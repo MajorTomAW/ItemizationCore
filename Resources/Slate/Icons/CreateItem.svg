@@ -1,0 +1,15 @@
+<svg id="eiuj8zMYgNd1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 20 20" shape-rendering="geometricPrecision" text-rendering="geometricPrecision" project-id="8a05ed056253435a856d9c75a68e19ce" export-id="0674c0c6f57a42ba987f1073ca001904" cached="false">
+    <defs>
+        <linearGradient id="eiuj8zMYgNd4-fill" x1="12.1242" y1="31.3812" x2="52.3216" y2="31.3812" spreadMethod="pad" gradientUnits="userSpaceOnUse" gradientTransform="translate(0 0)">
+            <stop id="eiuj8zMYgNd4-fill-0" offset="0%" stop-color="#999"/>
+            <stop id="eiuj8zMYgNd4-fill-1" offset="0%" stop-color="#c9c9c9"/>
+            <stop id="eiuj8zMYgNd4-fill-2" offset="100%" stop-color="#e6e6e6"/>
+        </linearGradient>
+    </defs>
+    <g transform="matrix(.394363 0 0 0.394363-4.598909-4.083726)">
+        <path d="M12.4,31.4c0-11.15615,9.04385-20.2,20.2-20.2c10.26144,0,18.7358,7.6514,20.02907,17.5602h-12.70142v0v0v9.58338h-9.45012v.00001v0v13.14623C20.31899,50.42907,12.4,41.83932,12.4,31.4Z" clip-rule="evenodd" fill="#4d4d4d" fill-rule="evenodd"/>
+        <path d="M17.1,44.8C9.9,36.5,10.7,23.6,19,16.4c6.5-5.8,15.9-6.7,23.1-2.7.3.2.3.5.2.7L32.7,30.8c-.2.3,0,.6.3.7l6.92765,1.09963v5.74396h-9.45012v13.09279C25.52017,50.99893,20.7258,48.76421,17.1,44.8Z" clip-rule="evenodd" fill="url(#eiuj8zMYgNd4-fill)" fill-rule="evenodd"/>
+        <path d="M35.6,30.3c-.3,0-.5-.3-.3-.6l8.9-12.2c.1-.2.4-.3.6-.1.5.4,1.2.9,1.6,1.6c2.50567,2.76487,3.89153,6.27629,4.22209,9.7602h-10.69444v1.687L35.6,30.3Z" opacity="0.3" clip-rule="evenodd" fill="#fff" fill-rule="evenodd"/>
+        <path d="M16,11h-3v-3h-2v3h-3v2h3v3h2v-3h3v-2Z" transform="matrix(3.146474 0 0 3.146474 11.626716 9.974683)" clip-rule="evenodd" fill="#fff" fill-rule="evenodd"/>
+    </g>
+</svg>
