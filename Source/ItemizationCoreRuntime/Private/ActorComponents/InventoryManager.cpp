@@ -877,7 +877,7 @@ void UInventoryManager::InitInventorySystem(AActor* InOwnerActor, AActor* InAvat
 				continue;
 			}
 
-			//ItemEntry.Instance->OnAvatarSet(); @TODO
+			ItemEntry.Instance->OnAvatarSet(ItemEntry, InventoryData.Get());
 		}
 	}
 }
