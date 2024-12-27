@@ -27,6 +27,7 @@ public class ItemizationCoreRuntime : ModuleRules
         {
             "CoreUObject",
             "Engine",
+            "EngineSettings",
         });
 
         if (Target.bBuildEditor)

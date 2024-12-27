@@ -3,13 +3,17 @@
 
 #include "ActorComponents/InventoryManager.h"
 
+#include "DisplayDebugHelpers.h"
 #include "InventoryItemInstance.h"
-#include "ItemDefinition.h"
 #include "ItemizationCoreLog.h"
 #include "ItemizationCoreStats.h"
 #include "Components/ItemComponentData_MaxStackSize.h"
+#include "Engine/ActorChannel.h"
+#include "GameFramework/HUD.h"
 #include "GameFramework/PlayerState.h"
 #include "Net/UnrealNetwork.h"
+
+#include UE_INLINE_GENERATED_CPP_BY_NAME(InventoryManager)
 
 static bool bReplicateInventoryItemsToSimulatedProxies = false;
 static FAutoConsoleVariableRef CVarReplicateInventoryItemsToOwnerOnly
@@ -72,17 +76,38 @@ bool UInventoryManager::IsOwnerActorAuthoritative() const
 	return !bCachedIsNetSimulated;
 }
 
-FInventoryItemEntryHandle UInventoryManager::GiveItem(const FInventoryItemEntry& ItemEntry, const FItemActionContextData& Context, int32& Excess)
+void UInventoryManager::ForceAvatarReplication()
+{
+	if (AActor* LocalAvatar = GetAvatarActor_Direct())
+	{
+		LocalAvatar->ForceNetUpdate();
+	}
+}
+
+FInventoryItemEntryHandle UInventoryManager::GiveItem(const FInventoryItemEntry& ItemEntry, int32& Excess)
+{
+	FItemActionContextData ContextData = FItemActionContextData(ItemEntry);
+	if (ContextData.InventoryManager == nullptr)
+	{
+		ContextData.InventoryManager = this;
+	}
+	
+	return GiveItem(ItemEntry, ContextData, Excess);
+}
+
+FInventoryItemEntryHandle UInventoryManager::GiveItem(const FInventoryItemEntry& ItemEntry, const FItemActionContextData& ContextData, int32& Excess)
 {
 	if (!IsValid(ItemEntry.Definition))
 	{
-		ITEMIZATION_LOG(Error, TEXT("[%hs] (%s): Attempted to give an item with an invalid definition."), __FUNCTION__, *GetName());
+		ITEMIZATION_LOG(Error, TEXT("[%hs] (%s): Attempted to give an item with an invalid definition."),
+			__FUNCTION__, *GetName());
 		return FInventoryItemEntryHandle();
 	}
 
 	if (!IsOwnerActorAuthoritative())
 	{
-		ITEMIZATION_LOG(Error, TEXT("[%hs] (%s): Attempted to give item (%s) on the client-side."), __FUNCTION__, *GetName(), *GetNameSafe(ItemEntry.Definition));
+		ITEMIZATION_LOG(Error, TEXT("[%hs] (%s): Attempted to give item (%s) on the client-side."),
+			__FUNCTION__, *GetName(), *GetNameSafe(ItemEntry.Definition));
 		return FInventoryItemEntryHandle();
 	}
 	
@@ -90,14 +115,15 @@ FInventoryItemEntryHandle UInventoryManager::GiveItem(const FInventoryItemEntry&
 	// The entry handle won't be regenerated when the item is actually added, so we can use it to refer to the item.
 	if (InventoryScopeLockCount > 0)
 	{
-		ITEMIZATION_LOG(Verbose, TEXT("[%hs] (%s): Adding item (%s) to pending adds."), __FUNCTION__, *GetName(), *GetNameSafe(ItemEntry.Definition));
+		ITEMIZATION_LOG(Verbose, TEXT("[%hs] (%s): Adding item (%s) to pending adds."),
+			__FUNCTION__, *GetName(), *GetNameSafe(ItemEntry.Definition));
 		ItemPendingAdds.Add(ItemEntry);
 		return ItemEntry.Handle;
 	}
 	
 	INVENTORY_LIST_SCOPE_LOCK();
 
-	FItemActionContextData CurrentContext = Context;
+	FItemActionContextData CurrentContext = ContextData;
 	EvaluateCurrentContext(ItemEntry, CurrentContext);
 
 	// See if we can stack the item with an existing item.
@@ -180,6 +206,31 @@ FInventoryItemEntryHandle UInventoryManager::K2_GiveItem(UItemDefinition* ItemDe
 	// Give the item and return its handle.
 	// Will run validation and authority checks.
 	return GiveItem(ItemEntry, ContextData, Excess);
+}
+
+bool UInventoryManager::RemoveItem(const FInventoryItemEntryHandle& Handle, int32 StackCount)
+{
+	if (!Handle.IsValid())
+	{
+		ITEMIZATION_LOG(Error, TEXT("[%hs] (%s): Attempted to remove an item with an invalid handle."),
+			__FUNCTION__, *GetName());
+		return false;
+	}
+
+	if (!IsOwnerActorAuthoritative())
+	{
+		ITEMIZATION_LOG(Error, TEXT("[%hs] (%s): Attempted to remove item (%s) on the client-side."),
+			__FUNCTION__, *GetName(), *Handle.ToString());
+
+		return false;
+	}
+
+	const TFunction<bool(const FInventoryItemEntry&)> Pred = [Handle](const FInventoryItemEntry& Other)->bool
+	{
+		return Other.Handle == Handle;
+	};
+
+	return RemoveItemByPredicate(Pred, StackCount);
 }
 
 FInventoryItemEntry UInventoryManager::BuildItemEntryFromDefinition(UItemDefinition* ItemDefinition, int32 StackCount, const FItemActionContextData& ContextData)
@@ -331,6 +382,36 @@ FInventoryItemEntry* UInventoryManager::FindItemEntryFromHandle(FInventoryItemEn
 	return nullptr;
 }
 
+FInventoryItemEntry* UInventoryManager::FindItemEntryFromDefinition(UItemDefinition* ItemDefinition) const
+{
+	SCOPE_CYCLE_COUNTER(STAT_FindItemEntryFromHandle);
+
+	for (const FInventoryItemEntry& ItemEntry : InventoryList.Items)
+	{
+		if (ItemEntry.Definition == nullptr)
+		{
+			continue;
+		}
+
+		if (ItemEntry.Definition == ItemDefinition)
+		{
+			return const_cast<FInventoryItemEntry*>(&ItemEntry);
+		}
+	}
+
+	return nullptr;
+}
+
+int32 UInventoryManager::GetCurrentStackCount(FInventoryItemEntryHandle Handle) const
+{
+	if (const FInventoryItemEntry* ItemEntry = FindItemEntryFromHandle(Handle))
+	{
+		return ItemEntry->StackCount;
+	}
+
+	return 0;
+}
+
 void UInventoryManager::GetAllItemHandles(TArray<FInventoryItemEntryHandle>& OutHandles) const
 {
 	// Reset the output array
@@ -367,9 +448,9 @@ void UInventoryManager::ReadyForReplication()
 
 	if (IsUsingRegisteredSubObjectList())
 	{
-		for (const FInventoryItemEntry& ItemSpec : InventoryList.Items)
+		for (const FInventoryItemEntry& ItemEntry : InventoryList.Items)
 		{
-			UInventoryItemInstance* Instance = ItemSpec.Instance;
+			UInventoryItemInstance* Instance = ItemEntry.Instance;
 
 			if (IsValid(Instance))
 			{
@@ -384,8 +465,12 @@ void UInventoryManager::GetLifetimeReplicatedProps(TArray<class FLifetimePropert
 {
 	FDoRepLifetimeParams Params;
 	Params.bIsPushBased = true;
-	Params.Condition = COND_ReplayOrOwner;
 
+	Params.Condition = COND_None;
+	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, OwnerActor, Params);
+	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, AvatarActor, Params);
+	
+	Params.Condition = COND_ReplayOrOwner;
 	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, InventoryList, Params);
 	
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -403,6 +488,48 @@ void UInventoryManager::OnRegister()
 	CacheIsNetSimulated();
 
 	InventoryList.RegisterWithOwner(this);
+
+	if (!InventoryData.IsValid())
+	{
+		InventoryData = MakeShareable(new FItemizationCoreInventoryData());
+	}
+}
+
+void UInventoryManager::InitializeComponent()
+{
+	Super::InitializeComponent();
+
+	AActor* Owner = GetOwner();
+	InitInventorySystem(Owner, Owner);
+}
+
+void UInventoryManager::UninitializeComponent()
+{
+	Super::UninitializeComponent();
+}
+
+bool UInventoryManager::ReplicateSubobjects(UActorChannel* Channel, FOutBunch* Bunch, FReplicationFlags* RepFlags)
+{
+#if SUBOBJECT_TRANSITION_VALIDATION
+	if (UActorChannel::CanIgnoreDeprecatedReplicateSubObjects())
+	{
+		return false;
+	}
+#endif
+
+	bool WroteSomething = Super::ReplicateSubobjects(Channel, Bunch, RepFlags);
+
+	for (const FInventoryItemEntry& ItemEntry : InventoryList.Items)
+	{
+		UInventoryItemInstance* Instance = ItemEntry.Instance;
+
+		if (IsValid(Instance))
+		{
+			WroteSomething |= Channel->ReplicateSubobject(Instance, *Bunch, *RepFlags);
+		}
+	}
+
+	return WroteSomething;
 }
 
 void UInventoryManager::IncrementInventoryListLock()
@@ -435,14 +562,15 @@ void UInventoryManager::DecrementInventoryListLock()
 		{
 			FInventoryListLockActiveChange ActiveChange(*this, ItemPendingAdds, ItemPendingRemoves);
 
-			for (FInventoryItemEntry& Spec : ActiveChange.Adds)
+			for (FInventoryItemEntry& ItemEntry : ActiveChange.Adds)
 			{
-				
+				int32 Excess;
+				GiveItem(ItemEntry, Excess);
 			}
 
-			for (FInventoryItemEntryHandle& Handle : ActiveChange.Removes)
+			for (const FInventoryItemEntryHandle& Handle : ActiveChange.Removes)
 			{
-				
+				RemoveItem(Handle);
 			}
 		}
 	}
@@ -472,7 +600,19 @@ void UInventoryManager::ClearAllItems()
 	INVENTORY_LIST_SCOPE_LOCK();
 	for (FInventoryItemEntry& Entry : InventoryList.Items)
 	{
-		OnRemoveItem(Entry);
+		bool bCanClearItem = true;
+		for (const FItemComponentData* Comp : Entry.Definition->GetItemComponents())
+		{
+			if (!Comp->IncludeInClearAll())
+			{
+				bCanClearItem = false;
+			}
+		}
+
+		if (bCanClearItem)
+		{
+			OnRemoveItem(Entry);
+		}
 	}
 
 	InventoryList.Items.Empty(InventoryList.Items.Num());
@@ -515,7 +655,7 @@ void UInventoryManager::OnRemoveItem(FInventoryItemEntry& ItemEntry)
 	UInventoryItemInstance* Instance = ItemEntry.Instance;
 	if (Instance)
 	{
-		Instance->OnRemovedFromInventory(this, ItemEntry);
+		Instance->OnRemovedFromInventory(ItemEntry, Instance->CurrentInventoryData);
 
 		// Make sure we remove this before marking it as garbage.
 		if (GetOwnerRole() == ROLE_Authority)
@@ -551,7 +691,7 @@ void UInventoryManager::OnGiveItem(FInventoryItemEntry& ItemEntry)
 
 	if (ensure(Instance))
 	{
-		Instance->OnAddedToInventory(this, ItemEntry);
+		Instance->OnAddedToInventory(ItemEntry, InventoryData.Get());
 	}
 }
 
@@ -579,6 +719,77 @@ UInventoryItemInstance* UInventoryManager::CreateNewInstanceOfItem(FInventoryIte
 	return NewInstance;
 }
 
+bool UInventoryManager::RemoveItemByPredicate(const TFunctionRef<bool(const FInventoryItemEntry& Other)>& Predicate, int32 StackCount)
+{
+	if (StackCount <= 0)
+	{
+		StackCount = TNumericLimits<int32>::Max();
+	}
+
+	for (int Idx = 0; Idx < ItemPendingAdds.Num(); ++Idx)
+	{
+		if (Predicate(ItemPendingAdds[Idx]))
+		{
+			ItemPendingAdds.RemoveAtSwap(Idx, 1, EAllowShrinking::No);
+			return true;
+		}
+	}
+
+	bool bRemovedAtLeastOne = false;
+	for (auto It = InventoryList.Items.CreateIterator(); It; ++It)
+	{
+		// No more items to remove?
+		if (StackCount <= 0)
+		{
+			return true;
+		}
+
+		FInventoryItemEntry& ItemEntry = *It;
+		check(ItemEntry.Instance);
+
+		if (!Predicate(ItemEntry))
+		{
+			ITEMIZATION_LOG(Verbose, TEXT("Predicate failed for item [%s] %s."), *ItemEntry.Handle.ToString(), *GetNameSafe(ItemEntry.Instance));
+			continue;
+		}
+
+		const int32 Delta = FMath::Min(StackCount, ItemEntry.StackCount);
+		ItemEntry.StackCount -= Delta;
+		StackCount -= Delta;
+
+		bRemovedAtLeastOne = true;
+
+		ITEMIZATION_LOG(Display, TEXT("Removing Item [%s] %s. Stack Count: %d"),
+			*ItemEntry.Handle.ToString(), *GetNameSafe(ItemEntry.Instance), ItemEntry.StackCount);
+
+		MarkItemEntryDirty(ItemEntry, true);
+
+		// If the stack count is now 0, remove the item.
+		if (ItemEntry.StackCount <= 0)
+		{
+			bool bCanClearItem = true;
+			for (const FItemComponentData* Comp : ItemEntry.Definition->GetItemComponents())
+			{
+				if (!Comp->CanClearItem(ItemEntry))
+				{
+					bCanClearItem = false;
+					break;
+				}
+			}
+
+			if (bCanClearItem)
+			{
+				OnRemoveItem(ItemEntry);
+
+				It.RemoveCurrent();
+				InventoryList.MarkArrayDirty();
+			}
+		}
+	}
+
+	return bRemovedAtLeastOne;
+}
+
 void UInventoryManager::AddReplicatedItemInstance(UInventoryItemInstance* ItemInstance)
 {
 	if (IsUsingRegisteredSubObjectList() && IsReadyForReplication())
@@ -596,6 +807,148 @@ void UInventoryManager::RemoveReplicatedItemInstance(UInventoryItemInstance* Ite
 	}
 }
 
+void UInventoryManager::SetOwnerActor(AActor* NewOwnerActor)
+{
+	MARK_PROPERTY_DIRTY_FROM_NAME(ThisClass, OwnerActor, this);
+	if (OwnerActor)
+	{
+		OwnerActor->OnDestroyed.RemoveDynamic(this, &ThisClass::OnOwnerActorDestroyed);
+	}
+
+	OwnerActor = NewOwnerActor;
+
+	if (OwnerActor)
+	{
+		OwnerActor->OnDestroyed.AddUniqueDynamic(this, &ThisClass::OnOwnerActorDestroyed);
+	}
+}
+
+void UInventoryManager::SetAvatarActor_Direct(AActor* NewAvatarActor)
+{
+	MARK_PROPERTY_DIRTY_FROM_NAME(ThisClass, AvatarActor, this);
+	if (AvatarActor)
+	{
+		AvatarActor->OnDestroyed.RemoveDynamic(this, &ThisClass::OnAvatarActorDestroyed);
+	}
+
+	AvatarActor = NewAvatarActor;
+
+	if (AvatarActor)
+	{
+		AvatarActor->OnDestroyed.AddUniqueDynamic(this, &ThisClass::OnAvatarActorDestroyed);
+	}
+}
+
+void UInventoryManager::SetAvatarActor(AActor* NewAvatarActor)
+{
+	check(InventoryData.IsValid());
+	InitInventorySystem(GetOwnerActor(), NewAvatarActor);
+}
+
+
+AActor* UInventoryManager::GetAvatarActor() const
+{
+	check(InventoryData.IsValid());
+	return InventoryData->AvatarActor.Get();
+}
+
+void UInventoryManager::InitInventorySystem(AActor* InOwnerActor, AActor* InAvatarActor)
+{
+	check(InventoryData.IsValid());
+	const bool bWasAvatarNull = InventoryData->AvatarActor == nullptr;
+	const bool bAvatarChanged = InAvatarActor != InventoryData->AvatarActor;
+
+	InventoryData->InitFromActor(InOwnerActor, InAvatarActor, this);
+	SetOwnerActor(InOwnerActor);
+
+	// Caching previous avatar to check against
+	const AActor* OldAvatar = GetAvatarActor_Direct();
+	SetAvatarActor_Direct(InAvatarActor);
+
+	// Notify all our items that the avatar has changed.
+	if (bAvatarChanged)
+	{
+		INVENTORY_LIST_SCOPE_LOCK();
+
+		for (FInventoryItemEntry& ItemEntry : InventoryList.Items)
+		{
+			if (ItemEntry.Instance == nullptr)
+			{
+				continue;
+			}
+
+			//ItemEntry.Instance->OnAvatarSet(); @TODO
+		}
+	}
+}
+
+void UInventoryManager::ClearInventoryData()
+{
+	check(InventoryData.IsValid());
+	InventoryData->ClearInventoryData();
+	SetOwnerActor(nullptr);
+	SetAvatarActor_Direct(nullptr);
+}
+
+void UInventoryManager::OnRep_OwnerActor()
+{
+	check(InventoryData.IsValid());
+	
+	AActor* LocalOwnerActor = GetOwnerActor();
+	AActor* LocalAvatarActor = GetAvatarActor_Direct();
+
+	if (LocalOwnerActor != InventoryData->OwnerActor ||
+		LocalAvatarActor != InventoryData->AvatarActor)
+	{
+		if (LocalOwnerActor != nullptr)
+		{
+			InitInventorySystem(LocalOwnerActor, LocalAvatarActor);
+		}
+		else
+		{
+			ClearInventoryData();
+		}
+	}
+}
+
+void UInventoryManager::OnAvatarActorDestroyed(AActor* InActor)
+{
+	if (InActor == AvatarActor)
+	{
+		AvatarActor = nullptr;
+		MARK_PROPERTY_DIRTY_FROM_NAME(ThisClass, AvatarActor, this);
+	}
+}
+
+void UInventoryManager::OnOwnerActorDestroyed(AActor* InActor)
+{
+	if (InActor == OwnerActor)
+	{
+		OwnerActor = nullptr;
+		MARK_PROPERTY_DIRTY_FROM_NAME(ThisClass, OwnerActor, this);
+	}
+}
+
 void UInventoryManager::OnShowDebugInfo(AHUD* HUD, UCanvas* Canvas, const FDebugDisplayInfo& DisplayInfo, float& YL, float& YPos)
 {
+	if (DisplayInfo.IsDisplayOn(TEXT("Itemization")))
+	{
+		UWorld* World = HUD->GetWorld();
+		UInventoryManager* Mgr = nullptr;
+
+		Mgr = GetInventoryManager(HUD->GetCurrentDebugTargetActor());
+
+		if (Mgr)
+		{
+			Mgr->DisplayDebug(Canvas, DisplayInfo, YL, YPos);
+		}
+	}
+}
+
+void UInventoryManager::DisplayDebug(UCanvas* Canvas, const FDebugDisplayInfo& DebugDisplay, float& YL, float& YPos) const
+{
+	if (DebugDisplay.IsDisplayOn(FName(TEXT("Items"))))
+	{
+		
+	}
 }

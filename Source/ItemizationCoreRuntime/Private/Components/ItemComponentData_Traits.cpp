@@ -42,6 +42,16 @@ bool FItemComponentData_Traits::CanCreateNewStack(const FInventoryItemEntry& Ite
 	return true;
 }
 
+bool FItemComponentData_Traits::CanClearItem(const FInventoryItemEntry& ItemEntry) const
+{
+	if (Traits.IsEmpty())
+	{
+		return true;
+	}
+
+	return !Traits.HasTagExact(ItemizationCoreTags::TAG_ItemTrait_AllowEmptyFinalStack);
+}
+
 #if WITH_EDITOR
 EDataValidationResult FItemComponentData_Traits::IsDataValid(class FDataValidationContext& Context) const
 {

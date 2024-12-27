@@ -47,11 +47,11 @@ class ITEMIZATIONCORERUNTIME_API UItemDefinition : public UPrimaryDataAsset
 
 protected:
 	/** The primary asset type that will be used for this item definition. */
-	UPROPERTY(AssetRegistrySearchable)
+	UPROPERTY(VisibleDefaultsOnly, AssetRegistrySearchable, Category = "Development|Asset Manager")
 	FName PrimaryAssetType;
 
 	/** The primary asset name that will be used for this item definition. */
-	UPROPERTY(AssetRegistrySearchable)
+	UPROPERTY(VisibleDefaultsOnly, AssetRegistrySearchable, Category = "Development|Asset Manager")
 	FName PrimaryAssetName;
 
 public:

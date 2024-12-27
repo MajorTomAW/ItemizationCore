@@ -3,21 +3,30 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Components/ActorComponent.h"
 #include "AbilitySystemComponent.h"
+
+#include "ItemDefinition.h"
 #include "InventoryItemEntry.h"
 #include "InventoryItemEntryHandle.h"
-#include "ItemDefinition.h"
-#include "Components/ActorComponent.h"
-#include "InventoryManager.generated.h"
 
+#include "InventoryManager.generated.h"
 
 struct FItemActionContextData;
 struct FItemActionContextData;
 
 /**
  * Manages the inventory of an actor.
+ * Items are defined by the UItemDefinition asset, which is const and can't be changed,
+ * while the item instance is mutable and can be changed.
+ *
+ *
+ * For each stack of items in the inventory system, there will be one item instance associated with its item definition.
+ * The same thing for other data such as the stack count, its handle, and other data.
+ *
+ * Additionally, item definitions can have components that can be used to add custom logic to the item.
  */
-UCLASS(ClassGroup=(Itemization), meta=(BlueprintSpawnableComponent), BlueprintType, Blueprintable)
+UCLASS(ClassGroup = (Itemization), meta=(BlueprintSpawnableComponent), BlueprintType, Blueprintable)
 class ITEMIZATIONCORERUNTIME_API UInventoryManager : public UActorComponent
 {
 	GENERATED_UCLASS_BODY()
@@ -29,6 +38,12 @@ class ITEMIZATIONCORERUNTIME_API UInventoryManager : public UActorComponent
 
 	/** Returns true if this component's actor has authority. */
 	virtual bool IsOwnerActorAuthoritative() const;
+
+	/**
+	 * Forces the avatar actor to replicate.
+	 * Useful for when the avatar actor is set after the inventory manager has been created.
+	 */
+	virtual void ForceAvatarReplication();
 	
 	/**
 	 * Gives an item to the inventory.
@@ -36,10 +51,11 @@ class ITEMIZATIONCORERUNTIME_API UInventoryManager : public UActorComponent
 	 * 
 	 * @param ItemEntry The entry of the item to give.
 	 * @param ContextData The context of how the item is being given.
-	 * @param Excess [OUT] The amount of items that could not be added to the inventory.
+	 * @param Excess [OUT] The amount of items that couldn't be added to the inventory.
 	 * @returns The handle to the item that was given. 
 	 */
 	FInventoryItemEntryHandle GiveItem(const FInventoryItemEntry& ItemEntry, const FItemActionContextData& ContextData, int32& Excess);
+	FInventoryItemEntryHandle GiveItem(const FInventoryItemEntry& ItemEntry, int32& Excess);
 
 	/**
 	 * Grants an item definition or the inventory and returns its handle.
@@ -54,6 +70,15 @@ class ITEMIZATIONCORERUNTIME_API UInventoryManager : public UActorComponent
 	FInventoryItemEntryHandle K2_GiveItem(UItemDefinition* ItemDefinition, int32 StackCount, int32& OutExcess);
 
 	/**
+	 * Removes a given item from the inventory.
+	 * @param Handle	The handle of the item to remove.
+	 * @param StackCount	The number of items to remove. If -1, all items will be removed.
+	 * @returns True, if the item was removed.
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Itemization Core")
+	bool RemoveItem(const FInventoryItemEntryHandle& Handle, int32 StackCount = -1);
+
+	/**
 	 * Builds a simple FInventoryItemEntry from a definition and stack count.
 	 */
 	virtual FInventoryItemEntry BuildItemEntryFromDefinition(UItemDefinition* ItemDefinition, int32 StackCount, const FItemActionContextData& ContextData);
@@ -66,7 +91,7 @@ class ITEMIZATIONCORERUNTIME_API UInventoryManager : public UActorComponent
 	 * @param ThisEntry The item entry that will try to merge into the other entry. 
 	 * @param OtherEntry	The target item entry that will be modified.
 	 * @param Context	The context of the item action.
-	 * @param Excess	[OUT] The amount of items that could not be added to the inventory.
+	 * @param Excess	[OUT] The amount of items that couldn't be added to the inventory.
 	 * @return True, if the items can be combined.
 	 */
 	virtual bool CombineItemEntries(const FInventoryItemEntry& ThisEntry, FInventoryItemEntry& OtherEntry, FItemActionContextData& Context, int32& Excess);
@@ -111,6 +136,12 @@ class ITEMIZATIONCORERUNTIME_API UInventoryManager : public UActorComponent
 	/** Returns an item entry from the inventory for a given handle. */
 	FInventoryItemEntry* FindItemEntryFromHandle(FInventoryItemEntryHandle Handle, EConsiderPending ConsiderPending = EConsiderPending::PendingRemove) const;
 
+	/** Returns an item entry from the inventory for a given definition. */
+	FInventoryItemEntry* FindItemEntryFromDefinition(UItemDefinition* ItemDefinition) const;
+
+	/** Returns the current stack count of an item in the inventory. */
+	int32 GetCurrentStackCount(FInventoryItemEntryHandle Handle) const;
+
 	/** Returns the list of all items in the inventory. */
 	TArray<FInventoryItemEntry>& GetInventoryList() { return InventoryList.Items; }
 
@@ -128,7 +159,10 @@ class ITEMIZATIONCORERUNTIME_API UInventoryManager : public UActorComponent
 	
 	//~ Begin UActorComponent Interface
 	virtual void OnRegister() override;
-	
+	virtual void InitializeComponent() override;
+	virtual void UninitializeComponent() override;
+
+	virtual bool ReplicateSubobjects(UActorChannel* Channel, FOutBunch* Bunch, FReplicationFlags* RepFlags) override;
 	virtual void ReadyForReplication() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void GetReplicatedCustomConditionState(FCustomPropertyConditionState& OutActiveState) const override;
@@ -193,11 +227,73 @@ protected:
 	/** Creates a new instance of an item, storing it in the spec. */
 	virtual UInventoryItemInstance* CreateNewInstanceOfItem(FInventoryItemEntry& ItemEntry);
 
+	/** Removes an item instance from the inventory that matches the predicate. */
+	virtual bool RemoveItemByPredicate(const TFunctionRef<bool(const FInventoryItemEntry&)>& Predicate, int32 StackCount = -1);
+
 	/** Add a new item instance to the inventory. */
 	void AddReplicatedItemInstance(UInventoryItemInstance* ItemInstance);
 
 	/** Remove an item instance from the inventory. */
 	void RemoveReplicatedItemInstance(UInventoryItemInstance* ItemInstance);
+
+private:
+	/** The actor that owns this component logically. */
+	UPROPERTY(ReplicatedUsing = OnRep_OwnerActor, Transient)
+	TObjectPtr<AActor> OwnerActor;
+
+	/** The actor that is the physical representation of the owner. */
+	UPROPERTY(ReplicatedUsing = OnRep_OwnerActor, Transient)
+	TObjectPtr<AActor> AvatarActor;
+
+public:
+	/** Sets the owner actor. */
+	void SetOwnerActor(AActor* NewOwnerActor);
+	AActor* GetOwnerActor() const { return OwnerActor.Get(); }
+
+	/** Used to set the avatar actor directly, bypassing the automatic setting. */
+	void SetAvatarActor_Direct(AActor* NewAvatarActor);
+	AActor* GetAvatarActor_Direct() const { return AvatarActor.Get(); }
+
+	/** Used to set the avatar actor. */
+	void SetAvatarActor(AActor* NewAvatarActor);
+	AActor* GetAvatarActor() const;
+
+	/**
+	 * Cached data about the inventory system such as the owner actor, avatar actor, etc.
+	 * Utility-struct for easy access to those data.
+	 */
+	TSharedPtr<FItemizationCoreInventoryData> InventoryData;
+
+	/**
+	 * Initializes the inventory system with the owner actor, avatar actor, and inventory manager.
+	 * Also validates the inventory data.
+	 * Doesn't need to be called manually unless you want to control both the owner and avatar actor.
+	 * @param InOwnerActor	The actor that owns the inventory (virtually).
+	 * @param InAvatarActor		The physical representation of the owner actor (physically).
+	 */
+	virtual void InitInventorySystem(AActor* InOwnerActor, AActor* InAvatarActor);
+
+	/**
+	 * Clears out the inventory system and the inventory data.
+	 */
+	virtual void ClearInventoryData();
+
+	void RefreshInventoryData() {}
+
+	/** Called when the controller is set. */
+	virtual void OnControllerSet() {}
+
+	/** OnRep for the owner actor. */
+	UFUNCTION()
+	virtual void OnRep_OwnerActor();
+
+	/** Called when the avatar actor is destroyed. */
+	UFUNCTION()
+	virtual void OnAvatarActorDestroyed(AActor* InActor);
+
+	/** Called when the owner actor destroyed. */
+	UFUNCTION()
+	virtual void OnOwnerActorDestroyed(AActor* InActor);
 
 protected:
 	struct FInventoryListLockActiveChange
@@ -228,4 +324,5 @@ protected:
 
 public:
 	static void OnShowDebugInfo(AHUD* HUD, UCanvas* Canvas, const FDebugDisplayInfo& DisplayInfo, float& YL, float& YPos);
+	virtual void DisplayDebug(class UCanvas* Canvas, const FDebugDisplayInfo& DebugDisplay, float& YL, float& YPos) const;
 };

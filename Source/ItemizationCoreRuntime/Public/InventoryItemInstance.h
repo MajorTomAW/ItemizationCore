@@ -47,16 +47,16 @@ public:
 	virtual void PostNetInit();
 
 	/** Called to initialize the current entry handle. */
-	virtual void SetCurrentEntryInfo(UInventoryManager* InventoryManager, const FInventoryItemEntryHandle& InHandle);
+	virtual void SetCurrentEntryInfo(const FInventoryItemEntryHandle InHandle, const FItemizationCoreInventoryData* InventoryData);
 
 	/** Called when the item instance is added to an inventory. */
-	virtual void OnAddedToInventory(UInventoryManager* InventoryManager, const FInventoryItemEntry& ItemEntry);
+	virtual void OnAddedToInventory(const FInventoryItemEntry& ItemEntry, const FItemizationCoreInventoryData* InventoryData);
 
 	/** Called when the item instance is removed from an inventory. */
-	virtual void OnRemovedFromInventory(UInventoryManager* InventoryManager, const FInventoryItemEntry& ItemEntry);
+	virtual void OnRemovedFromInventory(const FInventoryItemEntry& ItemEntry, const FItemizationCoreInventoryData* InventoryData);
 
 	/** Called to inform the instance that the avatar actor has been set or changed. */
-	virtual void OnAvatarSet(AActor* Avatar, const FInventoryItemEntry& ItemEntry);
+	virtual void OnAvatarSet(const FInventoryItemEntry& ItemEntry, const FItemizationCoreInventoryData* InventoryData);
 
 	/** Gets the current item handle of the associated item entry. */
 	FInventoryItemEntryHandle GetCurrentItemHandle() const;
@@ -64,18 +64,104 @@ public:
 	/** Retrieves the actual item entry of the associated item handle. */
 	FInventoryItemEntry* GetCurrentItemEntry() const;
 
+	/** Retrieves the item definition of the associated item entry. */
+	UItemDefinition* GetCurrentItemDefinition() const;
+
+	/** Gets the current inventory data associated with this instance. */
+	const FItemizationCoreInventoryData* GetCurrentInventoryData() const;
+
 	/** Gets the current inventory manager that owns this item instance. */
-	UInventoryManager* GetCurrentInventoryManager() const { return CurrentInventoryManager.Get(); }
+	UFUNCTION(BlueprintCallable, Category = "Itemization Core|Item")
+	UInventoryManager* GetOwningInventoryManager() const;
+	UInventoryManager* GetOwningInventoryManager_Checked() const;
+	UInventoryManager* GetOwningInventoryManager_Ensured() const;
+
+	/** Gets the current item definition of the associated item entry. */
+	ECurrentItemState GetCurrentState() const { return CurrentState; }
+	EUserFacingItemState GetUserFacingState() const;
+
+	/** True if this is the server or single player. */
+	bool HasAuthority() const;
+
+	/** True if the owning actor is locally controlled, always true for single player. */
+	bool IsLocallyControlled() const;
+
+public:
+	/** Returns the inventory data associated with this instance. */
+	UFUNCTION(BlueprintCallable, Category = "Itemization Core|Item")
+	FItemizationCoreInventoryData GetInventoryData() const;
+
+	/** Returns the actor that owns this instance. */
+	UFUNCTION(BlueprintCallable, Category = "Itemization Core|Item")
+	AActor* GetOwningActorFromInventoryData() const;
+
+	/** Returns the avatar actor that represents the owner actor. */
+	UFUNCTION(BlueprintCallable, Category = "Itemization Core|Item")
+	AActor* GetAvatarActorFromInventoryData() const;
+
+	/** Retrieves the source object associated with this instance. */
+	UFUNCTION(BlueprintCallable, Category = "Itemization Core|Item")
+	UObject* GetSourceObject() const;
+	
+	/** Gets the current item handle of the associated item entry. */
+	UFUNCTION(BlueprintCallable, Category = "Itemization Core|Item", meta = (DisplayName = "Get Item Handle"))
+	FInventoryItemEntryHandle K2_GetCurrentItemHandle() const { return GetCurrentItemHandle(); }
+
+	/** Retrieves the actual item entry of the associated item handle. */
+	UFUNCTION(BlueprintCallable, Category = "Itemization Core|Item", meta = (DisplayName = "Get Item Entry"))
+	FInventoryItemEntry& K2_GetCurrentItemEntry() const { return *GetCurrentItemEntry(); }
+
+	/** Retrieves the item definition of the associated item entry. */
+	UFUNCTION(BlueprintCallable, Category = "Itemization Core|Item", meta = (DisplayName = "Get Item Definition"))
+	const UItemDefinition* K2_GetCurrentItemDefinition() const { return GetCurrentItemDefinition(); }
+
+	/** Gets the current inventory manager that owns this item instance. */
+	UFUNCTION(BlueprintCallable, Category = "Itemization Core|Item", meta = (DisplayName = "Get Inventory Manager"))
+	UInventoryManager* K2_GetOwningInventoryManager() const { return GetOwningInventoryManager(); }
+
+	/** Gets the current item definition of the associated item entry. */
+	UFUNCTION(BlueprintCallable, Category = "Itemization Core|Item", meta = (DisplayName = "Get Current State"))
+	void K2_GetCurrentState(EUserFacingItemState& State) const { State = GetUserFacingState(); }
+
+	/** True if this is the server or single player. */
+	UFUNCTION(BlueprintCallable, BlueprintPure = false, Category = "Itemization Core|Item", meta = (DisplayName = "Has Authority", ExpandBoolAsExecs = "ReturnValue"))
+	bool K2_HasAuthority() const { return HasAuthority(); }
+
+	/** True if the owning actor is locally controlled, always true for single player. */
+	UFUNCTION(BlueprintCallable, BlueprintPure = false, Category = "Itemization Core|Item", meta = (DisplayName = "Is Locally Controlled", ExpandBoolAsExecs = "ReturnValue"))
+	bool K2_IsLocallyControlled() const { return IsLocallyControlled(); }
+
+protected:
+	/**
+	 * Potential main entry point for subclasses to implement custom logic when the item is added to an inventory.
+	 */
+	UFUNCTION(BlueprintImplementableEvent, Category = "Itemization Core|Item", meta = (DisplayName = "On Added To Inventory", ScriptName = "OnAddedToInventory"))
+	void K2_OnAddedToInventory();
+
+	/**
+	 * Potential main entry point for subclasses to implement custom logic when the item is removed from an inventory.
+	 */
+	UFUNCTION(BlueprintImplementableEvent, Category = "Itemization Core|Item", meta = (DisplayName = "On Removed From Inventory", ScriptName = "OnRemovedFromInventory"))
+	void K2_OnRemovedFromInventory();
+
+	bool bHasBlueprintAddedToInventory : 1;
+	bool bHasBlueprintRemovedFromInventory : 1;
 
 protected:
 	/** A count of all current scope locks. */
 	mutable int8 ScopeLockCount;
 
+	/** Increases the scope lock count. */
+	void IncrementListLock() const;
+
+	/** Decreases the scope lock count. Runs the waiting to execute. */
+	void DecrementListLock() const;
+
 	/** Handle to the item entry that this instance is associated with. */
 	mutable FInventoryItemEntryHandle CurrentEntryHandle;
 
-	/** Cached pointer to the inventory manager that owns this item instance. */
-	TWeakObjectPtr<UInventoryManager> CurrentInventoryManager;
+	/** Shared cached data about the inventory system. */
+	mutable const FItemizationCoreInventoryData* CurrentInventoryData;
 
 	/** The current state of the item. */
 	UPROPERTY()

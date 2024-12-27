@@ -11,8 +11,9 @@
 class UItemDefinition;
 class UInventoryItemInstance;
 class UInventoryManager;
+
 /**
- * Fast array serializer for inventory item specs.
+ * Fast array serializer for inventory item entries.
  */
 USTRUCT(BlueprintType)
 struct ITEMIZATIONCORERUNTIME_API FInventoryItemEntry : public FFastArraySerializerItem
@@ -26,7 +27,7 @@ public:
 	FInventoryItemEntry();
 	FInventoryItemEntry(UItemDefinition* ItemDefinition, int32 InStackCount, UObject* InSourceObject = nullptr);
 
-	/** Handle for outside sources to refer to this spec by */
+	/** Handle for outside sources to refer to this entry by */
 	UPROPERTY()
 	FInventoryItemEntryHandle Handle;
 
@@ -34,7 +35,7 @@ public:
 	UPROPERTY()
 	TObjectPtr<UItemDefinition> Definition;
 
-	/** Instance of the item spec */
+	/** Instance of the item entry */
 	UPROPERTY()
 	TObjectPtr<UInventoryItemInstance> Instance;
 

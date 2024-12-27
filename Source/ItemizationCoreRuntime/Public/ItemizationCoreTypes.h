@@ -44,6 +44,14 @@ public:
 
 struct FItemActionContextData
 {
+public:
+	PRAGMA_DISABLE_DEPRECATION_WARNINGS
+	FItemActionContextData(FItemActionContextData&&) = default;
+	FItemActionContextData(const FItemActionContextData&) = default;
+	FItemActionContextData& operator=(FItemActionContextData&&) = default;
+	FItemActionContextData& operator=(const FItemActionContextData&) = default;
+	PRAGMA_ENABLE_DEPRECATION_WARNINGS
+	
 	FItemActionContextData()
 		: Instigator(nullptr)
 		, InventoryManager(nullptr)
@@ -106,10 +114,10 @@ enum class ECurrentItemState : uint8
 	/** Don't consider the item has any state. */
 	None = 0,
 
-	/** The item is currently active. */
+	/** The item is currently active. And equipped */
 	Active = 1 << 0,
 
-	/** The item is currently inactive. */
+	/** The item is currently inactive. But equipped. */
 	Inactive = 1 << 1,
 
 	/** The item is currently in the process of being activated. */
@@ -124,7 +132,7 @@ enum class ECurrentItemState : uint8
  * Mostly used for user facing data.
  */
 UENUM(BlueprintType)
-enum class EActiveItemState : uint8
+enum class EUserFacingItemState : uint8
 {
 	/** Applies in all states, as long as the item is owned by the player. */
 	Owned,
@@ -174,4 +182,80 @@ public:
 	/** The delta of the stack count. */
 	UPROPERTY(BlueprintReadOnly, Category = "Message")
 	int32 Delta = 0;
+};
+
+/**
+ * Utility-struct that holds some core data about the inventory system.
+ * Usually associated with the actor that owns the inventory.
+ *
+ * Has the concept of owning and avatar actor to make it possible to split up the inventory system from the actual actor.
+ * As some games might want the inventory to be on the player controller,
+ * while the actual physical representation of the items is on the player character.
+ */
+USTRUCT(BlueprintType)
+struct FItemizationCoreInventoryData
+{
+	GENERATED_USTRUCT_BODY()
+
+public:
+	FItemizationCoreInventoryData();
+	virtual ~FItemizationCoreInventoryData() = default;
+
+public:
+	/** The owning actor that owns the inventory. (virtually) !!Should always be valid!! */
+	UPROPERTY(BlueprintReadOnly, Category = "Inventory Data")
+	TWeakObjectPtr<AActor> OwnerActor;
+
+	/** The avatar actor that represents the owner actor. (physically) !!Should always be valid!!*/
+	UPROPERTY(BlueprintReadOnly, Category = "Inventory Data")
+	TWeakObjectPtr<AActor> AvatarActor;
+
+	/** The controller associated with the owning actor. !!Could be invalid!!*/
+	UPROPERTY(BlueprintReadOnly, Category = "Inventory Data")
+	TWeakObjectPtr<AController> Controller;
+
+	/** The inventory manager that is associated with the owning actor. !!Should always be valid!!*/
+	UPROPERTY(BlueprintReadOnly, Category = "Inventory Data")
+	TWeakObjectPtr<UInventoryManager> InventoryManager;
+
+public:
+	/**
+	 * Checks if the actor is locally controlled.
+	 * Only true for players on the client that owns them.
+	 * (Unlike APawn::IsLocallyControlled() which requires a controller)
+	 * @returns True if the actor is locally controlled.
+	 */
+	bool IsLocallyControlled() const;
+
+	/**
+	 * Checks if the actual player controller is locally controlled.
+	 * @returns True, if the actor has a player controller that is locally controlled. 
+	 */
+	bool IsLocallyControlledPlayer() const;
+
+	/**
+     * Checks if the owning actor has net authority.
+     * @returns True if the owning actor has net authority.
+     */
+	bool HasNetAuthority() const;
+
+	/**
+     * Initializes the actor info from an owning actor.
+     * Will set both owner and avatar.
+     * @param InOwnerActor The actor that owns the abilities.
+     * @param InAvatarActor The physical representation of the owner.
+     * @param InInventoryManager The inventory manager that is associated with the owning actor.
+     */
+	virtual void InitFromActor(AActor* InOwnerActor, AActor* InAvatarActor, UInventoryManager* InInventoryManager);
+
+	/**
+     * Sets a new avatar actor, keeping the same owner and ability system component.
+     * @param NewAvatarActor The new avatar actor.
+     */
+	virtual void SetAvatarActor_Direct(AActor* NewAvatarActor);
+
+	/**
+     * Clears out any actor info, both owner and avatar.
+     */
+	virtual void ClearInventoryData();
 };

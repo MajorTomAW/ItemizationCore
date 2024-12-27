@@ -18,6 +18,10 @@ public:
 	virtual void DrawData(APlayerController* OwnerPC, FGameplayDebuggerCanvasContext& CanvasContext) override;
 	//~ End FGameplayDebuggerCategory Interface
 
+	void OnShowItemHandlesToggle();
+	void OnShowItemStatesToggle();
+	void OnShowInstanceToggle();
+
 protected:
 	bool WrapStringAccordingToViewport(const FString& InString, FString& OutString, FGameplayDebuggerCanvasContext& CanvasContext, float ViewportWidth) const;
 
@@ -34,6 +38,7 @@ protected:
 		struct FInventoryItemDebug
 		{
 			FString ItemName;
+			FString InstanceName;
 			FString Source;
 			int32 StackCount;
 			int32 MaxStackCount;
@@ -49,5 +54,9 @@ protected:
 
 private:
 	float LastDrawDataEndSize = 0.f;
+
+	bool bShowItemHandles = false;
+	bool bShowItemStates = false;
+	bool bShowInstance = true;
 };
 #endif

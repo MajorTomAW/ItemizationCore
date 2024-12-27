@@ -5,6 +5,7 @@
 
 #include "ActorComponents/InventoryManager.h"
 #include "Components/ItemComponentData_MaxStackSize.h"
+#include "InventoryItemInstance.h"
 #include "Engine/Canvas.h"
 
 #if WITH_GAMEPLAY_DEBUGGER_MENU
@@ -14,6 +15,18 @@ const FString LongestDebugObjectName{ TEXT("ABCDEFGHIJKLMNOPQRSTUVWXYZ_ ABCDEFGH
 FGameplayDebuggerCategory_Itemization::FGameplayDebuggerCategory_Itemization()
 {
 	SetDataPackReplication<FRepData>(&DataPack);
+
+	// Hard coding these to avoid needing to import InputCore just for EKeys::GetFName().
+	const FName NAME_KeyOne{ "One" };
+	const FName NAME_KeyTwo{ "Two" };
+	const FName NAME_KeyThree{ "Three" };
+	const FName NAME_KeyFour{ "Four" };
+
+	typedef FGameplayDebuggerCategory_Itemization ThisClass;
+
+	BindKeyPress(NAME_KeyOne, FGameplayDebuggerInputModifier::Shift, this, &ThisClass::OnShowItemHandlesToggle, EGameplayDebuggerInputMode::Local);
+	BindKeyPress(NAME_KeyTwo, FGameplayDebuggerInputModifier::Shift, this, &ThisClass::OnShowItemStatesToggle, EGameplayDebuggerInputMode::Local);
+	BindKeyPress(NAME_KeyThree, FGameplayDebuggerInputModifier::Shift, this, &ThisClass::OnShowInstanceToggle, EGameplayDebuggerInputMode::Local);
 }
 
 TSharedRef<FGameplayDebuggerCategory> FGameplayDebuggerCategory_Itemization::MakeInstance()
@@ -39,6 +52,10 @@ void FGameplayDebuggerCategory_Itemization::CollectData(APlayerController* Owner
 			ItemData.ItemName = GetNameSafe(ItemEntry.Definition);
 			ItemData.ItemName.RemoveFromStart(DEFAULT_OBJECT_PREFIX);
 			ItemData.ItemName.RemoveFromEnd(TEXT("_C"));
+
+			ItemData.InstanceName = GetNameSafe(ItemEntry.Instance);
+			ItemData.InstanceName.RemoveFromStart(DEFAULT_OBJECT_PREFIX);
+			ItemData.InstanceName.RemoveFromEnd(TEXT("_C"));
 
 			ItemData.Source = GetNameSafe(ItemEntry.SourceObject.Get());
 			ItemData.Source.RemoveFromStart(DEFAULT_OBJECT_PREFIX);
@@ -108,6 +125,7 @@ void FGameplayDebuggerCategory_Itemization::FRepData::Serialize(FArchive& Ar)
 	for (int32 Idx = 0; Idx < NumItems; Idx++)
 	{
 		Ar << Items[Idx].ItemName;
+		Ar << Items[Idx].InstanceName;
 		Ar << Items[Idx].Source;
 		Ar << Items[Idx].StackCount;
 		Ar << Items[Idx].MaxStackCount;
@@ -124,8 +142,11 @@ void FGameplayDebuggerCategory_Itemization::DrawData(APlayerController* OwnerPC,
 		CanvasContext.CursorY -= CanvasContext.GetLineHeight();
 		const TCHAR* Active = TEXT("{green}");
 		const TCHAR* Inactive = TEXT("{grey}");
-		CanvasContext.Printf(TEXT("Items [%s%s{white}]"),
-			Active, TEXT("Monitoring"));
+		
+		CanvasContext.Printf(TEXT("Item Handles [%s%s{white}]\tItem States [%s%s{white}]\tInstance [%s%s{white}]"),
+			bShowItemHandles ? Active : Inactive, *GetInputHandlerDescription(0),
+			bShowItemStates ? Active : Inactive, *GetInputHandlerDescription(1),
+			bShowInstance ? Active : Inactive, *GetInputHandlerDescription(2));
 	}
 
 	if (LastDrawDataEndSize <= 0.f)
@@ -145,7 +166,25 @@ void FGameplayDebuggerCategory_Itemization::DrawData(APlayerController* OwnerPC,
 
 	DrawInventoryItems(CanvasContext, OwnerPC);
 
+	
+	FSlateRenderTransform(TQuat2<float>(45.f));
+
 	LastDrawDataEndSize = CanvasContext.CursorY - ThisDrawDataStartPos;
+}
+
+void FGameplayDebuggerCategory_Itemization::OnShowItemHandlesToggle()
+{
+	bShowItemHandles = !bShowItemHandles;
+}
+
+void FGameplayDebuggerCategory_Itemization::OnShowItemStatesToggle()
+{
+	bShowItemStates = !bShowItemStates;
+}
+
+void FGameplayDebuggerCategory_Itemization::OnShowInstanceToggle()
+{
+	bShowInstance = !bShowInstance;
 }
 
 void FGameplayDebuggerCategory_Itemization::DrawInventoryItems(FGameplayDebuggerCanvasContext& CanvasContext, const APlayerController* OwnerPC) const
@@ -172,7 +211,16 @@ void FGameplayDebuggerCategory_Itemization::DrawInventoryItems(FGameplayDebugger
 		CanvasContext.MeasureString(*LongestDebugObjectName, ObjNameSize, TempSizeY);
 		CanvasContext.MeasureString(TEXT("source: "), SourceNameSize, TempSizeY);
 		CanvasContext.MeasureString(TEXT("stack: 00"), StackNameSize, TempSizeY);
-		CanvasContext.MeasureString(TEXT("handle: 000"), HandleNameSize, TempSizeY);
+
+		if (bShowItemHandles)
+			CanvasContext.MeasureString(TEXT("handle: 000"), HandleNameSize, TempSizeY);
+
+		if (bShowItemStates)
+			CanvasContext.MeasureString(TEXT("state: active"), HandleNameSize, TempSizeY);
+
+		if (bShowInstance)
+			CanvasContext.MeasureString(TEXT("instance: 000000000"), HandleNameSize, TempSizeY);
+		
 		ObjNameSize += Padding;
 	}
 
@@ -182,7 +230,7 @@ void FGameplayDebuggerCategory_Itemization::DrawInventoryItems(FGameplayDebugger
 	CanvasContext.Printf(TEXT("Inventory Items:"));
 	CanvasContext.CursorX += 200.f;
 	CanvasContext.CursorY -= CanvasContext.GetLineHeight();
-	CanvasContext.Printf(TEXT("Legend:	{yellow}Granted [%d]	{cyan}Equipped [%d]		{green}Active [%d]"), DataPack.Items.Num(), NumEquipped, NumActive);
+	CanvasContext.Printf(TEXT("Legend:	{yellow}Idle [%d]	{cyan}Equipped [%d]		{green}Active [%d]"), DataPack.Items.Num(), NumEquipped, NumActive);
 	CanvasContext.CursorX += Padding;
 
 	for (const FRepData::FInventoryItemDebug& Item : DataPack.Items)
@@ -191,10 +239,36 @@ void FGameplayDebuggerCategory_Itemization::DrawInventoryItems(FGameplayDebugger
 		const float CurY = CanvasContext.CursorY;
 
 		// Print positions manually to align them properly
-		CanvasContext.PrintAt(CurX + ObjNameSize * 0, CurY, Item.bIsEquipped ? FColor::Cyan : FColor::Yellow, Item.ItemName.Left(35));
-		CanvasContext.PrintAt(CurX + ObjNameSize * 0.5f, CurY, FString::Printf(TEXT("{grey}source: {white}%s"), *Item.Source));
-		CanvasContext.PrintAt(CurX + ObjNameSize * 1.f + SourceNameSize, CurY, FString::Printf(TEXT("{grey}count: {white}%02d/{grey}%02d"), Item.StackCount, Item.MaxStackCount));
-		CanvasContext.PrintAt(CurX + ObjNameSize * 1.5f + SourceNameSize + StackNameSize, CurY, FString::Printf(TEXT("{grey}handle: {white}%03d"), Item.Handle));
+		FColor ItemColor = Item.bIsEquipped ? FColor::Cyan : FColor::Yellow;
+		ItemColor = Item.bIsActive ? FColor::Green : ItemColor;
+
+		float IndentAmount = 0.f;
+		CanvasContext.PrintAt(CurX + ObjNameSize * IndentAmount, CurY, ItemColor, Item.ItemName.Left(35));
+		IndentAmount += 0.4f;
+		CanvasContext.PrintAt(CurX + ObjNameSize * IndentAmount, CurY, FString::Printf(TEXT("{grey}source: {white}%s"), *Item.Source));
+		IndentAmount += 0.4f;
+		CanvasContext.PrintAt(CurX + ObjNameSize * IndentAmount + SourceNameSize, CurY, FString::Printf(TEXT("{grey}count: {white}%02d/{grey}%02d"), Item.StackCount, Item.MaxStackCount));
+		IndentAmount += 0.4f;
+
+		if (bShowItemHandles)
+		{
+			CanvasContext.PrintAt(CurX + ObjNameSize * IndentAmount + SourceNameSize + StackNameSize, CurY, FString::Printf(TEXT("{grey}handle: {white}%03d"), Item.Handle));
+			IndentAmount += 0.4f;
+		}
+
+		if (bShowItemStates)
+		{
+			FText ItemState = Item.bIsEquipped ? FText::FromString(TEXT("equipped")) : FText::FromString(TEXT("idle"));
+			ItemState = Item.bIsActive ? FText::FromString(TEXT("active")) : ItemState;
+			CanvasContext.PrintAt(CurX + ObjNameSize * IndentAmount + SourceNameSize + StackNameSize + HandleNameSize, CurY, FString::Printf(TEXT("{grey}state: {white}%s"), *ItemState.ToString()));
+			IndentAmount += 0.4f;
+		}
+
+		if (bShowInstance)
+		{
+			CanvasContext.PrintAt(CurX + ObjNameSize * IndentAmount + SourceNameSize + StackNameSize + HandleNameSize, CurY, FString::Printf(TEXT("{grey}instance: {white}%s"), *Item.InstanceName));
+			IndentAmount += 0.4f;
+		}
 
 		// PrintAt would have reset these values, restore them.
 		CanvasContext.CursorX = CurX + (CanvasWidth / NumColumns);

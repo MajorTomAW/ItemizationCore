@@ -50,9 +50,12 @@ public:
 	
 	virtual bool CanCombineItemStacks(const FInventoryItemEntry& ThisEntry, const FInventoryItemEntry& OtherEntry, FItemActionContextData& Context) const { return true; }
 	virtual bool CanCreateNewStack(const FInventoryItemEntry& ItemEntry, const FItemActionContextData& Context) const { return true; }
+	virtual bool CanClearItem(const FInventoryItemEntry& ItemEntry) const { return true; }
+	virtual bool IncludeInClearAll() const { return true; }
 	
 	virtual void OnItemStateChanged(const FInventoryItemEntry& ItemEntry, ECurrentItemState NewState) {}
-	virtual void OnItemInstanceCreated(FInventoryItemEntry& ItemEntry) {}
+	virtual void OnItemInstanceCreated(const FInventoryItemEntry& ItemEntry, const FItemizationCoreInventoryData* InventoryData) const {}
+	virtual void OnItemInstanceDestroyed(const FInventoryItemEntry& ItemEntry, const FItemizationCoreInventoryData* InventoryData) const {}
 	//~ End FItemComponentData Interface
 
 #if WITH_EDITOR

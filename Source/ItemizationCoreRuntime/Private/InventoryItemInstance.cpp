@@ -9,7 +9,6 @@
 
 #include "InventoryItemEntry.h"
 #include "ItemizationCoreLog.h"
-#include "Net/UnrealNetwork.h"
 #include "ActorComponents/InventoryManager.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(InventoryItemInstance)
@@ -28,8 +27,27 @@
 UInventoryItemInstance::UInventoryItemInstance(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
+	auto ImplementedInBlueprint = [](const UFunction* Func)->bool
+	{
+		return Func && ensure(Func->GetOuter()) &&
+			Func->GetOuter()->IsA(UBlueprintGeneratedClass::StaticClass());
+	};
+
+	{
+		static FName FuncName = FName(TEXT("K2_OnAddedToInventory"));
+		UFunction* OnAddedToInventoryFunction = GetClass()->FindFunctionByName(FuncName);
+		bHasBlueprintAddedToInventory = ImplementedInBlueprint(OnAddedToInventoryFunction);
+	}
+
+	{
+		static FName FuncName = FName(TEXT("K2_OnRemovedFromInventory"));
+		UFunction* OnRemovedFromInventoryFunction = GetClass()->FindFunctionByName(FuncName);
+		bHasBlueprintRemovedFromInventory = ImplementedInBlueprint(OnRemovedFromInventoryFunction);
+	}
+	
 	ScopeLockCount = 0;
 	CurrentState = ECurrentItemState::None;
+	CurrentInventoryData = nullptr;
 }
 
 UWorld* UInventoryItemInstance::GetWorld() const
@@ -111,7 +129,7 @@ void UInventoryItemInstance::PostNetInit()
 {
 	// Here we're dynamically spawned from replication.
 	// Which means we need to init out properties ourselves.
-	if (CurrentInventoryManager == nullptr)
+	if (CurrentInventoryData == nullptr)
 	{
 		AActor* OwnerActor = GetTypedOuter<AActor>();
 		if (ensure(OwnerActor))
@@ -119,34 +137,57 @@ void UInventoryItemInstance::PostNetInit()
 			UInventoryManager* InventoryManager = OwnerActor->FindComponentByClass<UInventoryManager>(); //@TODO: Abstract this to a function.
 			if (ensure(InventoryManager))
 			{
-				CurrentInventoryManager = InventoryManager;
+				CurrentInventoryData = InventoryManager->InventoryData.Get();
 			}
 		}
 	}
 }
 
-void UInventoryItemInstance::SetCurrentEntryInfo(UInventoryManager* InventoryManager, const FInventoryItemEntryHandle& InHandle)
+void UInventoryItemInstance::SetCurrentEntryInfo(const FInventoryItemEntryHandle InHandle, const FItemizationCoreInventoryData* InventoryData)
 {
 	if (IsInstantiated())
 	{
 		CurrentEntryHandle = InHandle;
-		CurrentInventoryManager = InventoryManager;
+		CurrentInventoryData = InventoryData;
 	}
 }
 
-void UInventoryItemInstance::OnAddedToInventory(UInventoryManager* InventoryManager, const FInventoryItemEntry& ItemEntry)
+void UInventoryItemInstance::OnAddedToInventory(const FInventoryItemEntry& ItemEntry, const FItemizationCoreInventoryData* InventoryData)
 {
-	SetCurrentEntryInfo(InventoryManager, ItemEntry.Handle);
+	SetCurrentEntryInfo(ItemEntry.Handle, InventoryData);
 
-	//@TODO: Get the avatar from the inventory manager
+	for (const FItemComponentData* Component : ItemEntry.Definition->GetItemComponents())
+	{
+		Component->OnItemInstanceCreated(ItemEntry, InventoryData);
+	}
+
+	if (InventoryData && InventoryData->AvatarActor.IsValid())
+	{
+		OnAvatarSet(ItemEntry, InventoryData);
+	}
+
+	if (bHasBlueprintAddedToInventory)
+	{
+		K2_OnAddedToInventory();
+	}
 }
 
-void UInventoryItemInstance::OnRemovedFromInventory(UInventoryManager* InventoryManager, const FInventoryItemEntry& ItemEntry)
+void UInventoryItemInstance::OnRemovedFromInventory(const FInventoryItemEntry& ItemEntry, const FItemizationCoreInventoryData* InventoryData)
 {
-	// Nothing to do here. Can be overridden by subclasses
+	for (const FItemComponentData* Component : ItemEntry.Definition->GetItemComponents())
+	{
+		Component->OnItemInstanceDestroyed(ItemEntry, InventoryData);
+	}
+
+	if (bHasBlueprintRemovedFromInventory)
+	{
+		K2_OnRemovedFromInventory();
+	}
+	
+	// Nothing else to do here. Can be overridden by subclasses
 }
 
-void UInventoryItemInstance::OnAvatarSet(AActor* Avatar, const FInventoryItemEntry& ItemEntry)
+void UInventoryItemInstance::OnAvatarSet(const FInventoryItemEntry& ItemEntry, const FItemizationCoreInventoryData* InventoryData)
 {
 	// Nothing to do here. Can be overridden by subclasses
 }
@@ -160,10 +201,147 @@ FInventoryItemEntryHandle UInventoryItemInstance::GetCurrentItemHandle() const
 FInventoryItemEntry* UInventoryItemInstance::GetCurrentItemEntry() const
 {
 	ENSURE_ITEM_IS_INSTANTIATED_OR_RETURN(GetCurrentItemEntry, nullptr);
-	check(CurrentInventoryManager.IsValid());
+	check(CurrentInventoryData);
 
-	UInventoryManager* const InventoryManager = CurrentInventoryManager.Get();
+	UInventoryManager* const InventoryManager = GetOwningInventoryManager_Checked();
 	return InventoryManager->FindItemEntryFromHandle(CurrentEntryHandle);
+}
+
+UItemDefinition* UInventoryItemInstance::GetCurrentItemDefinition() const
+{
+	return GetCurrentItemEntry()->Definition;
+}
+
+const FItemizationCoreInventoryData* UInventoryItemInstance::GetCurrentInventoryData() const
+{
+	ENSURE_ITEM_IS_INSTANTIATED_OR_RETURN(GetCurrentInventoryData, nullptr);
+	return CurrentInventoryData;
+}
+
+UInventoryManager* UInventoryItemInstance::GetOwningInventoryManager() const
+{
+	if (!ensure(CurrentInventoryData))
+	{
+		return nullptr;
+	}
+
+	return CurrentInventoryData->InventoryManager.Get();
+}
+
+UInventoryManager* UInventoryItemInstance::GetOwningInventoryManager_Checked() const
+{
+	UInventoryManager* InventoryManager = CurrentInventoryData ? CurrentInventoryData->InventoryManager.Get() : nullptr;
+	check(InventoryManager);
+
+	return InventoryManager;
+}
+
+UInventoryManager* UInventoryItemInstance::GetOwningInventoryManager_Ensured() const
+{
+	UInventoryManager* InventoryManager = CurrentInventoryData ? CurrentInventoryData->InventoryManager.Get() : nullptr;
+	ensure(InventoryManager);
+
+	return InventoryManager;
+}
+
+EUserFacingItemState UInventoryItemInstance::GetUserFacingState() const
+{
+	const ECurrentItemState State = GetCurrentState();
+	
+	if (State == ECurrentItemState::Active)
+	{
+		return EUserFacingItemState::Equipped;
+	}
+	
+	if (State == ECurrentItemState::Activating || State == ECurrentItemState::Active)
+	{
+		return EUserFacingItemState::EquippedAndActive;
+	}
+
+	return EUserFacingItemState::Owned;
+}
+
+bool UInventoryItemInstance::HasAuthority() const
+{
+	if (!IsInstantiated())
+	{
+		return false;
+	}
+
+	if (CurrentInventoryData == nullptr)
+	{
+		return false;
+	}
+
+	return CurrentInventoryData->HasNetAuthority();
+}
+
+bool UInventoryItemInstance::IsLocallyControlled() const
+{
+	const FItemizationCoreInventoryData* const DataPtr = GetCurrentInventoryData();
+	if (DataPtr->OwnerActor.IsValid())
+	{
+		return DataPtr->IsLocallyControlled();
+	}
+
+	return false;
+}
+
+FItemizationCoreInventoryData UInventoryItemInstance::GetInventoryData() const
+{
+	if (!ensure(CurrentInventoryData))
+	{
+		return FItemizationCoreInventoryData();
+	}
+	return *CurrentInventoryData;
+}
+
+AActor* UInventoryItemInstance::GetOwningActorFromInventoryData() const
+{
+	ENSURE_ITEM_IS_INSTANTIATED_OR_RETURN(GetOwningActorFromInventoryData, nullptr);
+
+	if (!ensure(CurrentInventoryData))
+	{
+		return nullptr;
+	}
+
+	return CurrentInventoryData->OwnerActor.Get();
+}
+
+AActor* UInventoryItemInstance::GetAvatarActorFromInventoryData() const
+{
+	ENSURE_ITEM_IS_INSTANTIATED_OR_RETURN(GetAvatarActorFromInventoryData, nullptr);
+
+	if (!ensure(CurrentInventoryData))
+	{
+		return nullptr;
+	}
+
+	return CurrentInventoryData->AvatarActor.Get();
+}
+
+UObject* UInventoryItemInstance::GetSourceObject() const
+{
+	FInventoryItemEntry* Entry = GetCurrentItemEntry();
+	if (Entry)
+	{
+		return Entry->SourceObject.Get();
+	}
+
+	return nullptr;
+}
+
+void UInventoryItemInstance::IncrementListLock() const
+{
+	++ScopeLockCount;
+}
+
+void UInventoryItemInstance::DecrementListLock() const
+{
+	if (--ScopeLockCount == 0)
+	{
+		
+	}
 }
 
 #undef LOCTEXT_NAMESPACE

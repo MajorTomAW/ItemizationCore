@@ -25,7 +25,11 @@ void FItemizationCoreRuntimeModule::StartupModule()
 {
 #if WITH_GAMEPLAY_DEBUGGER
 	IGameplayDebugger& GameplayDebugger = IGameplayDebugger::Get();
-	GameplayDebugger.RegisterCategory("Itemization", IGameplayDebugger::FOnGetCategory::CreateStatic(&FGameplayDebuggerCategory_Itemization::MakeInstance));
+	GameplayDebugger.RegisterCategory(
+		"Itemization",
+		IGameplayDebugger::FOnGetCategory::CreateStatic(&FGameplayDebuggerCategory_Itemization::MakeInstance),
+		EGameplayDebuggerCategoryState::EnabledInGame,
+		3);
 	GameplayDebugger.NotifyCategoriesChanged();
 #endif
 
