@@ -22,12 +22,14 @@ struct FInventoryItemEntry;
 UCLASS(Blueprintable)
 class ITEMIZATIONCORERUNTIME_API UInventoryItemInstance : public UObject
 {
-	GENERATED_UCLASS_BODY()
+	GENERATED_BODY()
 	REPLICATED_BASE_CLASS(UInventoryItemInstance);
 
 	friend class UInventoryManager;
 
 public:
+	UInventoryItemInstance(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
+	
 	//~ Begin UObject Interface
 	virtual UWorld* GetWorld() const override;
 	virtual int32 GetFunctionCallspace(UFunction* Function, FFrame* Stack) override;
@@ -70,15 +72,8 @@ public:
 	/** Gets the current inventory data associated with this instance. */
 	const FItemizationCoreInventoryData* GetCurrentInventoryData() const;
 
-	/** Gets the current inventory manager that owns this item instance. */
-	UFUNCTION(BlueprintCallable, Category = "Itemization Core|Item")
-	UInventoryManager* GetOwningInventoryManager() const;
-	UInventoryManager* GetOwningInventoryManager_Checked() const;
-	UInventoryManager* GetOwningInventoryManager_Ensured() const;
-
 	/** Gets the current item definition of the associated item entry. */
-	ECurrentItemState GetCurrentState() const { return CurrentState; }
-	EUserFacingItemState GetUserFacingState() const;
+	EUserFacingItemState GetCurrentState() const { return CurrentState; }
 
 	/** True if this is the server or single player. */
 	bool HasAuthority() const;
@@ -87,6 +82,16 @@ public:
 	bool IsLocallyControlled() const;
 
 public:
+	// ----------------------------------------------------
+	// Utility functions for blueprints
+	// ----------------------------------------------------
+
+	/** Gets the current inventory manager that owns this item instance. */
+	UFUNCTION(BlueprintCallable, Category = "Itemization Core|Item")
+	UInventoryManager* GetOwningInventoryManager() const;
+	UInventoryManager* GetOwningInventoryManager_Checked() const;
+	UInventoryManager* GetOwningInventoryManager_Ensured() const;
+	
 	/** Returns the inventory data associated with this instance. */
 	UFUNCTION(BlueprintCallable, Category = "Itemization Core|Item")
 	FItemizationCoreInventoryData GetInventoryData() const;
@@ -115,16 +120,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Itemization Core|Item", meta = (DisplayName = "Get Item Definition"))
 	const UItemDefinition* K2_GetCurrentItemDefinition() const { return GetCurrentItemDefinition(); }
 
-	/** Gets the current inventory manager that owns this item instance. */
-	UFUNCTION(BlueprintCallable, Category = "Itemization Core|Item", meta = (DisplayName = "Get Inventory Manager"))
-	UInventoryManager* K2_GetOwningInventoryManager() const { return GetOwningInventoryManager(); }
-
 	/** Gets the current item definition of the associated item entry. */
 	UFUNCTION(BlueprintCallable, Category = "Itemization Core|Item", meta = (DisplayName = "Get Current State"))
-	void K2_GetCurrentState(EUserFacingItemState& State) const { State = GetUserFacingState(); }
+	EUserFacingItemState K2_GetCurrentState() const { return GetCurrentState(); }
 
 	/** True if this is the server or single player. */
-	UFUNCTION(BlueprintCallable, BlueprintPure = false, Category = "Itemization Core|Item", meta = (DisplayName = "Has Authority", ExpandBoolAsExecs = "ReturnValue"))
+	UFUNCTION(BlueprintCallable, Category = "Itemization Core|Item", meta = (DisplayName = "Has Authority", ScriptName = "HasAuthority"))
 	bool K2_HasAuthority() const { return HasAuthority(); }
 
 	/** True if the owning actor is locally controlled, always true for single player. */
@@ -165,5 +166,5 @@ protected:
 
 	/** The current state of the item. */
 	UPROPERTY()
-	ECurrentItemState CurrentState;
+	EUserFacingItemState CurrentState;
 };

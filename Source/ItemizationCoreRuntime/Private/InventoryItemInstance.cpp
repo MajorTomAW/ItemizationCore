@@ -46,7 +46,7 @@ UInventoryItemInstance::UInventoryItemInstance(const FObjectInitializer& ObjectI
 	}
 	
 	ScopeLockCount = 0;
-	CurrentState = ECurrentItemState::None;
+	CurrentState = EUserFacingItemState::Owned;
 	CurrentInventoryData = nullptr;
 }
 
@@ -158,7 +158,8 @@ void UInventoryItemInstance::OnAddedToInventory(const FInventoryItemEntry& ItemE
 
 	for (const FItemComponentData* Component : ItemEntry.Definition->GetItemComponents())
 	{
-		Component->OnItemInstanceCreated(ItemEntry, InventoryData);
+		Component->OnItemInstanceCreated(ItemEntry.Handle, InventoryData);
+		Component->OnItemStateChanged(ItemEntry.Handle, EUserFacingItemState::Owned);
 	}
 
 	if (InventoryData && InventoryData->AvatarActor.IsValid())
@@ -176,7 +177,7 @@ void UInventoryItemInstance::OnRemovedFromInventory(const FInventoryItemEntry& I
 {
 	for (const FItemComponentData* Component : ItemEntry.Definition->GetItemComponents())
 	{
-		Component->OnItemInstanceDestroyed(ItemEntry, InventoryData);
+		Component->OnItemInstanceDestroyed(ItemEntry.Handle, InventoryData);
 	}
 
 	if (bHasBlueprintRemovedFromInventory)
@@ -194,7 +195,7 @@ void UInventoryItemInstance::OnAvatarSet(const FInventoryItemEntry& ItemEntry, c
 
 FInventoryItemEntryHandle UInventoryItemInstance::GetCurrentItemHandle() const
 {
-	ENSURE_ITEM_IS_INSTANTIATED_OR_RETURN(GetCurrentItemHandle, FInventoryItemEntryHandle());
+	ENSURE_ITEM_IS_INSTANTIATED_OR_RETURN(GetCurrentItemHandle, FInventoryItemEntryHandle::NullHandle);
 	return CurrentEntryHandle;
 }
 
@@ -242,23 +243,6 @@ UInventoryManager* UInventoryItemInstance::GetOwningInventoryManager_Ensured() c
 	ensure(InventoryManager);
 
 	return InventoryManager;
-}
-
-EUserFacingItemState UInventoryItemInstance::GetUserFacingState() const
-{
-	const ECurrentItemState State = GetCurrentState();
-	
-	if (State == ECurrentItemState::Active)
-	{
-		return EUserFacingItemState::Equipped;
-	}
-	
-	if (State == ECurrentItemState::Activating || State == ECurrentItemState::Active)
-	{
-		return EUserFacingItemState::EquippedAndActive;
-	}
-
-	return EUserFacingItemState::Owned;
 }
 
 bool UInventoryItemInstance::HasAuthority() const
