@@ -11,6 +11,8 @@
 #include "ItemizationCoreLog.h"
 #include "ActorComponents/EquipmentManager.h"
 #include "ActorComponents/InventoryManager.h"
+#include "Engine/AssetManager.h"
+#include "Engine/StreamableManager.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(InventoryEquipmentInstance)
 
@@ -122,6 +124,11 @@ bool UInventoryEquipmentInstance::IsInstantiated() const
 	return !HasAllFlags(RF_ClassDefaultObject);
 }
 
+bool UInventoryEquipmentInstance::HasAnyEquipmentData() const
+{
+	return true; // Always true for now
+}
+
 void UInventoryEquipmentInstance::SetCurrentEntryInfo(const FInventoryItemEntryHandle InHandle, const FItemizationCoreInventoryData* InventoryData)
 {
 	if (IsInstantiated())
@@ -167,7 +174,7 @@ void UInventoryEquipmentInstance::OnUnequipped(const FInventoryEquipmentEntry& E
 		K2_OnUnequipped(InventoryData->AvatarActor.Get());
 	}
 
-	// Nothing to do here. Can be overridden by subclasses
+	DestroyEquipmentActors();
 }
 
 FInventoryItemEntryHandle UInventoryEquipmentInstance::GetCurrentEntryHandle() const
@@ -242,7 +249,63 @@ void UInventoryEquipmentInstance::OnAvatarSet(const FInventoryEquipmentEntry& Eq
 		K2_OnEquipped(InventoryData->AvatarActor.Get());
 	}
 
-	// Nothing to do here. Can be overridden by subclasses
+	if (HasAnyEquipmentData())
+	{
+		OnSpawnEquipmentActors(EquipmentEntry, InventoryData);
+	}
+}
+
+void UInventoryEquipmentInstance::OnSpawnEquipmentActors(
+	const FInventoryEquipmentEntry& EquipmentEntry, const FItemizationCoreInventoryData* InventoryData)
+{
+	TArray<FItemizationEquipmentSpawnQuery> Queries;
+	const UItemDefinition* ItemDefinition = EquipmentEntry.Definition;
+	ItemDefinition->EquipmentData.Get<FEquipmentComponentData>().QuerySpawnParams(Queries, GetPawn());
+
+	TArray<FSoftObjectPath> AssetsToStream;
+	FStreamableManager& Streamable = UAssetManager::GetStreamableManager();
+
+	for (const auto& Query : Queries)
+	{
+		if (!Query.IsValid())
+		{
+			continue;
+		}
+
+		AssetsToStream.AddUnique(Query.ActorToSpawn.ToSoftObjectPath());
+	}
+
+	// Request the async load of the equipment actors.
+	Streamable.RequestAsyncLoad(AssetsToStream, FStreamableDelegate::CreateUObject(this, &ThisClass::SpawnEquipmentActorsDeferred, Queries));
+}
+
+void UInventoryEquipmentInstance::SpawnEquipmentActorsDeferred(TArray<FItemizationEquipmentSpawnQuery> Queries)
+{
+	for (const auto& Query : Queries)
+	{
+		AActor* NewActor = GetWorld()->SpawnActorDeferred<AActor>(
+			Query.ActorToSpawn.Get(), FTransform::Identity, GetPawn());
+		check(NewActor);
+		
+		NewActor->FinishSpawning(FTransform::Identity, true);
+		NewActor->SetActorRelativeTransform(Query.RelativeTransform);
+		NewActor->AttachToComponent(Query.AttachTarget.Get(), FAttachmentTransformRules::KeepRelativeTransform, Query.SocketName);
+
+		SpawnedEquipmentActors.AddUnique(NewActor);
+	}
+}
+
+void UInventoryEquipmentInstance::DestroyEquipmentActors()
+{
+	for (AActor* Actor : SpawnedEquipmentActors)
+	{
+		if (!IsValid(Actor))
+		{
+			return;
+		}
+
+		Actor->Destroy();
+	}
 }
 
 UObject* UInventoryEquipmentInstance::GetInstigatorTyped(TSubclassOf<UInventoryItemInstance> Type) const
