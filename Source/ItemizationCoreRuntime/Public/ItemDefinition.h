@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "InstancedStruct.h"
+#include "InventoryEquipmentInstance.h"
 #include "ItemizationCoreTypes.h"
 #include "Components/EquipmentComponentData.h"
 #include "Components/ItemComponentData.h"
@@ -28,6 +29,12 @@ class ITEMIZATIONCORERUNTIME_API UItemDefinition : public UPrimaryDataAsset
 	 * Will fall back to UInventoryItemInstance if not set.
 	 */
 	TSubclassOf<UInventoryItemInstance> GetDefaultInstanceClass() const;
+
+	/**
+	 * Returns the default instance class that will be used to create an instance of this item/equipment definition.
+	 * Will fall back to UInventoryEquipmentInstance if not set.
+	 */
+	TSubclassOf<UInventoryEquipmentInstance> GetDefaultEquipmentInstanceClass() const;
 
 	/** Template method to get the specified instanced struct from the DisplayComponents array. */
 	template<typename T>
@@ -56,15 +63,15 @@ protected:
 
 public:
 	/** The friendly name to be shown in the UI for this item. */
-	UPROPERTY(EditDefaultsOnly, Category = "Display", AssetRegistrySearchable, meta = (DisplayName = "Display Name"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Display", AssetRegistrySearchable, meta = (DisplayName = "Display Name"))
 	FText ItemName;
 
 	/** The description of this item for summary information. */
-	UPROPERTY(EditDefaultsOnly, Category = "Display", meta = (DisplayName = "Description"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Display", meta = (DisplayName = "Description"))
 	FText ItemDescription;
 
 	/** The short description of this item for summary information. Mostly used for tooltips. */
-	UPROPERTY(EditDefaultsOnly, Category = "Display", meta = (DisplayName = "Short Description"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Display", meta = (DisplayName = "Short Description"))
 	FText ItemShortDescription;
 
 	/** List of display components that will be used to modify the front-end display of this item. */
@@ -72,14 +79,14 @@ public:
 	TArray<FItemComponentDataProxy> DisplayComponents;
 
 	/** List of item components that will be used to modify the data/functionality of this item. */
-	UPROPERTY(EditDefaultsOnly, Category = "Components", NoClear, meta = (AllowCosmeticComponents = false, AllowNonCosmeticComponents = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Components", NoClear, meta = (AllowCosmeticComponents = false, AllowNonCosmeticComponents = true))
 	TArray<FItemComponentDataProxy> ItemComponents;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Equipment", NoClear, meta = (ExcludeBaseStruct = true))
 	TInstancedStruct<FEquipmentComponentData> EquipmentData;
 
 	/** The source actor blueprint that will be used to spawn the playset. If not set, the playset will try to spawn actors from the data list. */
-	UPROPERTY(EditDefaultsOnly, Category = "Actor Data", AssetRegistrySearchable, meta = (ForceShowPluginContent = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Actor Data", AssetRegistrySearchable, meta = (ForceShowPluginContent = true))
 	TSoftClassPtr<AActor> SourceActorBlueprint;
 
 	/** Whether this playset should adjust for world collision when dragged into the world. */
@@ -111,12 +118,12 @@ public:
 	FString DocumentationURL;
 	
 	/** The default instance class that will be used to create an instance of this item definition. */
-	UPROPERTY(EditDefaultsOnly, Category = "Development", Config)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Development", Config)
 	TSoftClassPtr<UInventoryItemInstance> DefaultInstanceClass;
 
 	/** The default instance class that will be used to create an equipment instance of this item definition. */
-	UPROPERTY(EditDefaultsOnly, Category = "Development", Config)
-	TSoftClassPtr<UObject> DefaultEquipmentInstanceClass;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Development", Config)
+	TSoftClassPtr<UInventoryEquipmentInstance> DefaultEquipmentInstanceClass;
 };
 
 template <typename T>

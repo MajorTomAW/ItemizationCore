@@ -44,6 +44,16 @@ TSubclassOf<UInventoryItemInstance> UItemDefinition::GetDefaultInstanceClass() c
 	return DefaultInstanceClass.LoadSynchronous();
 }
 
+TSubclassOf<UInventoryEquipmentInstance> UItemDefinition::GetDefaultEquipmentInstanceClass() const
+{
+	if (DefaultEquipmentInstanceClass.IsNull())
+	{
+		return UInventoryEquipmentInstance::StaticClass();
+	}
+
+	return DefaultEquipmentInstanceClass.LoadSynchronous();
+}
+
 TArray<const FItemComponentData*> UItemDefinition::GetDisplayComponents() const
 {
 	TArray<const FItemComponentData*> OutComponents;
