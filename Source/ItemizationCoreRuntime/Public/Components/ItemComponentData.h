@@ -53,14 +53,17 @@ public:
 	virtual bool CanClearItem(const FInventoryItemEntry& ItemEntry) const { return true; }
 	virtual bool IncludeInClearAll() const { return true; }
 	
-	virtual void OnItemStateChanged(const FInventoryItemEntry& ItemEntry, ECurrentItemState NewState) {}
-	virtual void OnItemInstanceCreated(const FInventoryItemEntry& ItemEntry, const FItemizationCoreInventoryData* InventoryData) const {}
-	virtual void OnItemInstanceDestroyed(const FInventoryItemEntry& ItemEntry, const FItemizationCoreInventoryData* InventoryData) const {}
+	virtual void OnItemStateChanged(const FInventoryItemEntryHandle& Handle, EUserFacingItemState NewState) const;
+	virtual void OnItemInstanceCreated(const FInventoryItemEntryHandle& Handle, const FItemizationCoreInventoryData* InventoryData) const {}
+	virtual void OnItemInstanceDestroyed(const FInventoryItemEntryHandle& Handle, const FItemizationCoreInventoryData* InventoryData) const {}
 	//~ End FItemComponentData Interface
 
 #if WITH_EDITOR
 	virtual EDataValidationResult IsDataValid(class FDataValidationContext& Context) const;
 #endif
+
+protected:
+	EUserFacingItemState CurrentState = EUserFacingItemState::Owned;
 };
 
 /**

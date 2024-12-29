@@ -52,6 +52,16 @@ bool FItemComponentData_Traits::CanClearItem(const FInventoryItemEntry& ItemEntr
 	return !Traits.HasTagExact(ItemizationCoreTags::TAG_ItemTrait_AllowEmptyFinalStack);
 }
 
+bool FItemComponentData_Traits::IncludeInClearAll() const
+{
+	if (Traits.IsEmpty())
+	{
+		return true;
+	}
+
+	return !Traits.HasTagExact(ItemizationCoreTags::TAG_ItemTrait_IgnoreRemoveAllInventoryItems);
+}
+
 #if WITH_EDITOR
 EDataValidationResult FItemComponentData_Traits::IsDataValid(class FDataValidationContext& Context) const
 {

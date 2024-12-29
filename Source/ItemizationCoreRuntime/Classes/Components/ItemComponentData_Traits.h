@@ -25,6 +25,7 @@ protected:
 	//~ Begin FItemComponentData Interface
 	virtual bool CanCreateNewStack(const FInventoryItemEntry& ItemEntry, const FItemActionContextData& Context) const override;
 	virtual bool CanClearItem(const FInventoryItemEntry& ItemEntry) const override;
+	virtual bool IncludeInClearAll() const override;
 
 #if WITH_EDITOR
 	virtual EDataValidationResult IsDataValid(class FDataValidationContext& Context) const override;

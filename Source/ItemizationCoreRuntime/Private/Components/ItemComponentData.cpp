@@ -9,3 +9,15 @@ EDataValidationResult FItemComponentData::IsDataValid(class FDataValidationConte
 	return EDataValidationResult::Valid;
 }
 #endif
+
+void FItemComponentData::OnItemStateChanged(const FInventoryItemEntryHandle& Handle, EUserFacingItemState NewState) const
+{
+	// If the state hasn't changed, don't do anything.
+	if (CurrentState == NewState)
+	{
+		return;
+	}
+
+	FItemComponentData* MutableThis = const_cast<FItemComponentData*>(this);
+	MutableThis->CurrentState = NewState;
+}
