@@ -4,10 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "InventoryItemEntry.h"
+#include "ItemizationCoreTypes.h"
 #include "Net/Serialization/FastArraySerializer.h"
 
 #include "InventoryEquipmentEntry.generated.h"
 
+class UInventoryEquipmentInstance;
 class UEquipmentManager;
 class UItemDefinition;
 class UInventoryManager;
@@ -22,14 +24,29 @@ struct ITEMIZATIONCORERUNTIME_API FInventoryEquipmentEntry : public FFastArraySe
 	friend class UEquipmentManager;
 	friend struct FInventoryEquipmentContainer;
 
-	FInventoryEquipmentEntry()
-	{
-	}
+	FInventoryEquipmentEntry();
+	FInventoryEquipmentEntry(const FInventoryItemEntryHandle& InHandle);
 
 public:
 	/** The item entry that owns this equipment. */
 	UPROPERTY()
-	FInventoryItemEntry OwningEntry;
+	FInventoryItemEntryHandle Handle;
+
+	/** The definition of the item */
+	UPROPERTY()
+	TObjectPtr<UItemDefinition> Definition;
+
+	/** Instance of the equipment item */
+	UPROPERTY()
+	TObjectPtr<UInventoryEquipmentInstance> Instance;
+
+	/** Object this item was equipped from, should always be the UInventoryItemInstance. */
+	UPROPERTY()
+	TObjectPtr<UObject> SourceObject;
+
+	/** Authority-only list of granted handles. */
+	UPROPERTY(NotReplicated)
+	FItemizationGrantedHandles GrantedHandles;
 
 	//~ Begin FFastArraySerializerItem Interface
 	void PreReplicatedRemove(const FInventoryEquipmentContainer& InArraySerializer);

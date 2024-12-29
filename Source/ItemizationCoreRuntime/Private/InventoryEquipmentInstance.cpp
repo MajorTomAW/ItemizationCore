@@ -2,3 +2,268 @@
 
 
 #include "InventoryEquipmentInstance.h"
+
+#if UE_WITH_IRIS
+#include "Iris/ReplicationSystem/ReplicationFragmentUtil.h"
+#endif
+
+#include "InventoryEquipmentEntry.h"
+#include "ItemizationCoreLog.h"
+#include "ActorComponents/EquipmentManager.h"
+#include "ActorComponents/InventoryManager.h"
+
+#include UE_INLINE_GENERATED_CPP_BY_NAME(InventoryEquipmentInstance)
+
+#define ENSURE_EQUIPMENT_IS_INSTANTIATED_OR_RETURN(FunctionName, ReturnValue) \
+{ \
+	if (!ensure(IsInstantiated())) \
+	{ \
+		ITEMIZATION_LOG(Error, TEXT("%s: " #FunctionName" cannot be called on a non-instanced equipment."), *GetPathName()); \
+		return ReturnValue; \
+	} \
+} \
+
+UInventoryEquipmentInstance::UInventoryEquipmentInstance(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
+{
+	auto ImplementedInBlueprint = [](const UFunction* Func)->bool
+	{
+		return Func && ensure(Func->GetOuter()) &&
+			Func->GetOuter()->IsA(UBlueprintGeneratedClass::StaticClass());
+	};
+
+	{
+		static FName FuncName = FName(TEXT("K2_OnEquipped"));
+		UFunction* OnEquippedFunction = GetClass()->FindFunctionByName(FuncName);
+		bHasBlueprintEquipped = ImplementedInBlueprint(OnEquippedFunction);
+	}
+
+	{
+		static FName FuncName = FName(TEXT("K2_OnUnequipped"));
+		UFunction* OnUnequippedFunction = GetClass()->FindFunctionByName(FuncName);
+		bHasBlueprintUnequipped = ImplementedInBlueprint(OnUnequippedFunction);
+	}
+	
+	CurrentInventoryData = nullptr;
+}
+
+UWorld* UInventoryEquipmentInstance::GetWorld() const
+{
+	if (!IsInstantiated())
+	{
+		// If we're CDO, we must return nullptr instead of calling Outer->GetWorld() to fool UObject::ImplementsGetWorld.
+		return nullptr;
+	}
+	
+	return GetOuter()->GetWorld();
+}
+
+int32 UInventoryEquipmentInstance::GetFunctionCallspace(UFunction* Function, FFrame* Stack)
+{
+	if (HasAnyFlags(RF_ClassDefaultObject) || !IsSupportedForNetworking())
+	{
+		// This handles absorbing authority/cosmetic
+		return GEngine->GetGlobalFunctionCallspace(Function, this, Stack);
+	}
+
+	check(GetOuter() != nullptr);
+	return GetOuter()->GetFunctionCallspace(Function, Stack);
+}
+
+bool UInventoryEquipmentInstance::CallRemoteFunction(UFunction* Function, void* Parms, FOutParmRec* OutParms, FFrame* Stack)
+{
+	check(!HasAnyFlags(RF_ClassDefaultObject));
+	check(GetOuter() != nullptr);
+
+	AActor* Owner = CastChecked<AActor>(GetOuter());
+	bool bProcessed = false;
+
+	FWorldContext* const Context = GEngine->GetWorldContextFromWorld(GetWorld());
+	if (Context != nullptr)
+	{
+		for (FNamedNetDriver& Driver : Context->ActiveNetDrivers)
+		{
+			if (Driver.NetDriver != nullptr && Driver.NetDriver->ShouldReplicateFunction(Owner, Function))
+			{
+				Driver.NetDriver->ProcessRemoteFunction(Owner, Function, Parms, OutParms, Stack, this);
+				bProcessed = true;
+			}
+		}
+	}
+
+	return bProcessed;
+}
+
+bool UInventoryEquipmentInstance::IsSupportedForNetworking() const
+{
+	return true;
+}
+
+void UInventoryEquipmentInstance::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	UObject::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	if (UBlueprintGeneratedClass* BPClass = Cast<UBlueprintGeneratedClass>(GetClass()))
+	{
+		BPClass->GetLifetimeBlueprintReplicationList(OutLifetimeProps);
+	}
+}
+
+#if UE_WITH_IRIS
+void UInventoryEquipmentInstance::RegisterReplicationFragments(UE::Net::FFragmentRegistrationContext& Context, UE::Net::EFragmentRegistrationFlags RegistrationFlags)
+{
+	// Build descriptors and allocate PropertyReplicationFragments for this object
+	UE::Net::FReplicationFragmentUtil::CreateAndRegisterFragmentsForObject(this, Context, RegistrationFlags);
+}
+#endif
+
+bool UInventoryEquipmentInstance::IsInstantiated() const
+{
+	return !HasAllFlags(RF_ClassDefaultObject);
+}
+
+void UInventoryEquipmentInstance::SetCurrentEntryInfo(const FInventoryItemEntryHandle InHandle, const FItemizationCoreInventoryData* InventoryData)
+{
+	if (IsInstantiated())
+	{
+		CurrentEntryHandle = InHandle;
+		CurrentInventoryData = InventoryData;
+	}
+}
+
+void UInventoryEquipmentInstance::OnEquipped(const FInventoryEquipmentEntry& EquipmentEntry, const FItemizationCoreInventoryData* InventoryData)
+{
+	SetCurrentEntryInfo(EquipmentEntry.Handle, InventoryData);
+	
+	const UInventoryManager* InventoryManager = InventoryData->InventoryManager.Get();
+	const UItemDefinition* ItemDefinition = EquipmentEntry.Definition.Get();
+
+	if (ItemDefinition == nullptr)
+	{
+		UE_LOG(LogInventorySystem, Error, TEXT("ItemDefinition is null"));
+		return;
+	}
+
+	for (const FItemComponentData* Component : ItemDefinition->GetItemComponents())
+	{
+		Component->OnItemStateChanged(EquipmentEntry.Handle, EUserFacingItemState::Equipped);
+	}
+
+	if (InventoryData && InventoryData->AvatarActor.IsValid())
+	{
+		OnAvatarSet(EquipmentEntry, InventoryData);
+	}
+}
+
+void UInventoryEquipmentInstance::OnUnequipped(const FInventoryEquipmentEntry& EquipmentEntry, const FItemizationCoreInventoryData* InventoryData)
+{
+	for (const FItemComponentData* Component : EquipmentEntry.Definition->GetItemComponents())
+	{
+		Component->OnItemStateChanged(EquipmentEntry.Handle, EUserFacingItemState::Owned);
+	}
+
+	if (bHasBlueprintUnequipped)
+	{
+		K2_OnUnequipped(InventoryData->AvatarActor.Get());
+	}
+
+	// Nothing to do here. Can be overridden by subclasses
+}
+
+FInventoryItemEntryHandle UInventoryEquipmentInstance::GetCurrentEntryHandle() const
+{
+	ENSURE_EQUIPMENT_IS_INSTANTIATED_OR_RETURN(GetCurrentEntryHandle, FInventoryItemEntryHandle::NullHandle);
+	return CurrentEntryHandle;
+}
+
+FInventoryEquipmentEntry* UInventoryEquipmentInstance::GetCurrentEquipmentEntry() const
+{
+	ENSURE_EQUIPMENT_IS_INSTANTIATED_OR_RETURN(GetCurrentEquipmentEntry, nullptr);
+	check(CurrentInventoryData);
+
+	UEquipmentManager* const EquipmentManager = GetOwningEquipmentManager_Checked();
+	return EquipmentManager->FindEquipmentEntryFromHandle(CurrentEntryHandle);
+}
+
+UItemDefinition* UInventoryEquipmentInstance::GetCurrentItemDefinition() const
+{
+	return GetCurrentEquipmentEntry()->Definition;
+}
+
+const FItemizationCoreInventoryData* UInventoryEquipmentInstance::GetCurrentInventoryData() const
+{
+	ENSURE_EQUIPMENT_IS_INSTANTIATED_OR_RETURN(GetCurrentInventoryData, nullptr);
+	return CurrentInventoryData;
+}
+
+bool UInventoryEquipmentInstance::HasAuthority() const
+{
+	if (!IsInstantiated())
+	{
+		return false;
+	}
+
+	if (CurrentInventoryData == nullptr)
+	{
+		return false;
+	}
+
+	return CurrentInventoryData->HasNetAuthority();
+}
+
+UEquipmentManager* UInventoryEquipmentInstance::GetOwningEquipmentManager() const
+{
+	if (!ensure(CurrentInventoryData))
+	{
+		return nullptr;
+	}
+
+	return UEquipmentManager::GetEquipmentManager(CurrentInventoryData->AvatarActor.Get());
+}
+
+UEquipmentManager* UInventoryEquipmentInstance::GetOwningEquipmentManager_Checked() const
+{
+	UEquipmentManager* EquipmentManager = GetOwningEquipmentManager();
+	check(EquipmentManager);
+	return EquipmentManager;
+}
+
+UEquipmentManager* UInventoryEquipmentInstance::GetOwningEquipmentManager_Ensured() const
+{
+	UEquipmentManager* EquipmentManager = GetOwningEquipmentManager();
+	ensure(EquipmentManager);
+	return EquipmentManager;
+}
+
+void UInventoryEquipmentInstance::OnAvatarSet(const FInventoryEquipmentEntry& EquipmentEntry, const FItemizationCoreInventoryData* InventoryData)
+{
+	if (bHasBlueprintEquipped)
+	{
+		K2_OnEquipped(InventoryData->AvatarActor.Get());
+	}
+
+	// Nothing to do here. Can be overridden by subclasses
+}
+
+UObject* UInventoryEquipmentInstance::GetInstigatorTyped(TSubclassOf<UInventoryItemInstance> Type) const
+{
+	UObject* Instigator = nullptr;
+	const FInventoryEquipmentEntry* EquipmentEntry = GetCurrentEquipmentEntry();
+
+	if (EquipmentEntry->SourceObject->IsA(Type))
+	{
+		return EquipmentEntry->SourceObject.Get();
+	}
+
+	return nullptr;
+}
+
+FItemizationCoreInventoryData UInventoryEquipmentInstance::GetInventoryData() const
+{
+	if (!ensure(CurrentInventoryData))
+	{
+		return FItemizationCoreInventoryData();
+	}
+
+	return *CurrentInventoryData;
+}
