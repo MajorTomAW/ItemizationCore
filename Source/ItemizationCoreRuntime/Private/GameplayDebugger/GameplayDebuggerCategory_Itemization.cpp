@@ -6,6 +6,7 @@
 #include "ActorComponents/InventoryManager.h"
 #include "Components/ItemComponentData_MaxStackSize.h"
 #include "InventoryItemInstance.h"
+#include "ActorComponents/EquipmentManager.h"
 #include "Engine/Canvas.h"
 
 #if WITH_GAMEPLAY_DEBUGGER_MENU
@@ -43,6 +44,10 @@ void FGameplayDebuggerCategory_Itemization::CollectData(APlayerController* Owner
 		DataPack.ClientPackageMap = NetConnection ? NetConnection->PackageMap : nullptr;
 
 		DataPack.Items.Reset();
+		DataPack.InventorySystem.OwnerActor = GetNameSafe(InventoryManager->GetOwnerActor());
+		DataPack.InventorySystem.AvatarActor = GetNameSafe(InventoryManager->GetAvatarActor());
+		DataPack.InventorySystem.NumReplicatedItems = InventoryManager->GetReplicatedItemInstances().Num();
+		
 		const TArray<FInventoryItemEntry>& ItemEntries = InventoryManager->GetInventoryItems();
 		for (int32 Idx = 0; Idx < ItemEntries.Num(); Idx++)
 		{
@@ -74,7 +79,17 @@ void FGameplayDebuggerCategory_Itemization::CollectData(APlayerController* Owner
 			ItemData.Handle = ItemEntry.Handle.Get();
 
 			ItemData.bIsActive = false;
-			ItemData.bIsEquipped = false;
+			ItemData.bIsEquipped = false;	
+
+			if (const UEquipmentManager* EquipmentManager = UEquipmentManager::GetEquipmentManager(DebugActor))
+			{
+				if (const FInventoryEquipmentEntry* EquipmentEntry = EquipmentManager->FindEquipmentEntryFromHandle(ItemEntry.Handle))
+				{
+					ItemData.bIsEquipped = true;
+					ItemData.Equipment.InstanceName = GetNameSafe(EquipmentEntry->Instance);
+					ItemData.Equipment.Source = GetNameSafe(EquipmentEntry->SourceObject);
+				}
+			}
 
 			DataPack.Items.Add(ItemData);
 		}
@@ -115,6 +130,10 @@ bool FGameplayDebuggerCategory_Itemization::WrapStringAccordingToViewport(const 
 
 void FGameplayDebuggerCategory_Itemization::FRepData::Serialize(FArchive& Ar)
 {
+	Ar << InventorySystem.AvatarActor;
+	Ar << InventorySystem.OwnerActor;
+	Ar << InventorySystem.NumReplicatedItems;
+	
 	int32 NumItems = Items.Num();
 	Ar << NumItems;
 	if (Ar.IsLoading())
@@ -132,6 +151,8 @@ void FGameplayDebuggerCategory_Itemization::FRepData::Serialize(FArchive& Ar)
 		Ar << Items[Idx].Handle;
 		Ar << Items[Idx].bIsEquipped;
 		Ar << Items[Idx].bIsActive;
+		Ar << Items[Idx].Equipment.Source;
+		Ar << Items[Idx].Equipment.InstanceName;
 	}
 }
 
@@ -195,11 +216,13 @@ void FGameplayDebuggerCategory_Itemization::DrawInventoryItems(FGameplayDebugger
 		return A.Handle < B.Handle;
 	});
 
-	int32 NumEquipped = 0, NumActive = 0;
+	int32 NumEquipped = 0, NumActive = 0, NumIdle = 0;
+	NumIdle = DataPack.Items.Num();
 	for (const FRepData::FInventoryItemDebug& Item : DataPack.Items)
 	{
 		NumEquipped += Item.bIsEquipped;
 		NumActive += Item.bIsActive;
+		NumIdle -= Item.bIsEquipped || Item.bIsActive;
 	}
 
 	constexpr float Padding = 10.f;
@@ -210,7 +233,7 @@ void FGameplayDebuggerCategory_Itemization::DrawInventoryItems(FGameplayDebugger
 
 		CanvasContext.MeasureString(*LongestDebugObjectName, ObjNameSize, TempSizeY);
 		CanvasContext.MeasureString(TEXT("source: "), SourceNameSize, TempSizeY);
-		CanvasContext.MeasureString(TEXT("stack: 00"), StackNameSize, TempSizeY);
+		CanvasContext.MeasureString(TEXT("stack: 00/00"), StackNameSize, TempSizeY);
 
 		if (bShowItemHandles)
 			CanvasContext.MeasureString(TEXT("handle: 000"), HandleNameSize, TempSizeY);
@@ -227,16 +250,22 @@ void FGameplayDebuggerCategory_Itemization::DrawInventoryItems(FGameplayDebugger
 	const float ColumnWidth = ObjNameSize * 2 + SourceNameSize + StackNameSize + HandleNameSize;
 	const int NumColumns = FMath::Max(1, FMath::FloorToInt(CanvasWidth / ColumnWidth));
 
-	CanvasContext.Printf(TEXT("Inventory Items:"));
+	CanvasContext.Printf(TEXT("Inventory System"));
 	CanvasContext.CursorX += 200.f;
 	CanvasContext.CursorY -= CanvasContext.GetLineHeight();
-	CanvasContext.Printf(TEXT("Legend:	{yellow}Idle [%d]	{cyan}Equipped [%d]		{green}Active [%d]"), DataPack.Items.Num(), NumEquipped, NumActive);
+	CanvasContext.Printf(TEXT("Legend:	{yellow}Idle [%d]	{cyan}Equipped [%d]		{green}Active [%d]"), NumIdle, NumEquipped, NumActive);
+	CanvasContext.Printf(TEXT("{white}Owner: {green}%s     {white}Avatar: {green}%s		{white}Num Replicated Instances: {green}%d"),
+		*DataPack.InventorySystem.OwnerActor, *DataPack.InventorySystem.AvatarActor, DataPack.InventorySystem.NumReplicatedItems);
+	CanvasContext.CursorY += CanvasContext.GetLineHeight();
+	
 	CanvasContext.CursorX += Padding;
 
 	for (const FRepData::FInventoryItemDebug& Item : DataPack.Items)
 	{
 		const float CurX = CanvasContext.CursorX;
-		const float CurY = CanvasContext.CursorY;
+		const float CurY = Item.Equipment.HasAnyData()
+			? CanvasContext.CursorY + ( CanvasContext.GetLineHeight() * 1.5f )
+			: CanvasContext.CursorY;
 
 		// Print positions manually to align them properly
 		FColor ItemColor = Item.bIsEquipped ? FColor::Cyan : FColor::Yellow;
@@ -268,6 +297,17 @@ void FGameplayDebuggerCategory_Itemization::DrawInventoryItems(FGameplayDebugger
 		{
 			CanvasContext.PrintAt(CurX + ObjNameSize * IndentAmount + SourceNameSize + StackNameSize + HandleNameSize, CurY, FString::Printf(TEXT("{grey}instance: {white}%s"), *Item.InstanceName));
 			IndentAmount += 0.4f;
+		}
+
+		// Print Equipment stats
+		if (Item.Equipment.HasAnyData())
+		{
+			CanvasContext.PrintAt(Padding * 4, CurY + CanvasContext.GetLineHeight(), FColor::White, TEXT("{grey}equipment"));
+			CanvasContext.PrintAt(CurX + ObjNameSize * 0.4f, CurY + CanvasContext.GetLineHeight(), FColor::White,
+				FString::Printf(TEXT("{grey}source: {white}%s"), *Item.Equipment.Source));
+			
+			CanvasContext.PrintAt(CurX + ObjNameSize * IndentAmount + SourceNameSize, CurY + CanvasContext.GetLineHeight(), FColor::White,
+				FString::Printf(TEXT("{grey}instance: {white}%s"), *Item.Equipment.InstanceName));
 		}
 
 		// PrintAt would have reset these values, restore them.

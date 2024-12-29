@@ -35,6 +35,17 @@ protected:
 		// Helper package for serialization
 		TWeakObjectPtr<UPackageMap> ClientPackageMap;
 
+		struct FInventoryEquipmentDebug
+		{
+			FString InstanceName;
+			FString Source;
+
+			bool HasAnyData() const
+			{
+				return !InstanceName.IsEmpty() || !Source.IsEmpty(); 
+			}
+		};
+
 		struct FInventoryItemDebug
 		{
 			FString ItemName;
@@ -45,8 +56,18 @@ protected:
 			int32 Handle;
 			bool bIsEquipped = false;
 			bool bIsActive = false;
+
+			FInventoryEquipmentDebug Equipment;
 		};
 		TArray<FInventoryItemDebug> Items;
+
+		struct FInventorySystemDebug
+		{
+			FString OwnerActor;
+			FString AvatarActor;
+			int32 NumReplicatedItems = 0;
+		};
+		FInventorySystemDebug InventorySystem;
 
 		void Serialize(FArchive& Ar);
 	};
