@@ -11,6 +11,7 @@
  */
 struct ITEMIZATIONCORERUNTIME_API FItemizationEquipmentSpawnQuery
 {
+	friend class UInventoryEquipmentInstance;
 	FItemizationEquipmentSpawnQuery()
 		: SocketName(NAME_None)
 		, RelativeTransform(FTransform::Identity)
@@ -18,6 +19,11 @@ struct ITEMIZATIONCORERUNTIME_API FItemizationEquipmentSpawnQuery
 	}
 
 public:
+	bool IsValid() const
+	{
+		return !ActorToSpawn.IsNull();
+	}
+	
 	void SetSocketName(const FName& InSocketName)
 	{
 		SocketName = InSocketName;
