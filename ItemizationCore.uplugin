@@ -10,7 +10,7 @@
 	"DocsURL": "",
 	"MarketplaceURL": "",
 	"SupportURL": "",
-	"CanContainContent": false,
+	"CanContainContent": true,
 	"IsBetaVersion": false,
 	"IsExperimentalVersion": true,
 	"Installed": false,
@@ -56,5 +56,6 @@
 			"Name": "DataValidation",
 			"Enabled": true
 		}
-	]
+	],
+	"EditorCustomVirtualPath": "ForEngine"
 }

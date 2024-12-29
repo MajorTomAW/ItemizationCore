@@ -3,6 +3,8 @@
 
 #include "InventoryItemEntryHandle.h"
 
+const FInventoryItemEntryHandle FInventoryItemEntryHandle::NullHandle;
+
 FInventoryItemEntryHandle::FInventoryItemEntryHandle()
 	: Handle(INDEX_NONE)
 {

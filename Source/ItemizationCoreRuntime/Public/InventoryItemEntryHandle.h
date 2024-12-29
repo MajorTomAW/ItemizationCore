@@ -41,7 +41,7 @@ public:
 	/** Operator to expose FInventoryItemEntryHandle serialization to custom serialization functions like NetSerialize overrides. */
 	friend FArchive& operator<<(FArchive& Ar, FInventoryItemEntryHandle& ItemSpecHandle)
 	{
-		static_assert(sizeof(FInventoryItemEntryHandle) == 4, "If properties of FGameplayAbilitySpecHandle change, consider updating this operator implementation.");
+		static_assert(sizeof(FInventoryItemEntryHandle) == 4, "If properties of FInventoryItemEntryHandle change, consider updating this operator implementation.");
 		Ar << ItemSpecHandle.Handle;
 		return Ar;
 	}
@@ -56,10 +56,14 @@ public:
 		return IsValid() ? FString::FromInt(Handle) : TEXT("Invalid");	
 	}
 
+	/** Returns the handle as an integer. */
 	int32 Get() const
 	{
 		return Handle;
 	}
+
+	/** An invalid handle. */
+	static ITEMIZATIONCORERUNTIME_API const FInventoryItemEntryHandle NullHandle;
 
 private:
 	/** Handle to the item spec. */

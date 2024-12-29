@@ -101,14 +101,14 @@ FInventoryItemEntryHandle UInventoryManager::GiveItem(const FInventoryItemEntry&
 	{
 		ITEMIZATION_LOG(Error, TEXT("[%hs] (%s): Attempted to give an item with an invalid definition."),
 			__FUNCTION__, *GetName());
-		return FInventoryItemEntryHandle();
+		return FInventoryItemEntryHandle::NullHandle;
 	}
 
 	if (!IsOwnerActorAuthoritative())
 	{
 		ITEMIZATION_LOG(Error, TEXT("[%hs] (%s): Attempted to give item (%s) on the client-side."),
 			__FUNCTION__, *GetName(), *GetNameSafe(ItemEntry.Definition));
-		return FInventoryItemEntryHandle();
+		return FInventoryItemEntryHandle::NullHandle;
 	}
 	
 	// If locked, add to the pending-list.
@@ -312,8 +312,6 @@ void UInventoryManager::EvaluateCurrentContext(const FInventoryItemEntry& ItemEn
 
 		Component->EvaluateContext(ItemEntry, OutContext);
 	}
-
-	ITEMIZATION_LOG(Display, TEXT("Evaluated Item Context: %s"), *OutContext.ToString());
 }
 
 void UInventoryManager::MarkItemEntryDirty(FInventoryItemEntry& ItemEntry, bool bWasAddOrChange)
@@ -448,10 +446,8 @@ void UInventoryManager::ReadyForReplication()
 
 	if (IsUsingRegisteredSubObjectList())
 	{
-		for (const FInventoryItemEntry& ItemEntry : InventoryList.Items)
+		for (UInventoryItemInstance* Instance : GetReplicatedItemInstances_Mutable())
 		{
-			UInventoryItemInstance* Instance = ItemEntry.Instance;
-
 			if (IsValid(Instance))
 			{
 				const ELifetimeCondition LifetimeCondition = bReplicateInventoryItemsToSimulatedProxies ? COND_None : COND_ReplayOrOwner;
@@ -519,10 +515,8 @@ bool UInventoryManager::ReplicateSubobjects(UActorChannel* Channel, FOutBunch* B
 
 	bool WroteSomething = Super::ReplicateSubobjects(Channel, Bunch, RepFlags);
 
-	for (const FInventoryItemEntry& ItemEntry : InventoryList.Items)
+	for (UInventoryItemInstance* Instance : GetReplicatedItemInstances())
 	{
-		UInventoryItemInstance* Instance = ItemEntry.Instance;
-
 		if (IsValid(Instance))
 		{
 			WroteSomething |= Channel->ReplicateSubobject(Instance, *Bunch, *RepFlags);
@@ -652,8 +646,7 @@ void UInventoryManager::OnRemoveItem(FInventoryItemEntry& ItemEntry)
 	ITEMIZATION_LOG(Display, TEXT("%s: Removing Item [%s] %s. Stack Count: %d"), *GetName(), *ItemEntry.Handle.ToString(), *GetNameSafe(ItemEntry.Instance), ItemEntry.StackCount);
 
 	// Notify the item that has been removed.
-	UInventoryItemInstance* Instance = ItemEntry.Instance;
-	if (Instance)
+	if (UInventoryItemInstance* Instance = ItemEntry.Instance)
 	{
 		Instance->OnRemovedFromInventory(ItemEntry, Instance->CurrentInventoryData);
 
@@ -779,6 +772,8 @@ bool UInventoryManager::RemoveItemByPredicate(const TFunctionRef<bool(const FInv
 
 			if (bCanClearItem)
 			{
+				// Scope lock to ensure the item is removed properly.
+				INVENTORY_LIST_SCOPE_LOCK();
 				OnRemoveItem(ItemEntry);
 
 				It.RemoveCurrent();
@@ -792,16 +787,24 @@ bool UInventoryManager::RemoveItemByPredicate(const TFunctionRef<bool(const FInv
 
 void UInventoryManager::AddReplicatedItemInstance(UInventoryItemInstance* ItemInstance)
 {
-	if (IsUsingRegisteredSubObjectList() && IsReadyForReplication())
+	TArray<TObjectPtr<UInventoryItemInstance>>& ReplicatedInstances = GetReplicatedItemInstances_Mutable();
+	if (ReplicatedInstances.Find(ItemInstance) == INDEX_NONE)
 	{
-		const ELifetimeCondition LifetimeCondition = bReplicateInventoryItemsToSimulatedProxies ? COND_None : COND_ReplayOrOwner;
-		AddReplicatedSubObject(ItemInstance, LifetimeCondition);
+		ReplicatedInstances.Add(ItemInstance);
+		
+		if (IsUsingRegisteredSubObjectList() && IsReadyForReplication())
+		{
+			const ELifetimeCondition LifetimeCondition = bReplicateInventoryItemsToSimulatedProxies ? COND_None : COND_ReplayOrOwner;
+			AddReplicatedSubObject(ItemInstance, LifetimeCondition);
+		}	
 	}
 }
 
 void UInventoryManager::RemoveReplicatedItemInstance(UInventoryItemInstance* ItemInstance)
 {
-	if (IsUsingRegisteredSubObjectList() && IsReadyForReplication())
+	const bool bWasRemoved = GetReplicatedItemInstances_Mutable().RemoveSingle(ItemInstance) > 0;
+	
+	if (bWasRemoved && IsUsingRegisteredSubObjectList() && IsReadyForReplication())
 	{
 		RemoveReplicatedSubObject(ItemInstance);
 	}

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "InventoryItemEntryHandle.h"
+#include "ItemizationCoreTypes.h"
 #include "Net/Serialization/FastArraySerializer.h"
 
 #include "InventoryItemEntry.generated.h"
@@ -50,6 +51,10 @@ public:
 	/** Object this item was given from, can be an actor or static object. Useful to find out previous ownership */
 	UPROPERTY()
 	TWeakObjectPtr<UObject> SourceObject;
+
+	/** Authority-only list of granted handles. */
+	UPROPERTY(NotReplicated)
+	FItemizationGrantedHandles GrantedHandles;
 
 	/** Pending removal due to scope lock */
 	UPROPERTY(NotReplicated)

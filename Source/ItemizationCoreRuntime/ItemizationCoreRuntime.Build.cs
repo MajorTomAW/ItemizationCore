@@ -1,4 +1,5 @@
-﻿using UnrealBuildTool;
+﻿using System.Linq;
+using UnrealBuildTool;
 
 public class ItemizationCoreRuntime : ModuleRules
 {
@@ -10,7 +11,7 @@ public class ItemizationCoreRuntime : ModuleRules
         PublicDefinitions.Add("WITH_GAMEPLAY_MESSAGE_ROUTER=1");
         
         // Turn this off if you aren't planning on using the EquipmentSystem
-        PublicDefinitions.Add("WITH_EQUIPMENT_SYSTEM=1");
+        PublicDefinitions.Add("WITH_EQUIPMENT_SYSTEM=0");
 
         PublicDependencyModuleNames.AddRange(new []
         {
@@ -35,7 +36,7 @@ public class ItemizationCoreRuntime : ModuleRules
             PrivateDependencyModuleNames.Add("Slate");
             PrivateDependencyModuleNames.Add("SlateCore");
         }
-        
+
         if (PublicDefinitions.Contains("WITH_GAMEPLAY_MESSAGE_ROUTER=1"))
         {
             PrivateDependencyModuleNames.Add("GameplayMessageRuntime");

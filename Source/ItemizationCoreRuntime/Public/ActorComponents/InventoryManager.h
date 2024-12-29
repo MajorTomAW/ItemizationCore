@@ -29,9 +29,12 @@ struct FItemActionContextData;
 UCLASS(ClassGroup = (Itemization), meta=(BlueprintSpawnableComponent), BlueprintType, Blueprintable)
 class ITEMIZATIONCORERUNTIME_API UInventoryManager : public UActorComponent
 {
-	GENERATED_UCLASS_BODY()
+	GENERATED_BODY()
 	friend struct FInventoryItemEntry;
 	friend struct FInventoryItemContainer;
+
+public:
+	UInventoryManager(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 	/** Static getter to find the inventory manager on an actor. */
 	static UInventoryManager* GetInventoryManager(AActor* Actor);
@@ -56,6 +59,10 @@ class ITEMIZATIONCORERUNTIME_API UInventoryManager : public UActorComponent
 	 */
 	FInventoryItemEntryHandle GiveItem(const FInventoryItemEntry& ItemEntry, const FItemActionContextData& ContextData, int32& Excess);
 	FInventoryItemEntryHandle GiveItem(const FInventoryItemEntry& ItemEntry, int32& Excess);
+
+#if WITH_EQUIPMENT_SYSTEM
+	FInventoryItemEntryHandle GiveAndEquipItem(const FInventoryItemEntry& ItemEntry, int32& Excess);
+#endif
 
 	/**
 	 * Grants an item definition or the inventory and returns its handle.
@@ -145,6 +152,9 @@ class ITEMIZATIONCORERUNTIME_API UInventoryManager : public UActorComponent
 	/** Returns the list of all items in the inventory. */
 	TArray<FInventoryItemEntry>& GetInventoryList() { return InventoryList.Items; }
 
+	/** Full list of all replicated item instances which are replicated to clients. */
+	const TArray<UInventoryItemInstance*>& GetReplicatedItemInstances() const { return AllReplicatedItemInstances; }
+
 	/**
 	 * Returns a list with all given item handles.
 	 * @param OutHandles Array that will be filled with the item handles.
@@ -224,7 +234,7 @@ protected:
 	/** Checks whether we need to create a new instance of an item, aka it doesn't stack, or the stack is full. */
 	virtual bool ShouldCreateNewInstanceOfItem(const FInventoryItemEntry& ItemEntry, const uint32 InStackCount) const;
 
-	/** Creates a new instance of an item, storing it in the spec. */
+	/** Creates a new instance of an item, storing it in the item entry. */
 	virtual UInventoryItemInstance* CreateNewInstanceOfItem(FInventoryItemEntry& ItemEntry);
 
 	/** Removes an item instance from the inventory that matches the predicate. */
@@ -244,6 +254,13 @@ private:
 	/** The actor that is the physical representation of the owner. */
 	UPROPERTY(ReplicatedUsing = OnRep_OwnerActor, Transient)
 	TObjectPtr<AActor> AvatarActor;
+
+	/** Full list of all replicated item instances which are replicated to clients. */
+	UPROPERTY()
+	TArray<TObjectPtr<UInventoryItemInstance>> AllReplicatedItemInstances;
+
+	/** Full-mutable list of all replicated item instances which are replicated to clients. */
+	TArray<TObjectPtr<UInventoryItemInstance>>& GetReplicatedItemInstances_Mutable() { return AllReplicatedItemInstances; }
 
 public:
 	/** Sets the owner actor. */

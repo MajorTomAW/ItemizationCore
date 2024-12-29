@@ -3,8 +3,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "ActiveGameplayEffectHandle.h"
+#include "GameplayAbilitySpecHandle.h"
 #include "GameplayTagContainer.h"
-#include "InventoryItemEntry.h"
 
 #include "ItemizationCoreTypes.generated.h"
 
@@ -62,16 +63,7 @@ public:
 	{
 	}
 	
-	FItemActionContextData(const FInventoryItemEntry& ItemEntry)
-	{
-		Instigator = ItemEntry.SourceObject;
-		InventoryManager = nullptr;
-		ContextTags = nullptr;
-
-		Delta = ItemEntry.StackCount;
-		SlotSize = 1;
-		MaxStackSize = 1;
-	}
+	FItemActionContextData(const FInventoryItemEntry& ItemEntry);
 	
 public:
 	TWeakObjectPtr<UObject> Instigator; // The object that instigated the item.
@@ -102,46 +94,20 @@ public:
 };
 
 /**
- * When performing actions such as shooting, reloading, and so on,
- * the item's current state can be used to determine what actions are allowed or which ones should be triggered or deactivated.
- * 
- * For example, a totem that constantly regenerates health when being active.
- * ->	Can be set to inactive when the player is at full health or when the player is in combat. (or manually)
- */
-UENUM()
-enum class ECurrentItemState : uint8
-{
-	/** Don't consider the item has any state. */
-	None = 0,
-
-	/** The item is currently active. And equipped */
-	Active = 1 << 0,
-
-	/** The item is currently inactive. But equipped. */
-	Inactive = 1 << 1,
-
-	/** The item is currently in the process of being activated. */
-	Activating = 1 << 2,
-
-	/** The item is currently in the process of being deactivated. */
-	Deactivating = 1 << 3,
-};
-
-/**
  * Describes the active state of an item on a higher level.
- * Mostly used for user facing data.
+ * Mostly used for user-facing data or logic that should only be applied in certain states.
  */
 UENUM(BlueprintType)
 enum class EUserFacingItemState : uint8
 {
 	/** Applies in all states, as long as the item is owned by the player. */
-	Owned,
+	Owned = 0,
 
-	/** Applies provided teh item is in an equippable inventory (needn't be equipped and active) */
-	Equipped,
+	/** Applies provided the item is in an equippable inventory (needn't be equipped and active) */
+	Equipped = 1 << 1,
 
 	/** Applies provided the item is both inside an equippable inventory and active (equipped) */
-	EquippedAndActive,
+	EquippedAndActive = 1 << 2,
 };
 
 /**
@@ -258,4 +224,24 @@ public:
      * Clears out any actor info, both owner and avatar.
      */
 	virtual void ClearInventoryData();
+};
+
+/**
+ * Helper struct to cache off all granted ability-, effect handles, and attributes.
+ * That were given by an item or equipment.
+ */
+USTRUCT()
+struct FItemizationGrantedHandles
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY()
+	TArray<FGameplayAbilitySpecHandle> AbilityHandles;
+
+	UPROPERTY()
+	TArray<FActiveGameplayEffectHandle> EffectHandles;
+
+	UPROPERTY()
+	TArray<TObjectPtr<const class UAttributeSet>> AttributeSets;
 };

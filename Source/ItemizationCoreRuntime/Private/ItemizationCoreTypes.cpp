@@ -8,6 +8,17 @@
 #include "ActorComponents/InventoryManager.h"
 #include "GameFramework/PlayerState.h"
 
+FItemActionContextData::FItemActionContextData(const FInventoryItemEntry& ItemEntry)
+{
+	Instigator = ItemEntry.SourceObject;
+	InventoryManager = nullptr;
+	ContextTags = nullptr;
+
+	Delta = ItemEntry.StackCount;
+	SlotSize = 1;
+	MaxStackSize = 1;
+}
+
 FString FItemActionContextData::ToString() const
 {
 	return FString::Printf(TEXT("Context Data:\n    Instigator: %s\n    InventoryManager: %s\n    ContextTags: %s\n    Delta: %d\n    SlotSize: %d\n    MaxStackSize: %d"),
