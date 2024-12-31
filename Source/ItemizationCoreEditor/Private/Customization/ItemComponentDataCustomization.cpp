@@ -8,11 +8,10 @@
 #include "IDetailChildrenBuilder.h"
 #include "InstancedStruct.h"
 #include "InstancedStructDetails.h"
-#include "InstancedStructDetails.h"
 #include "Components/ItemComponentData.h"
 #include "StructViewerFilter.h"
 #include "StructViewerModule.h"
-#include "UnrealEdGlobals.h"
+#include "StructUtils/InstancedStruct.h"
 #include "Styles/ItemizationEditorStyle.h"
 #include "Styling/SlateIconFinder.h"
 

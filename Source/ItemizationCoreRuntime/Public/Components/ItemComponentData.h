@@ -6,6 +6,7 @@
 #include "InstancedStruct.h"
 #include "InventoryItemEntry.h"
 #include "ItemizationCoreTypes.h"
+#include "StructUtils/InstancedStruct.h"
 
 #include "ItemComponentData.generated.h"
 

@@ -16,7 +16,6 @@ FItemizationEditorViewportClient::FItemizationEditorViewportClient(FPreviewScene
 	EngineShowFlags.SetCompositeEditorPrimitives(true);
 	EngineShowFlags.SetSelection(true);
 	EngineShowFlags.SetSelectionOutline(true);
-	EngineShowFlags.SetSelectionOutlineColor0(true);
 
 	DrawHelper.bDrawGrid = true;
 	DrawHelper.GridColorAxis = FColor(80,80,80);
