@@ -12,6 +12,9 @@ public class ItemizationCoreRuntime : ModuleRules
         
         // Turn this off if you aren't planning on using the EquipmentSystem
         PublicDefinitions.Add("WITH_EQUIPMENT_SYSTEM=0");
+        
+        // Turn this off if you aren't planning on using the GameFeatures
+        PublicDefinitions.Add("WITH_GAME_FEATURES=1");
 
         PublicDependencyModuleNames.AddRange(new []
         {
@@ -22,13 +25,14 @@ public class ItemizationCoreRuntime : ModuleRules
             "IrisCore",
             "GameplayTags",
             "GameplayAbilities",
+            "DeveloperSettings",
         });
 
         PrivateDependencyModuleNames.AddRange(new []
         {
             "CoreUObject",
             "Engine",
-            "EngineSettings",
+            "EngineSettings"
         });
 
         if (Target.bBuildEditor)
@@ -40,6 +44,13 @@ public class ItemizationCoreRuntime : ModuleRules
         if (PublicDefinitions.Contains("WITH_GAMEPLAY_MESSAGE_ROUTER=1"))
         {
             PrivateDependencyModuleNames.Add("GameplayMessageRuntime");
+        }
+        
+        if (PublicDefinitions.Contains("WITH_GAME_FEATURES=1"))
+        {
+            PublicDependencyModuleNames.Add("GameFeaturesExtension");
+            PublicDependencyModuleNames.Add("GameFeatures");
+            PublicDependencyModuleNames.Add("ModularGameplay");
         }
         
         SetupGameplayDebuggerSupport(Target);

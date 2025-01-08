@@ -86,7 +86,7 @@ void UInventoryManager::ForceAvatarReplication()
 
 FInventoryItemEntryHandle UInventoryManager::GiveItem(const FInventoryItemEntry& ItemEntry, int32& Excess)
 {
-	FItemActionContextData ContextData = FItemActionContextData(ItemEntry);
+	FItemActionContextData ContextData = CreateItemActionContextData(ItemEntry);
 	if (ContextData.InventoryManager == nullptr)
 	{
 		ContextData.InventoryManager = this;
@@ -184,6 +184,18 @@ FInventoryItemEntryHandle UInventoryManager::GiveItem(const FInventoryItemEntry&
 
 	Excess = FMath::Max(0, CurrentContext.Delta);
 	return LastHandle;
+}
+
+FInventoryItemEntryHandle UInventoryManager::GiveItem(const FInventoryItemEntry& ItemEntry, const FItemActionContextData& ContextData)
+{
+	int32 Excess;
+	return GiveItem(ItemEntry, ContextData, Excess);
+}
+
+FInventoryItemEntryHandle UInventoryManager::GiveItem(const FInventoryItemEntry& ItemEntry)
+{
+	int32 Excess;
+	return GiveItem(ItemEntry, Excess);
 }
 
 FInventoryItemEntryHandle UInventoryManager::K2_GiveItem(UItemDefinition* ItemDefinition, int32 StackCount, int32& Excess)
@@ -408,6 +420,13 @@ int32 UInventoryManager::GetCurrentStackCount(FInventoryItemEntryHandle Handle) 
 	}
 
 	return 0;
+}
+
+FItemActionContextData UInventoryManager::CreateItemActionContextData(const FInventoryItemEntry& Item)
+{
+	FItemActionContextData Context(Item);
+	Context.InventoryManager = this;
+	return Context;
 }
 
 void UInventoryManager::GetAllItemHandles(TArray<FInventoryItemEntryHandle>& OutHandles) const

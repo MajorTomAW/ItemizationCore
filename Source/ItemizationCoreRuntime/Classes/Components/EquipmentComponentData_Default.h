@@ -11,7 +11,7 @@
  * Data-struct that holds information about a piece of equipment that will be spawned.
  */
 USTRUCT(BlueprintType)
-struct FEquipmentComponentActorToSpawn
+struct ITEMIZATIONCORERUNTIME_API FEquipmentComponentActorToSpawn
 {
 	GENERATED_BODY()
 
@@ -33,7 +33,7 @@ public:
  * Default equipment component data structure used to spawn a piece equipment.
  */
 USTRUCT(DisplayName = "Default Equipment")
-struct FEquipmentComponentData_Default : public FEquipmentComponentData
+struct ITEMIZATIONCORERUNTIME_API FEquipmentComponentData_Default : public FEquipmentComponentData
 {
 	GENERATED_BODY()
 

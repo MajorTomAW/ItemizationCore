@@ -50,6 +50,11 @@
 			"Optional": true
 		},
 		{
+			"Name": "GameFeaturesExtension",
+			"Enabled": true,
+			"Optional": true
+		},
+		{
 			"Name": "AssetManagerEditor",
 			"Enabled": true
 		},

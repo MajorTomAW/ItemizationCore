@@ -7,6 +7,8 @@
 #include "ItemAssetFactory.generated.h"
 
 
+class UItemDefinition;
+
 UCLASS(HideCategories = Object)
 class UItemAssetFactory : public UFactory
 {
@@ -19,4 +21,7 @@ protected:
 	virtual FString GetDefaultNewAssetName() const override;
 	virtual UObject* FactoryCreateNew(UClass* InClass, UObject* InParent, FName InName, EObjectFlags Flags, UObject* Context, FFeedbackContext* Warn, FName CallingContext) override;
 	//~ End UFactory Interface
+
+	UPROPERTY(EditAnywhere, Category = ItemDefinition)
+	TSubclassOf<UItemDefinition> ItemDefinitionClass;
 };

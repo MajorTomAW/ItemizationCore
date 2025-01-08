@@ -58,7 +58,9 @@ public:
 	 * @returns The handle to the item that was given. 
 	 */
 	FInventoryItemEntryHandle GiveItem(const FInventoryItemEntry& ItemEntry, const FItemActionContextData& ContextData, int32& Excess);
+	FInventoryItemEntryHandle GiveItem(const FInventoryItemEntry& ItemEntry, const FItemActionContextData& ContextData);
 	FInventoryItemEntryHandle GiveItem(const FInventoryItemEntry& ItemEntry, int32& Excess);
+	FInventoryItemEntryHandle GiveItem(const FInventoryItemEntry& ItemEntry);
 
 #if WITH_EQUIPMENT_SYSTEM
 	FInventoryItemEntryHandle GiveAndEquipItem(const FInventoryItemEntry& ItemEntry, int32& Excess);
@@ -151,6 +153,9 @@ public:
 
 	/** Returns the list of all items in the inventory. */
 	TArray<FInventoryItemEntry>& GetInventoryList() { return InventoryList.Items; }
+
+	/** Creates a new item action context. */
+	virtual FItemActionContextData CreateItemActionContextData(const FInventoryItemEntry& Item);
 
 	/** Full list of all replicated item instances which are replicated to clients. */
 	const TArray<UInventoryItemInstance*>& GetReplicatedItemInstances() const { return AllReplicatedItemInstances; }
