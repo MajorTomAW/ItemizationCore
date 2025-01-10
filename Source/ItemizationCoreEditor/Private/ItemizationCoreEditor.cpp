@@ -29,8 +29,11 @@ public:
 
 	//~ Begin IItemizationCoreEditorModule
 	virtual TSharedRef<FWorkflowCentricApplication> CreateItemizationApplication(const EToolkitMode::Type Mode, const TSharedPtr<IToolkitHost>& InitToolkitHost, UObject* InObject) override;
-	virtual void RegisterApplicationMode(UClass* AssetClass, FOnGetApplicationMode& OnGetApplicationMode) override;
+	virtual void RegisterApplicationMode(UClass* AssetClass, FOnGetApplicationMode& OnGetApplicationMode, FName ModeId, FName CommandId = FName()) override;
 	virtual bool FindApplicationModesForAsset(UClass* AssetClass, TArray<FOnGetApplicationMode>& OutGetApplicationModes, bool bExactMatch = false) override;
+	virtual TArray<FOnGetApplicationMode> GetAllApplicationModes() const override;
+	virtual int32 GetNumApplicationModes() const override;
+	virtual const TMap<FName, FName>& GetAllModeIds() const override { return AllModeIds; }
 	//~ End IItemizationCoreEditorModule
 
 private:
@@ -45,7 +48,9 @@ private:
 
 	/** List of delegates to call to get the application mode for a specific asset class */
 	typedef TArray<FOnGetApplicationMode> FOnGetApplicationModeArray;
-	TMap<FName, FOnGetApplicationModeArray> RegisteredApplicationModes;
+	TMap</*ClassName*/ FName, FOnGetApplicationModeArray> RegisteredApplicationModes;
+	TMap</*ModeId*/ FName, /*CommandId*/ FName> AllModeIds;
+	
 };
 IMPLEMENT_MODULE(FItemizationCoreEditorModule, ItemizationCoreEditor)
 using namespace UE::ItemizationCore::Editor;
@@ -124,7 +129,7 @@ void FItemizationCoreEditorModule::RegisterDefaultApplicationModes()
 			})
 		);
 
-		RegisterApplicationMode(UItemDefinition::StaticClass(), OnGetApplicationMode);
+		RegisterApplicationMode(UItemDefinition::StaticClass(), OnGetApplicationMode, IDs::AppMode_Default());
 	}
 
 	{ // Components Mode
@@ -139,7 +144,8 @@ void FItemizationCoreEditorModule::RegisterDefaultApplicationModes()
 					FText::Format(
 						LOCTEXT("ComponentsModeTooltip", "Manage the components of the item. ({0})"),
 						FItemizationEditorCommands::Get().AppMode_Components->GetInputText()),
-					FSlateIcon(FItemizationEditorStyle::Get()->GetStyleSetName(), "Icons.Components")
+					FSlateIcon(FItemizationEditorStyle::Get()->GetStyleSetName(), "Icons.Components"),
+					-1
 				);
 
 				TSharedPtr<FItemizationEditorApplication> MutableApp = StaticCastSharedPtr<FItemizationEditorApplication>(App);
@@ -149,7 +155,7 @@ void FItemizationCoreEditorModule::RegisterDefaultApplicationModes()
 			})
 		);
 
-		RegisterApplicationMode(UItemDefinition::StaticClass(), OnGetApplicationMode);
+		RegisterApplicationMode(UItemDefinition::StaticClass(), OnGetApplicationMode, IDs::AppMode_Components());
 	}
 
 	{ // Equipment Mode
@@ -164,7 +170,8 @@ void FItemizationCoreEditorModule::RegisterDefaultApplicationModes()
 					FText::Format(
 						LOCTEXT("EquipmentModeTooltip", "Manage the equipment of the item. ({0})"),
 						FItemizationEditorCommands::Get().AppMode_Equipment->GetInputText()),
-					FSlateIcon(FItemizationEditorStyle::Get()->GetStyleSetName(), "Icons.Equipment")
+					FSlateIcon(FItemizationEditorStyle::Get()->GetStyleSetName(), "Icons.Equipment"),
+					0
 				);
 
 				TSharedPtr<FItemizationEditorApplication> MutableApp = StaticCastSharedPtr<FItemizationEditorApplication>(App);
@@ -174,7 +181,7 @@ void FItemizationCoreEditorModule::RegisterDefaultApplicationModes()
 			})
 		);
 
-		RegisterApplicationMode(UItemDefinition::StaticClass(), OnGetApplicationMode);
+		RegisterApplicationMode(UItemDefinition::StaticClass(), OnGetApplicationMode, IDs::AppMode_Equipment());
 	}
 }
 
@@ -187,7 +194,7 @@ TSharedRef<FWorkflowCentricApplication> FItemizationCoreEditorModule::CreateItem
 }
 
 void FItemizationCoreEditorModule::RegisterApplicationMode(
-	UClass* AssetClass, FOnGetApplicationMode& OnGetApplicationMode)
+	UClass* AssetClass, FOnGetApplicationMode& OnGetApplicationMode, FName ModeId, FName CommandId)
 {
 	if (AssetClass == nullptr)
 	{
@@ -202,6 +209,16 @@ void FItemizationCoreEditorModule::RegisterApplicationMode(
 	const FName AssetClassName = AssetClass->GetFName();
 	FOnGetApplicationModeArray& AppModes = RegisteredApplicationModes.FindOrAdd(AssetClassName);
 	AppModes.Add(OnGetApplicationMode);
+	
+	FName& NewCommandId = AllModeIds.Add(ModeId);
+	if (CommandId.IsNone())
+	{
+		NewCommandId = ModeId;
+	}
+	else
+	{
+		NewCommandId = CommandId;
+	}
 }
 
 bool FItemizationCoreEditorModule::FindApplicationModesForAsset(
@@ -241,6 +258,35 @@ bool FItemizationCoreEditorModule::FindApplicationModesForAsset(
 	}
 
 	return bFoundAny;
+}
+
+TArray<IItemizationCoreEditorModule::FOnGetApplicationMode> FItemizationCoreEditorModule::GetAllApplicationModes() const
+{
+	TArray<FOnGetApplicationMode> FilteredModes;
+
+	for (const auto& KVP : RegisteredApplicationModes)
+	{
+		KVP.Value.FilterByPredicate([&FilteredModes](const FOnGetApplicationMode& Mode)
+		{
+			FilteredModes.Add(Mode);
+			return false;
+		});
+	}
+
+	return FilteredModes;
+}
+
+int32 FItemizationCoreEditorModule::GetNumApplicationModes() const
+{
+	int32 NumModes = 0;
+	for (const auto& KVP : RegisteredApplicationModes)
+	{
+		if (NumModes < KVP.Value.Num())
+		{
+			NumModes = KVP.Value.Num();
+		}
+	}
+	return NumModes;
 }
 
 #undef LOCTEXT_NAMESPACE

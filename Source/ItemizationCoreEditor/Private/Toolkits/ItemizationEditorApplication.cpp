@@ -221,7 +221,22 @@ void FItemizationEditorApplication::PostRegenerateMenusAndToolbars()
 
 void FItemizationEditorApplication::PostInitAssetEditor()
 {
-	ToolkitCommands->MapAction
+	IItemizationCoreEditorModule& ItemizationModule = IItemizationCoreEditorModule::Get();
+	for (const auto& KVP : ItemizationModule.GetAllModeIds())
+	{
+		const TSharedPtr<FUICommandInfo>* Cmd = FItemizationEditorCommands::Get().MappedCommands.Find(KVP.Value);
+		if (Cmd != nullptr)
+		{
+			ToolkitCommands->MapAction
+			(
+				*Cmd,
+				FExecuteAction::CreateRaw(this, &FItemizationEditorApplication::SetCurrentMode, KVP.Key),
+				FCanExecuteAction::CreateRaw(this, &FItemizationEditorApplication::CanActivateMode, KVP.Key)
+			);
+		}
+	}
+	
+	/*ToolkitCommands->MapAction
 	(
 		FItemizationEditorCommands::Get().AppMode_Default,
 		FExecuteAction::CreateRaw(this, &FItemizationEditorApplication::SetCurrentMode, IDs::AppMode_Default()),
@@ -240,7 +255,7 @@ void FItemizationEditorApplication::PostInitAssetEditor()
 		FItemizationEditorCommands::Get().AppMode_Equipment,
 		FExecuteAction::CreateRaw(this, &FItemizationEditorApplication::SetCurrentMode, IDs::AppMode_Equipment()),
 		FCanExecuteAction::CreateRaw(this, &FItemizationEditorApplication::CanActivateMode, IDs::AppMode_Equipment())
-	);
+	);*/
 }
 
 void FItemizationEditorApplication::SaveAsset_Execute()

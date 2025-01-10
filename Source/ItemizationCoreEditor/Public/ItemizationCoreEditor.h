@@ -35,20 +35,23 @@ public:
 	{
 	public:
 		FItemizationAppModeArgs()
-			: ExtensionHookId("Modes")
+			: Priority(INDEX_NONE)
+			, ExtensionHookId("Modes")
 		{
 		}
 
-		FItemizationAppModeArgs(const FName InModeId, const FText& InModeLabel, const FText& InModeTooltip = FText())
+		FItemizationAppModeArgs(const FName InModeId, const FText& InModeLabel, const FText& InModeTooltip = FText(), int32 InPriority = INDEX_NONE)
 			: ModeId(InModeId)
+			, Priority(InPriority)
 			, ExtensionHookId("Modes")
 			, ModeLabel(InModeLabel)
 			, ModeTooltip(InModeTooltip)
 		{
 		}
 
-		FItemizationAppModeArgs(const FName InModeId, const FText& InModeLabel, const FText& InModeTooltip = FText(), const FSlateIcon& InModeIcon = FSlateIcon())
+		FItemizationAppModeArgs(const FName InModeId, const FText& InModeLabel, const FText& InModeTooltip = FText(), const FSlateIcon& InModeIcon = FSlateIcon(), int32 InPriority = INDEX_NONE)
 			: ModeId(InModeId)
+			, Priority(InPriority)
 			, ExtensionHookId("Modes")
 			, ModeLabel(InModeLabel)
 			, ModeTooltip(InModeTooltip)
@@ -56,8 +59,9 @@ public:
 		{
 		}
 
-		FItemizationAppModeArgs(const FName InModeId, const FName InExtensionHookId, const FText& InModeLabel, const FText& InModeTooltip = FText(), const FSlateIcon& InModeIcon = FSlateIcon())
+		FItemizationAppModeArgs(const FName InModeId, const FName InExtensionHookId, const FText& InModeLabel, const FText& InModeTooltip = FText(), const FSlateIcon& InModeIcon = FSlateIcon(), int32 InPriority = INDEX_NONE)
 			: ModeId(InModeId)
+			, Priority(InPriority)
 			, ExtensionHookId(InExtensionHookId)
 			, ModeLabel(InModeLabel)
 			, ModeTooltip(InModeTooltip)
@@ -67,6 +71,9 @@ public:
 		
 		/** Unique Id for the mode */
 		FName ModeId;
+
+		/** Priority of the mode */
+		int32 Priority;
 
 		/** The hook id to use for the mode switcher */
 		FName ExtensionHookId;
@@ -115,7 +122,7 @@ public:
 	 * Registers a new application mode for the itemization editor.
 	 * Mapped to a specific class to allow different modes to be created.
 	 */
-	ITEMIZATIONCOREEDITOR_API virtual void RegisterApplicationMode(UClass* AssetClass, FOnGetApplicationMode& OnGetApplicationMode) = 0;
+	ITEMIZATIONCOREEDITOR_API virtual void RegisterApplicationMode(UClass* AssetClass, FOnGetApplicationMode& OnGetApplicationMode, FName ModeId, FName CommandId = FName()) = 0;
 
 	/**
 	 * Finds all application mode delegates mapped to the given asset class.
@@ -126,6 +133,22 @@ public:
 	 * @returns True if any application modes were found.
 	 */
 	ITEMIZATIONCOREEDITOR_API virtual bool FindApplicationModesForAsset(UClass* AssetClass, TArray<FOnGetApplicationMode>& OutGetApplicationModes, bool bExactMatch = false) = 0;
+
+	/**
+	 * Returns all application mode delegates.
+	 * Filtering out dupes and sorting by priority.
+	 */
+	ITEMIZATIONCOREEDITOR_API virtual TArray<FOnGetApplicationMode> GetAllApplicationModes() const = 0;
+
+	/**
+	 * Returns the number of application modes registered.
+	 */
+	ITEMIZATIONCOREEDITOR_API virtual int32 GetNumApplicationModes() const = 0;
+
+	/**
+	 * Returns the list of all registered app mode ids.
+	 */
+	ITEMIZATIONCOREEDITOR_API virtual const TMap<FName, FName>& GetAllModeIds() const = 0;
 
 	/**
 	 * Creates a new itemization editor application to edit the specified object.

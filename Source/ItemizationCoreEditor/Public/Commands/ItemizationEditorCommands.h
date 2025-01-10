@@ -4,7 +4,7 @@
 
 #include "Framework/Commands/Commands.h"
 
-class FItemizationEditorCommands : public TCommands<FItemizationEditorCommands>
+class ITEMIZATIONCOREEDITOR_API FItemizationEditorCommands : public TCommands<FItemizationEditorCommands>
 {
 public:
 	FItemizationEditorCommands();
@@ -17,4 +17,9 @@ public:
 	TSharedPtr<FUICommandInfo> AppMode_Default;
 	TSharedPtr<FUICommandInfo> AppMode_Components;
 	TSharedPtr<FUICommandInfo> AppMode_Equipment;
+	TSharedPtr<FUICommandInfo> AppMode_Extra_A;
+	TSharedPtr<FUICommandInfo> AppMode_Extra_B;
+	TSharedPtr<FUICommandInfo> AppMode_Extra_C;
+
+	TMap</*CommandId*/ FName, /*Command*/ TSharedPtr<FUICommandInfo>> MappedCommands;
 };

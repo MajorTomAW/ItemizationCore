@@ -55,6 +55,11 @@ void FItemizationEditorToolbar::FillModesToolbar(FToolBarBuilder& ToolBarBuilder
 	{
 		return;
 	}
+	
+	ModesArgs.Sort([](const IItemizationCoreEditorModule::FItemizationAppModeArgs& A, const IItemizationCoreEditorModule::FItemizationAppModeArgs& B)->bool
+	{
+		return A.Priority < B.Priority;
+	});
 
 	TMap<FName, TArray<IItemizationCoreEditorModule::FItemizationAppModeArgs>> ModesByHook;
 	for (const auto& Mode : ModesArgs)

@@ -4,6 +4,7 @@
 #include "ItemizationDetailsCustomization.h"
 
 #include "DetailLayoutBuilder.h"
+#include "Toolkits/ItemizationEditorApplication.h"
 
 
 FItemizationDetailsCustomization::FItemizationDetailsCustomization()
@@ -43,4 +44,34 @@ void FItemizationDetailsCustomization::CustomizeDetails(IDetailLayoutBuilder& De
 			}
 		}
 	}
+
+	TSharedPtr<FItemizationEditorApplication> App = WeakApp.Pin();
+	const FName& Mode = App->GetCurrentMode();
+	const UClass* ItemClass = App->GetItemDefinition()->GetClass();
+
+	const bool bModeExclusive = ItemClass->HasMetaData("ModesExclusive");
+
+	FIsPropertyVisible IsVisible = FIsPropertyVisible::CreateLambda([Mode, bModeExclusive, ItemClass](const FPropertyAndParent& Prop)->bool
+	{
+		if (Prop.Property.HasMetaData("AllowedItemModes"))
+		{
+			const FString AllowedModes = Prop.Property.GetMetaData("AllowedItemModes");
+			if (!AllowedModes.Contains(Mode.ToString()))
+			{
+				return false;
+			}
+		}
+		else if (bModeExclusive)
+		{
+			const FString ExclusiveModes = ItemClass->GetMetaData("ModesExclusive");
+			if (ExclusiveModes.Contains(Mode.ToString()))
+			{
+				return false;
+			}
+		}
+		
+		return true;
+	});
+
+	DetailBuilder.GetDetailsView()->SetIsPropertyVisibleDelegate(IsVisible);
 }

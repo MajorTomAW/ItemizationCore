@@ -265,20 +265,28 @@ void SItemizationEditorViewport::RebuildScene(
 
 	FTransform RootTransform = FTransform(OwningItem->DefaultRotation, OwningItem->DefaultLocation);
 
-	AActor* RootActor;
+	AActor* RootActor = nullptr;
 	if (!OwningItem->SourceActorBlueprint.IsNull())
 	{
-		RootActor = PreviewScene->GetWorld()->SpawnActor<AActor>(OwningItem->SourceActorBlueprint.LoadSynchronous(), FTransform::Identity, SpawnParams);
-		LastSourceBP = OwningItem->SourceActorBlueprint.Get();
+		AActor* CDO = OwningItem->SourceActorBlueprint->GetDefaultObject<AActor>();
+		if (!CDO->IsUnreachable())
+		{
+			RootActor = PreviewScene->GetWorld()->SpawnActor<AActor>(OwningItem->SourceActorBlueprint.Get(), FTransform::Identity, SpawnParams);
+			LastSourceBP = OwningItem->SourceActorBlueprint.Get();	
+		}
 	}
-	else
+	
+	if (!RootActor)
 	{
 		RootActor = PreviewScene->GetWorld()->SpawnActor<AActor>(AActor::StaticClass(), FTransform::Identity, SpawnParams);
 	}
 	check(RootActor);
-	
-	SceneComponents.Add(RootActor->GetRootComponent());
-	PreviewScene->AddComponent(RootActor->GetRootComponent(), RootTransform);
+
+	if (RootActor->GetRootComponent() && !RootActor->GetRootComponent()->IsUnreachable())
+	{
+		SceneComponents.Add(RootActor->GetRootComponent());
+		PreviewScene->AddComponent(RootActor->GetRootComponent(), RootTransform);
+	}
 
 	auto SpawnActor = [this, SpawnParams, RootActor](UClass* Class, const FTransform& SpawnTransform)->AActor*
 	{
@@ -311,6 +319,16 @@ void SItemizationEditorViewport::RebuildScene(
 		
 		UClass* Class = Data.ActorBlueprint.LoadSynchronous();
 		if (Class == nullptr)
+		{
+			continue;
+		}
+
+		if (Class->IsUnreachable())
+		{
+			continue;
+		}
+
+		if (Class->IsNative())
 		{
 			continue;
 		}

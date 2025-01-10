@@ -12,6 +12,20 @@
 #include "ItemDefinition.generated.h"
 
 class UInventoryItemInstance;
+
+/** Property metadata for the item definition. */
+namespace UM
+{
+	enum
+	{
+		// [PropertyMetaData] Indicates for which item modes this item definition is allowed.
+		AllowedItemModes,
+
+		// [ClassMetaData] Indicates that properties that dont have the AllowedItemModes metadata won't be shown in the editor.
+		ModesExclusive,
+	};
+}
+
 /**
  * Minimal item definition asset which defines an item that can be given to a player's inventory.
  */
@@ -79,7 +93,7 @@ public:
 	TArray<FItemComponentDataProxy> DisplayComponents;
 
 	/** List of item components that will be used to modify the data/functionality of this item. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Components", NoClear, meta = (AllowCosmeticComponents = false, AllowNonCosmeticComponents = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Components", NoClear, meta = (AllowCosmeticComponents = false, AllowNonCosmeticComponents = true, AllowedItemModes = "AppMode_Components"))
 	TArray<FItemComponentDataProxy> ItemComponents;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Equipment", NoClear, meta = (ExcludeBaseStruct = true))
