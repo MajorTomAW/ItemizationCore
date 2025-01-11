@@ -4,6 +4,8 @@
 #include "Components/EquipmentComponentData_Default.h"
 
 #include "GameFramework/Character.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Components/SceneComponent.h"
 
 
 void FEquipmentComponentData_Default::QuerySpawnParams(
@@ -27,6 +29,6 @@ void FEquipmentComponentData_Default::QuerySpawnParams(
 		Query.SetActorClass(ActorToSpawn.ActorToSpawn);
 		Query.SetSocketName(ActorToSpawn.SocketName);
 		Query.SetRelativeTransform(ActorToSpawn.RelativeTransform);
-		Query.SetAttachTarget((USceneComponent*)AttachTarget);
+		Query.SetAttachTarget(const_cast<USceneComponent*>(AttachTarget));
 	}
 }

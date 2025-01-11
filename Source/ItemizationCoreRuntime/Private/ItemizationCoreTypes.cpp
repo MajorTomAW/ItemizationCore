@@ -7,6 +7,7 @@
 #include "ItemizationCoreLog.h"
 #include "ActorComponents/InventoryManager.h"
 #include "GameFramework/PlayerState.h"
+#include "GameFramework/PlayerController.h"
 
 FItemActionContextData::FItemActionContextData(const FInventoryItemEntry& ItemEntry)
 {
@@ -147,3 +148,10 @@ void FItemizationCoreInventoryData::SetAvatarActor_Direct(AActor* NewAvatarActor
 void FItemizationCoreInventoryData::ClearInventoryData()
 {
 }
+
+FString FItemizationCoreInventoryData::ToString() const
+{
+	return FString::Printf(TEXT("OwnerActor(%s), AvatarActor(%s), Controller(%s), InventoryManager(%s)"),
+			*GetNameSafe(OwnerActor.Get()), *GetNameSafe(AvatarActor.Get()), *GetNameSafe(Controller.Get()), *GetNameSafe(InventoryManager.Get()));
+}
+

@@ -11,7 +11,6 @@
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
 
-#define ENGINE_VERSION_LATER_5_4 ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 4
 
 FAbilityItemComponent_Ability::FAbilityItemComponent_Ability()
 {
@@ -34,7 +33,7 @@ void FItemComponentData_Ability::OnItemInstanceCreated(
 	}
 	
 	const UInventoryManager* InventoryManager = InventoryData->InventoryManager.Get();
-	UAbilitySystemComponent* ASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(InventoryData->AvatarActor.Get());
+	UAbilitySystemComponent* ASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(InventoryData->OwnerActor.Get());
 
 	if ((InventoryManager == nullptr) || (ASC == nullptr))
 	{
@@ -68,12 +67,7 @@ void FItemComponentData_Ability::OnItemInstanceCreated(
 		UGameplayAbility* AbilityCDO = Streamable.LoadSynchronous<UClass>(Entry.Ability)->GetDefaultObject<UGameplayAbility>();
 		FGameplayAbilitySpec AbilitySpec(AbilityCDO, Entry.DefaultLevel.Value);
 		AbilitySpec.SourceObject = ItemEntry->Instance;
-
-#if ENGINE_VERSION_LATER_5_4
 		AbilitySpec.GetDynamicSpecSourceTags().AddTag(Entry.InputTag);
-#else
-		AbilitySpec.DynamicAbilityTags.AddTag(Entry.InputTag);
-#endif
 		
 		const FGameplayAbilitySpecHandle GrantedHandle = ASC->GiveAbility(AbilitySpec);
 		GrantedHandles.AbilityHandles.Add(GrantedHandle);

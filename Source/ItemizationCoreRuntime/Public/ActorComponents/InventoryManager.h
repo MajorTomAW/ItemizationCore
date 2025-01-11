@@ -160,6 +160,10 @@ public:
 	/** Full list of all replicated item instances which are replicated to clients. */
 	const TArray<UInventoryItemInstance*>& GetReplicatedItemInstances() const { return AllReplicatedItemInstances; }
 
+	/** Returns the inventory data. */
+	const TSharedPtr<FItemizationCoreInventoryData>& GetInventoryData() const { return InventoryData; }
+	FItemizationCoreInventoryData* GetInventoryDataPtr() const { return InventoryData.Get(); }
+
 	/**
 	 * Returns a list with all given item handles.
 	 * @param OutHandles Array that will be filled with the item handles.
@@ -280,6 +284,7 @@ public:
 	void SetAvatarActor(AActor* NewAvatarActor);
 	AActor* GetAvatarActor() const;
 
+protected:
 	/**
 	 * Cached data about the inventory system such as the owner actor, avatar actor, etc.
 	 * Utility-struct for easy access to those data.
@@ -300,15 +305,19 @@ public:
 	 */
 	virtual void ClearInventoryData();
 
-	void RefreshInventoryData() {}
+	/** Called when the inventory system has been initialized. */
+	virtual void OnInventorySystemInitialized();
 
-	/** Called when the controller is set. */
-	virtual void OnControllerSet() {}
+	virtual void RefreshInventoryData() {}
 
 	/** OnRep for the owner actor. */
 	UFUNCTION()
 	virtual void OnRep_OwnerActor();
 
+public:
+	/** Called when the controller is set. */
+	virtual void OnControllerSet() {}
+	
 	/** Called when the avatar actor is destroyed. */
 	UFUNCTION()
 	virtual void OnAvatarActorDestroyed(AActor* InActor);

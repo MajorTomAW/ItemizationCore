@@ -2,14 +2,20 @@
 
 
 #include "InventoryItemInstance.h"
+#include "GameFramework/Character.h"
+#include "Misc/DataValidation.h"
+#include "UObject/Package.h"
+#include "InventoryItemEntry.h"
+#include "ItemizationCoreLog.h"
+#include "ActorComponents/InventoryManager.h"
+#include "Engine/Engine.h"
+#include "Engine/BlueprintGeneratedClass.h"
+#include "Engine/NetDriver.h"
+#include "TimerManager.h"
 
 #if UE_WITH_IRIS
 #include "Iris/ReplicationSystem/ReplicationFragmentUtil.h"
 #endif
-
-#include "InventoryItemEntry.h"
-#include "ItemizationCoreLog.h"
-#include "ActorComponents/InventoryManager.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(InventoryItemInstance)
 
@@ -137,7 +143,7 @@ void UInventoryItemInstance::PostNetInit()
 			UInventoryManager* InventoryManager = OwnerActor->FindComponentByClass<UInventoryManager>(); //@TODO: Abstract this to a function.
 			if (ensure(InventoryManager))
 			{
-				CurrentInventoryData = InventoryManager->InventoryData.Get();
+				CurrentInventoryData = InventoryManager->GetInventoryDataPtr();
 			}
 		}
 	}

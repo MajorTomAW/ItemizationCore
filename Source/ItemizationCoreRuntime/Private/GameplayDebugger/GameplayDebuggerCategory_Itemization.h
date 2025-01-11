@@ -7,6 +7,11 @@
 #if WITH_GAMEPLAY_DEBUGGER_MENU
 #include "GameplayDebuggerCategory.h"
 
+class AActor;
+class AController;
+class UPackage;
+class UPackageMap;
+
 class FGameplayDebuggerCategory_Itemization : public FGameplayDebuggerCategory
 {
 public:

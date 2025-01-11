@@ -7,11 +7,19 @@
 #include "InventoryItemInstance.h"
 #include "ItemizationCoreLog.h"
 #include "ItemizationCoreStats.h"
+#include "ActorComponents/EquipmentManager.h"
 #include "Components/ItemComponentData_MaxStackSize.h"
 #include "Engine/ActorChannel.h"
 #include "GameFramework/HUD.h"
 #include "GameFramework/PlayerState.h"
 #include "Net/UnrealNetwork.h"
+#include "Engine/World.h"
+#include "TimerManager.h"
+#include "Engine/BlueprintGeneratedClass.h"
+#include "Engine/NetworkDelegates.h"
+#include "Engine/NetConnection.h"
+#include "Engine/Engine.h"
+
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(InventoryManager)
 
@@ -40,7 +48,12 @@ UInventoryManager::UInventoryManager(const FObjectInitializer& ObjectInitializer
 
 UInventoryManager* UInventoryManager::GetInventoryManager(AActor* Actor)
 {
-	void* Mgr = nullptr;
+	if (!IsValid(Actor))
+	{
+		return nullptr;
+	}
+	
+	UInventoryManager* Mgr = nullptr;
 	if (Actor)
 	{
 		Mgr = Actor->GetComponentByClass<UInventoryManager>();
@@ -50,25 +63,25 @@ UInventoryManager* UInventoryManager::GetInventoryManager(AActor* Actor)
 	{
 		if (const APawn* Pawn = Cast<APawn>(Actor))
 		{
-			Mgr = Pawn->GetController()->GetComponentByClass<UInventoryManager>();
+			Mgr = Pawn->GetController() ? Pawn->GetController()->GetComponentByClass<UInventoryManager>() : nullptr;
 
 			if (Mgr == nullptr)
 			{
-				Mgr = Pawn->GetPlayerState()->GetComponentByClass<UInventoryManager>();
+				Mgr = Pawn->GetPlayerState() ? Pawn->GetPlayerState()->GetComponentByClass<UInventoryManager>() : nullptr;
 			}
 		}
 		else if (const AController* Controller = Cast<AController>(Actor))
 		{
-			Mgr = Controller->GetPawn()->GetComponentByClass<UInventoryManager>();
+			Mgr = Controller->GetPawn() ? Controller->GetPawn()->GetComponentByClass<UInventoryManager>() : nullptr;
 
 			if (Mgr == nullptr)
 			{
-				Mgr = Controller->GetPlayerState<APlayerState>()->GetComponentByClass<UInventoryManager>();
+				Mgr = Controller->GetPlayerState<APlayerState>() ? Controller->GetPlayerState<APlayerState>()->GetComponentByClass<UInventoryManager>() : nullptr;
 			}
 		}
 	}
 
-	return (UInventoryManager*)Mgr;
+	return Mgr;
 }
 
 bool UInventoryManager::IsOwnerActorAuthoritative() const
@@ -880,6 +893,16 @@ void UInventoryManager::InitInventorySystem(AActor* InOwnerActor, AActor* InAvat
 	const bool bWasAvatarNull = InventoryData->AvatarActor == nullptr;
 	const bool bAvatarChanged = InAvatarActor != InventoryData->AvatarActor;
 
+	//@TODO: Manually check if the avatar is a controller or player state and retrieve its pawn ?
+	if (const AController* C = Cast<AController>(InAvatarActor))
+	{
+		InAvatarActor = C->GetPawn();
+	}
+	else if (const APlayerState* PS = Cast<APlayerState>(InAvatarActor))
+	{
+		InAvatarActor = PS->GetPawn();
+	}
+
 	InventoryData->InitFromActor(InOwnerActor, InAvatarActor, this);
 	SetOwnerActor(InOwnerActor);
 
@@ -902,6 +925,8 @@ void UInventoryManager::InitInventorySystem(AActor* InOwnerActor, AActor* InAvat
 			ItemEntry.Instance->OnAvatarSet(ItemEntry, InventoryData.Get());
 		}
 	}
+
+	OnInventorySystemInitialized();
 }
 
 void UInventoryManager::ClearInventoryData()
@@ -910,6 +935,10 @@ void UInventoryManager::ClearInventoryData()
 	InventoryData->ClearInventoryData();
 	SetOwnerActor(nullptr);
 	SetAvatarActor_Direct(nullptr);
+}
+
+void UInventoryManager::OnInventorySystemInitialized()
+{
 }
 
 void UInventoryManager::OnRep_OwnerActor()
@@ -955,12 +984,7 @@ void UInventoryManager::OnShowDebugInfo(AHUD* HUD, UCanvas* Canvas, const FDebug
 {
 	if (DisplayInfo.IsDisplayOn(TEXT("Itemization")))
 	{
-		UWorld* World = HUD->GetWorld();
-		UInventoryManager* Mgr = nullptr;
-
-		Mgr = GetInventoryManager(HUD->GetCurrentDebugTargetActor());
-
-		if (Mgr)
+		if (const UInventoryManager* Mgr = GetInventoryManager(HUD->GetCurrentDebugTargetActor()))
 		{
 			Mgr->DisplayDebug(Canvas, DisplayInfo, YL, YPos);
 		}

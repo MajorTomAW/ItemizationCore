@@ -13,8 +13,12 @@
 #include "ActorComponents/InventoryManager.h"
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
+#include "Engine/Engine.h"
+#include "Engine/BlueprintGeneratedClass.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(InventoryEquipmentInstance)
+
+using namespace Itemization;
 
 #define ENSURE_EQUIPMENT_IS_INSTANTIATED_OR_RETURN(FunctionName, ReturnValue) \
 { \
@@ -142,12 +146,11 @@ void UInventoryEquipmentInstance::OnEquipped(const FInventoryEquipmentEntry& Equ
 {
 	SetCurrentEntryInfo(EquipmentEntry.Handle, InventoryData);
 	
-	const UInventoryManager* InventoryManager = InventoryData->InventoryManager.Get();
 	const UItemDefinition* ItemDefinition = EquipmentEntry.Definition.Get();
 
 	if (ItemDefinition == nullptr)
 	{
-		UE_LOG(LogInventorySystem, Error, TEXT("ItemDefinition is null"));
+		ITEMIZATION_Net_LOG(Warning, this, TEXT("OnEquipped: Item definition is null for equipment entry %s."), *EquipmentEntry.Handle.ToString());
 		return;
 	}
 
@@ -159,6 +162,21 @@ void UInventoryEquipmentInstance::OnEquipped(const FInventoryEquipmentEntry& Equ
 	if (InventoryData && InventoryData->AvatarActor.IsValid())
 	{
 		OnAvatarSet(EquipmentEntry, InventoryData);
+
+		ITEMIZATION_Net_LOG(Display, this, TEXT("Equipped Item [%s] '%s'"), *EquipmentEntry.Handle.ToString(), *ItemDefinition->GetPathName());
+	}
+	else
+	{
+		if (InventoryData)
+		{
+			ITEMIZATION_Net_LOG(Warning, this, TEXT("OnEquipped: Avatar actor is null for equipment entry %s."),
+				*EquipmentEntry.Handle.ToString());
+		}
+		else
+		{
+			ITEMIZATION_Net_LOG(Warning, this, TEXT("OnEquipped: Inventory data is null for equipment entry %s."),
+				*EquipmentEntry.Handle.ToString());
+		}
 	}
 }
 

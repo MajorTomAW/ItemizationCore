@@ -24,6 +24,16 @@ public:
 	/** Static getter to find the equipment manager on an actor. */
 	static UEquipmentManager* GetEquipmentManager(AActor* Actor);
 
+	/** Called to link up this equipment manager with an inventory manager. */
+	virtual void SetInventoryManager(UInventoryManager* InInventoryManager);
+
+	/** Called to initialize the equipment manager with the inventory manager. */
+	virtual void TryInitializeWithInventoryManager();
+
+	/** Returns the inventory data. */
+	const TSharedPtr<FItemizationCoreInventoryData>& GetInventoryData() const;
+	FItemizationCoreInventoryData* GetInventoryDataPtr() const;
+
 	
 	/**
 	 * Retrieves the Inventory Manager that owns the inventory.
@@ -44,6 +54,9 @@ public:
 	{
 		return GetPawn<APawn>();
 	}
+
+	/** Retrieves the controller from the owning pawn. */
+	AController* GetController() const { return GetPawn() ? GetPawn()->GetController() : nullptr; }
 
 	/** Returns true if this component's actor has authority. */
 	virtual bool IsOwnerActorAuthoritative() const;
@@ -111,10 +124,11 @@ protected:
 	FInventoryEquipmentContainer EquipmentList;
 	
 private:
-	/** Weak reference to the inventory manager. */
-	UPROPERTY()
-	TWeakObjectPtr<UInventoryManager> WeakInventoryManager;
-
-	/** Cached data that lives on the UInventoryManager, just for convenience. */
-	TSharedPtr<FItemizationCoreInventoryData> InventoryData;
+	/**
+	 * Cached data about the equipment system such as the inventory manager, etc.
+	 * Utility-struct for easy access to those data.
+	 *
+	 * For simulated proxies this will be its own inventory data that is not linked to the inventory manager.
+	 */
+	TSharedPtr<FItemizationCoreInventoryData> CachedInventoryData;
 };

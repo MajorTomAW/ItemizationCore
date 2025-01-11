@@ -6,8 +6,18 @@
 #include "ActorComponents/InventoryManager.h"
 #include "Components/ItemComponentData_MaxStackSize.h"
 #include "InventoryItemInstance.h"
+#include "ItemizationUtilities.h"
 #include "ActorComponents/EquipmentManager.h"
 #include "Engine/Canvas.h"
+#include "Engine/Engine.h"
+#include "GameFramework/PlayerController.h"
+#include "Net/UnrealNetwork.h"
+#include "Engine/NetConnection.h"
+#include "Engine/NetDriver.h"
+#include "Math/TransformCalculus2D.h"
+#include "Rendering/SlateRenderTransform.h"
+
+
 
 #if WITH_GAMEPLAY_DEBUGGER_MENU
 
@@ -54,7 +64,7 @@ void FGameplayDebuggerCategory_Itemization::CollectData(APlayerController* Owner
 			const FInventoryItemEntry& ItemEntry = ItemEntries[Idx];
 			FRepData::FInventoryItemDebug ItemData;
 
-			ItemData.ItemName = GetNameSafe(ItemEntry.Definition);
+			ItemData.ItemName = UE::ItemizationCore::Display::GatherItemDisplayName(ItemEntry.Definition).ToString();
 			ItemData.ItemName.RemoveFromStart(DEFAULT_OBJECT_PREFIX);
 			ItemData.ItemName.RemoveFromEnd(TEXT("_C"));
 
@@ -64,6 +74,7 @@ void FGameplayDebuggerCategory_Itemization::CollectData(APlayerController* Owner
 
 			ItemData.Source = GetNameSafe(ItemEntry.SourceObject.Get());
 			ItemData.Source.RemoveFromStart(DEFAULT_OBJECT_PREFIX);
+			ItemData.Source.RemoveFromEnd(TEXT("_C"));
 
 			ItemData.StackCount = ItemEntry.StackCount;
 

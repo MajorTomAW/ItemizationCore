@@ -7,6 +7,10 @@
 
 #include "EquipmentComponentData_Default.generated.h"
 
+class AActor;
+class APawn;
+class UObject;
+
 /**
  * Data-struct that holds information about a piece of equipment that will be spawned.
  */

@@ -16,5 +16,8 @@ namespace UE::ItemizationCore
 
 		/** Gets any description of the specified item definition. Preferably the long one. */
 		ITEMIZATIONCORERUNTIME_API FText GatherItemDesc_Any(const UItemDefinition* InItem);
+
+		/** Gets the display name of the specified item definition. */
+		ITEMIZATIONCORERUNTIME_API FText GatherItemDisplayName(const UItemDefinition* InItem);
 	}
 }

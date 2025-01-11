@@ -3,13 +3,24 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "UObject/Object.h"
+#include "GameFramework/Pawn.h"
+#include "GameFramework/Actor.h"
+#include "GameFramework/Controller.h"
+
+#include "Net/Core/PushModel/PushModelMacros.h"
+
 #include "InventoryEquipmentEntry.h"
 #include "InventoryItemEntryHandle.h"
 #include "InventoryItemInstance.h"
-#include "Net/Core/PushModel/PushModelMacros.h"
-#include "UObject/Object.h"
+
 #include "InventoryEquipmentInstance.generated.h"
 
+class APawn;
+class AActor;
+class UObject;
+class UFunction;
+class AController;
 struct FItemizationEquipmentSpawnQuery;
 struct FInventoryEquipmentEntry;
 struct FItemizationCoreInventoryData;
@@ -188,4 +199,3 @@ protected:
 	UPROPERTY()
 	TArray<TObjectPtr<AActor>> SpawnedEquipmentActors;
 };
-

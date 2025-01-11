@@ -17,6 +17,7 @@ struct FItemComponentData_OwnedGameplayTags : public FItemComponentData
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(EditAnywhere)
+	/** Tags owned by the item. */
+	UPROPERTY(EditAnywhere, Category = "Item Data")
 	FGameplayTagContainer Tags;
 };

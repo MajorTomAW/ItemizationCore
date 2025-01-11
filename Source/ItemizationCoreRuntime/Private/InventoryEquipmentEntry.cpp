@@ -36,7 +36,7 @@ void FInventoryEquipmentEntry::PostReplicatedAdd(const FInventoryEquipmentContai
 {
 	if (InArraySerializer.Owner)
 	{
-		UE_LOG(LogInventorySystem, Verbose, TEXT("%s: OnAddEquipment (Non-Auth): [%s] %s."),
+		UE_LOG(LogInventorySystem, Display, TEXT("%s: OnAddEquipment (Non-Auth): [%s] %s."),
 			*GetNameSafe(InArraySerializer.Owner->GetOwner()), *Handle.ToString(), *GetNameSafe(Instance));
 		InArraySerializer.Owner->OnEquipItem(*this);
 	}

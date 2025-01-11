@@ -31,8 +31,7 @@ bool UItemAssetFactory::ConfigureProperties()
 
 	// nullptr the ItemDefinitionClass so we can check for selection
 	ItemDefinitionClass = nullptr;
-
-	FClassViewerModule& ClassViewerModule = FModuleManager::LoadModuleChecked<FClassViewerModule>("ClassViewer");
+	
 	TSharedPtr<FItemizationClassViewerFilter> Filter = MakeShareable(new FItemizationClassViewerFilter(UItemDefinition::StaticClass()));
 	FClassViewerInitializationOptions Options;
 	{

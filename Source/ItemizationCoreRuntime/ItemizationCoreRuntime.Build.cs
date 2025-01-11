@@ -1,5 +1,4 @@
-﻿using System.Linq;
-using UnrealBuildTool;
+﻿using UnrealBuildTool;
 
 public class ItemizationCoreRuntime : ModuleRules
 {
@@ -8,13 +7,10 @@ public class ItemizationCoreRuntime : ModuleRules
         NumIncludedBytesPerUnityCPPOverride = 491520; // best unity size found from using UBT ProfileUnitySizes mode
         
         // Turn this off if you aren't planning on using the GameplayMessageRouter
-        PublicDefinitions.Add("WITH_GAMEPLAY_MESSAGE_ROUTER=1");
+        PublicDefinitions.Add("WITH_GAMEPLAY_MESSAGE_ROUTER=0");
         
         // Turn this off if you aren't planning on using the EquipmentSystem
         PublicDefinitions.Add("WITH_EQUIPMENT_SYSTEM=0");
-        
-        // Turn this off if you aren't planning on using the GameFeatures
-        PublicDefinitions.Add("WITH_GAME_FEATURES=1");
 
         PublicDependencyModuleNames.AddRange(new []
         {
@@ -44,13 +40,6 @@ public class ItemizationCoreRuntime : ModuleRules
         if (PublicDefinitions.Contains("WITH_GAMEPLAY_MESSAGE_ROUTER=1"))
         {
             PrivateDependencyModuleNames.Add("GameplayMessageRuntime");
-        }
-        
-        if (PublicDefinitions.Contains("WITH_GAME_FEATURES=1"))
-        {
-            PublicDependencyModuleNames.Add("GameFeaturesExtension");
-            PublicDependencyModuleNames.Add("GameFeatures");
-            PublicDependencyModuleNames.Add("ModularGameplay");
         }
         
         SetupGameplayDebuggerSupport(Target);

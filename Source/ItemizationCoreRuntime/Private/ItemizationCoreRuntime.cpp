@@ -1,6 +1,9 @@
 ﻿#include "ItemizationCoreRuntime.h"
 
+#if WITH_GAMEPLAY_DEBUGGER
 #include "GameplayDebugger.h"
+#endif
+
 #include "ActorComponents/InventoryManager.h"
 #include "GameFramework/HUD.h"
 #include "GameplayDebugger/GameplayDebuggerCategory_Itemization.h"

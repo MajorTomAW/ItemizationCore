@@ -7,6 +7,8 @@
 #include "GameFramework/CheatManager.h"
 #include "ItemizationCoreCheatManagerExtension.generated.h"
 
+struct FAutoCompleteCommand;
+
 /**
  * Cheats related to Itemization Core / Inventory System.
  */

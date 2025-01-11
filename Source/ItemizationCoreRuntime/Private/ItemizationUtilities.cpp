@@ -40,3 +40,18 @@ FText UE::ItemizationCore::Display::GatherItemDesc_Any(const UItemDefinition* In
 
 	return FText::GetEmpty();
 }
+
+FText UE::ItemizationCore::Display::GatherItemDisplayName(const UItemDefinition* InItem)
+{
+	if (InItem == nullptr)
+	{
+		return FText::GetEmpty();
+	}
+
+	if (!InItem->ItemName.IsEmpty())
+	{
+		return InItem->ItemName;
+	}
+
+	return FText::FromString(GetNameSafe(InItem));
+}

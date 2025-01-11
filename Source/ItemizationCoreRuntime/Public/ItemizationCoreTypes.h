@@ -6,6 +6,7 @@
 #include "ActiveGameplayEffectHandle.h"
 #include "GameplayAbilitySpecHandle.h"
 #include "GameplayTagContainer.h"
+#include "GameFramework/Controller.h"
 
 #include "ItemizationCoreTypes.generated.h"
 
@@ -13,6 +14,8 @@ class UInventoryManager;
 struct FInventoryItemEntry;
 class UItemDefinition;
 class UInventoryItemInstance;
+class AController;
+class AActor;
 
 /**
  * Utility-struct that holds the data of an item actor that will be spawned in the world.
@@ -224,6 +227,9 @@ public:
      * Clears out any actor info, both owner and avatar.
      */
 	virtual void ClearInventoryData();
+
+	/** Converts the inventory data to a string. */
+	FString ToString() const;
 };
 
 /**

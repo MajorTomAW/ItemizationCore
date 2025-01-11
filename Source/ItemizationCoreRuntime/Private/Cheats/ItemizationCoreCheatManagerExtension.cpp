@@ -7,6 +7,10 @@
 #include "ActorComponents/InventoryManager.h"
 #include "Engine/AssetManager.h"
 #include "Engine/Console.h"
+#include "Engine/AssetUserData.h"
+#include "AssetRegistry/AssetData.h"
+#include "GameFramework/PlayerController.h"
+#include "GameFramework/Actor.h"
 
 UItemizationCoreCheatManagerExtension::UItemizationCoreCheatManagerExtension()
 {

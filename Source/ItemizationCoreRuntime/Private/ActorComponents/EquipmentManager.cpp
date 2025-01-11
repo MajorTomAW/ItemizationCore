@@ -19,6 +19,8 @@
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(EquipmentManager)
 
+using namespace Itemization;
+
 UEquipmentManager::UEquipmentManager(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
@@ -30,7 +32,7 @@ UEquipmentManager::UEquipmentManager(const FObjectInitializer& ObjectInitializer
 
 UEquipmentManager* UEquipmentManager::GetEquipmentManager(AActor* Actor)
 {
-	void* Mgr = nullptr;
+	UEquipmentManager* Mgr = nullptr;
 	if (Actor)
 	{
 		Mgr = Actor->GetComponentByClass<UEquipmentManager>();
@@ -48,22 +50,28 @@ UEquipmentManager* UEquipmentManager::GetEquipmentManager(AActor* Actor)
 		}
 	}
 
-	return (UEquipmentManager*)Mgr;
+	return Mgr;
 }
+
+void UEquipmentManager::SetInventoryManager(UInventoryManager* InInventoryManager)
+{
+	check(InInventoryManager);
+	CachedInventoryData = InInventoryManager->GetInventoryData();
+
+	ITEMIZATION_Net_LOG(Log, this, TEXT("Equipment Manager (%s) linked to Inventory Manager (%s) [%s]"),
+		*GetName(), *GetNameSafe(InInventoryManager), GetInventoryData().IsValid() ? *GetInventoryData()->ToString() : TEXT("null"));
+}
+
+
 
 UInventoryManager* UEquipmentManager::GetInventoryManager() const
 {
-	if (WeakInventoryManager.IsValid())
+	if (CachedInventoryData.IsValid())
 	{
-		return WeakInventoryManager.Get();
+		return CachedInventoryData->InventoryManager.Get();
 	}
 
-	if (InventoryData.IsValid() && InventoryData->InventoryManager.IsValid())
-	{
-		return InventoryData->InventoryManager.Get();
-	}
-
-	return UInventoryManager::GetInventoryManager(GetPawn());
+	return UInventoryManager::GetInventoryManager(GetPawn()->GetController());
 }
 
 bool UEquipmentManager::IsOwnerActorAuthoritative() const
@@ -115,20 +123,21 @@ FInventoryItemEntryHandle UEquipmentManager::EquipItem(const FInventoryItemEntry
 	}
 
 	APawn* Pawn = GetPawn();
-	UInventoryManager* InventoryManager = GetInventoryManager();
+	UInventoryManager* MutableInventoryManager = GetInventoryManager();
 
 	FItemActionContextData CurrentContext = ContextData;
-	InventoryManager->EvaluateCurrentContext(*ItemEntry, CurrentContext);
+	MutableInventoryManager->EvaluateCurrentContext(*ItemEntry, CurrentContext);
 
 	const FInventoryEquipmentEntry DefaultedEntry(ItemHandle);
 	FInventoryEquipmentEntry& NewEquipment = EquipmentList.Items.Add_GetRef(DefaultedEntry);
 	NewEquipment.SourceObject = ContextData.Instigator.Get();
 
+	
+	ITEMIZATION_LOG(Display, TEXT("[%hs] (%s): Equipping Item [%s] %s."),
+		__FUNCTION__, *GetName(), *ItemHandle.ToString(), *GetNameSafe(ItemEntry->Instance));
+	
 	OnEquipItem(NewEquipment);
 	MarkEquipmentEntryDirty(NewEquipment, true);
-
-	ITEMIZATION_LOG(Verbose, TEXT("[%hs] (%s): Equipping Item [%s] %s."),
-		__FUNCTION__, *GetName(), *ItemHandle.ToString(), *GetNameSafe(ItemEntry->Instance));
 
 	return NewEquipment.Handle;
 }
@@ -170,9 +179,12 @@ void UEquipmentManager::OnEquipItem(FInventoryEquipmentEntry& EquipmentEntry)
 		Instance = EquipmentEntry.Instance;
 	}
 
+	ITEMIZATION_Net_LOG(Display, this, TEXT("Equipping Item [%s] '%s' data '%s'"),
+		*EquipmentEntry.Handle.ToString(), *GetNameSafe(Instance), GetInventoryData() ? *GetInventoryData()->ToString() : TEXT("null"));
+
 	if (ensure(Instance))
 	{
-		Instance->OnEquipped(EquipmentEntry, InventoryData.Get());
+		Instance->OnEquipped(EquipmentEntry, GetInventoryDataPtr());
 	}
 }
 
@@ -271,13 +283,13 @@ FInventoryItemEntry* UEquipmentManager::FindItemEntryFromHandle(FInventoryItemEn
 		return nullptr;
 	}
 
-	UInventoryManager* InventoryManager = GetInventoryManager();
-	if (InventoryManager == nullptr)
+	UInventoryManager* MutableInventoryManager = GetInventoryManager();
+	if (MutableInventoryManager == nullptr)
 	{
 		return nullptr;
 	}
 
-	return InventoryManager->FindItemEntryFromHandle(Handle, ConsiderPending);
+	return MutableInventoryManager->FindItemEntryFromHandle(Handle, ConsiderPending);
 }
 
 FInventoryEquipmentEntry* UEquipmentManager::FindEquipmentEntryFromHandle(FInventoryItemEntryHandle Handle) const
@@ -300,11 +312,55 @@ FInventoryEquipmentEntry* UEquipmentManager::FindEquipmentEntryFromHandle(FInven
 void UEquipmentManager::PreNetReceive()
 {
 	Super::PreNetReceive();
+
+	TryInitializeWithInventoryManager();
 }
 
 void UEquipmentManager::BeginPlay()
 {
 	Super::BeginPlay();
+
+	TryInitializeWithInventoryManager();
+}
+
+void UEquipmentManager::TryInitializeWithInventoryManager()
+{
+	if (APawn* Pawn = GetPawn())
+	{
+		if (UInventoryManager* MutableInventoryManager = UInventoryManager::GetInventoryManager(Pawn))
+		{
+			SetInventoryManager(MutableInventoryManager);
+			MutableInventoryManager->SetAvatarActor(Pawn);
+			MutableInventoryManager->ForceAvatarReplication();
+			return;
+		}
+
+		// For non-autonomous proxies we need to create our own inventory data.
+		if (!Pawn->IsLocallyControlled() || Pawn->GetLocalRole() == ROLE_SimulatedProxy)
+		{
+			if (!CachedInventoryData.IsValid())
+			{
+				CachedInventoryData = MakeShareable(new FItemizationCoreInventoryData());
+				CachedInventoryData->AvatarActor = Pawn;
+			}
+		}
+	}
+
+	// Try again next tick.
+	GetWorld()->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateLambda([this]()
+	{
+		TryInitializeWithInventoryManager();
+	}));
+}
+
+const TSharedPtr<FItemizationCoreInventoryData>& UEquipmentManager::GetInventoryData() const
+{
+	return CachedInventoryData;
+}
+
+FItemizationCoreInventoryData* UEquipmentManager::GetInventoryDataPtr() const
+{
+	return CachedInventoryData.Get();
 }
 
 void UEquipmentManager::OnRegister()
@@ -333,17 +389,15 @@ void UEquipmentManager::OnRegister()
 	}
 
 	EquipmentList.RegisterWithOwner(this);
+
+	TryInitializeWithInventoryManager();
 }
 
 void UEquipmentManager::InitializeComponent()
 {
 	Super::InitializeComponent();
 
-	AActor* Owner = GetOwner();
-	WeakInventoryManager = UInventoryManager::GetInventoryManager(Owner);
-	check(WeakInventoryManager.IsValid());
-
-	InventoryData = WeakInventoryManager.Get()->InventoryData;
+	TryInitializeWithInventoryManager();
 }
 
 void UEquipmentManager::UninitializeComponent()
