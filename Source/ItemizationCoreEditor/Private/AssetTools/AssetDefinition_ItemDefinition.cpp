@@ -25,7 +25,7 @@ namespace MenuExtension_ItemDefinition
 		
 	}
 	
-	static FDelayedAutoRegisterHelper DelayerAutoRegister(EDelayedRegisterRunPhase::EndOfEngineInit, []
+	static FDelayedAutoRegisterHelper DelayedAutoRegister(EDelayedRegisterRunPhase::EndOfEngineInit, []
 	{
 		UToolMenus::RegisterStartupCallback(FSimpleMulticastDelegate::FDelegate::CreateLambda([]()
 		{
@@ -84,7 +84,17 @@ namespace MenuExtension_ItemDefinition
 
 FText UAssetDefinition_ItemDefinition::GetAssetDisplayName() const
 {
-	return LOCTEXT("AssetDisplayName", "Item Definition");
+	return LOCTEXT("AssetDefinition_ItemDefinition", "Item Definition");
+}
+
+FText UAssetDefinition_ItemDefinition::GetAssetDisplayName(const FAssetData& AssetData) const
+{
+	if (const UItemDefinition* ItemDefinition = Cast<UItemDefinition>(AssetData.GetAsset()))
+	{
+		return FText::FromString(ItemDefinition->GetPrimaryAssetId().PrimaryAssetType.ToString());
+	}
+
+	return GetAssetDisplayName();
 }
 
 FText UAssetDefinition_ItemDefinition::GetAssetDescription(const FAssetData& AssetData) const
@@ -102,7 +112,7 @@ FLinearColor UAssetDefinition_ItemDefinition::GetAssetColor() const
 	return FLinearColor(FItemizationEditorStyle::Get()->GetColor("Colors.ClassColor"));
 }
 
-TSoftClassPtr<UObject> UAssetDefinition_ItemDefinition::GetAssetClass() const
+TSoftClassPtr<> UAssetDefinition_ItemDefinition::GetAssetClass() const
 {
 	return UItemDefinition::StaticClass();
 }
