@@ -210,7 +210,7 @@ FInventoryEquipmentEntry* UInventoryEquipmentInstance::GetCurrentEquipmentEntry(
 	return EquipmentManager->FindEquipmentEntryFromHandle(CurrentEntryHandle);
 }
 
-UItemDefinition* UInventoryEquipmentInstance::GetCurrentItemDefinition() const
+UItemDefinition* UInventoryEquipmentInstance::GetItemDefinition() const
 {
 	return GetCurrentEquipmentEntry()->Definition;
 }
@@ -347,4 +347,9 @@ FItemizationCoreInventoryData UInventoryEquipmentInstance::GetInventoryData() co
 	}
 
 	return *CurrentInventoryData;
+}
+
+const FItemizationCoreInventoryData* UInventoryEquipmentInstance::GetInventoryDataPtr() const
+{
+	return CurrentInventoryData;
 }

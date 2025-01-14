@@ -63,6 +63,13 @@ void FItemizationDetailsCustomization::CustomizeDetails(IDetailLayoutBuilder& De
 		}
 		else if (bModeExclusive)
 		{
+			// Properties that live inside classes that are not the item class should always be visible
+			const UClass* OwnerClass = Prop.Property.GetOwnerClass();
+			if (OwnerClass && !ItemClass->IsChildOf(OwnerClass))
+			{
+				return true;
+			}
+			
 			const FString ExclusiveModes = ItemClass->GetMetaData("ModesExclusive");
 			if (ExclusiveModes.Contains(Mode.ToString()))
 			{

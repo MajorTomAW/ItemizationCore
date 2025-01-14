@@ -84,6 +84,14 @@ public:
 	/** Returns an equipment entry from the equipment list for a given handle. */
 	FInventoryEquipmentEntry* FindEquipmentEntryFromHandle(FInventoryItemEntryHandle Handle) const;
 
+	/** Returns the first equipped instance of a given type. */
+	UInventoryEquipmentInstance* GetFirstInstanceOfType(TSubclassOf<UInventoryEquipmentInstance> InstanceType) const;
+	template <class T = UInventoryEquipmentInstance>
+	T* GetFirstInstanceOfType() const
+	{
+		return Cast<T>(GetFirstInstanceOfType(T::StaticClass()));
+	}
+
 	//~ Begin UObject Interface
 	virtual void PreNetReceive() override;
 	virtual void BeginPlay() override;

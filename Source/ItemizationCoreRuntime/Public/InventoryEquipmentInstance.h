@@ -98,7 +98,9 @@ public:
 	FInventoryEquipmentEntry* GetCurrentEquipmentEntry() const;
 
 	/** Retrieves the item definition of the associated equipment entry. */
-	UItemDefinition* GetCurrentItemDefinition() const;
+	UItemDefinition* GetItemDefinition() const;
+	template <class T = UItemDefinition>
+	T* GetItemDefinition() const { return Cast<T>(GetItemDefinition()); }
 
 	/** Gets the current inventory data associated with this instance. */
 	const FItemizationCoreInventoryData* GetCurrentInventoryData() const;
@@ -146,6 +148,7 @@ public:
 	/** returns the inventory data associated with this instance. */
 	UFUNCTION(BlueprintCallable, Category = "Itemization Core|Equipment")
 	FItemizationCoreInventoryData GetInventoryData() const;
+	const FItemizationCoreInventoryData* GetInventoryDataPtr() const;
 
 	/** Gets the current item handle of the associated equipment/item entry. */
 	UFUNCTION(BlueprintCallable, Category = "Itemization Core|Equipment", meta = (DisplayName = "Get Item Handle", ScriptName = "GetItemHandle"))
@@ -157,7 +160,7 @@ public:
 
 	/** retrieves the item definition of the associated equipment entry. */
 	UFUNCTION(BlueprintCallable, Category = "Itemization Core|Equipment", meta = (DisplayName = "Get Item Definition", ScriptName = "GetItemDefinition"))
-	UItemDefinition* K2_GetCurrentItemDefinition() const { return GetCurrentItemDefinition(); }
+	UItemDefinition* K2_GetCurrentItemDefinition() const { return GetItemDefinition(); }
 
 	/** True if this is the server or single player. */
 	UFUNCTION(BlueprintCallable, Category = "Itemization Core|Equipment", meta = (DisplayName = "Has Authority", ScriptName = "HasAuthority"))

@@ -309,6 +309,23 @@ FInventoryEquipmentEntry* UEquipmentManager::FindEquipmentEntryFromHandle(FInven
 	return nullptr;
 }
 
+UInventoryEquipmentInstance* UEquipmentManager::GetFirstInstanceOfType(
+	TSubclassOf<UInventoryEquipmentInstance> InstanceType) const
+{
+	for (auto& Entry : EquipmentList.Items)
+	{
+		if (UInventoryEquipmentInstance* Instance = Entry.Instance)
+		{
+			if (Instance->IsA(InstanceType))
+			{
+				return Instance;
+			}
+		}
+	}
+
+	return nullptr;
+}
+
 void UEquipmentManager::PreNetReceive()
 {
 	Super::PreNetReceive();
