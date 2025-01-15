@@ -268,6 +268,7 @@ void SItemizationEditorViewport::RebuildScene(
 	AActor* RootActor = nullptr;
 	if (!OwningItem->SourceActorBlueprint.IsNull())
 	{
+		OwningItem->SourceActorBlueprint.LoadSynchronous();
 		AActor* CDO = OwningItem->SourceActorBlueprint->GetDefaultObject<AActor>();
 		if (!CDO->IsUnreachable())
 		{
