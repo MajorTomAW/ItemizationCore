@@ -3,7 +3,7 @@
 	"Version": 1,
 	"VersionName": "0.2",
 	"FriendlyName": "Itemization Core",
-	"Description": "Plugin for an inventory and item gameplay system.",
+	"Description": "Plugin for an inventory and item gameplay system",
 	"Category": "For Engine",
 	"CreatedBy": "MajorT",
 	"CreatedByURL": "https://github.com/MajorTomAW",
