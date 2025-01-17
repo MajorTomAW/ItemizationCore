@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 
 #if WITH_GAMEPLAY_DEBUGGER_MENU
 #include "GameplayDebuggerCategory.h"
@@ -39,6 +40,10 @@ protected:
 	{
 		// Helper package for serialization
 		TWeakObjectPtr<UPackageMap> ClientPackageMap;
+
+		// Tag counts, maybe for the future?
+		FGameplayTagContainer OwnedTags;
+		TArray<int32> TagCounts;
 
 		struct FInventoryEquipmentDebug
 		{

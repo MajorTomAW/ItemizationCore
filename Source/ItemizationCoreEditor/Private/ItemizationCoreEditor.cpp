@@ -97,7 +97,7 @@ void FItemizationCoreEditorModule::OnPostEngineInit()
 	}
 
 	// Toolbar
-	FItemizationLevelEditorToolbar::RegisterItemizationLevelEditorToolBar();
+	//FItemizationLevelEditorToolbar::RegisterItemizationLevelEditorToolBar();
 	FItemizationEditorCommands::Register();
 }
 

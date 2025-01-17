@@ -198,9 +198,6 @@ void FGameplayDebuggerCategory_Itemization::DrawData(APlayerController* OwnerPC,
 
 	DrawInventoryItems(CanvasContext, OwnerPC);
 
-	
-	FSlateRenderTransform(TQuat2<float>(45.f));
-
 	LastDrawDataEndSize = CanvasContext.CursorY - ThisDrawDataStartPos;
 }
 
