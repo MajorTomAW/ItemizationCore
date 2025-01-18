@@ -32,16 +32,33 @@ UItemizationCoreCheatManagerExtension::UItemizationCoreCheatManagerExtension()
 void UItemizationCoreCheatManagerExtension::PopulateAutoCompleteEntries(TArray<FAutoCompleteCommand>& AutoCompleteCommands)
 {
 #if UE_WITH_CHEAT_MANAGER
-	static bool bInitialized = false;
+	/*static bool bInitialized = false;
 	if (bInitialized)
 	{
 		return;
 	}
-	bInitialized = true;
+	bInitialized = true;*/
 	
 	TArray<FAssetData> Assets;
-	const FPrimaryAssetType PrimaryAsset("ItemDefinition");
-	UAssetManager::Get().GetPrimaryAssetDataList(PrimaryAsset, Assets);
+
+	TArray<FName> AssetTypes;
+	TArray<UClass*> DerivedClasses;
+	GetDerivedClasses(UItemDefinition::StaticClass(), DerivedClasses, true);
+	DerivedClasses.Add(UItemDefinition::StaticClass());
+	
+	for (const UClass* Class : DerivedClasses)
+	{
+		if (const UItemDefinition* CDO = Class->GetDefaultObject<UItemDefinition>())
+		{
+			AssetTypes.AddUnique( CDO->GetPrimaryAssetId().PrimaryAssetType);
+		}
+	}
+
+	// Get all item definitions that were found
+	for (const auto AssetType : AssetTypes)
+	{
+		UAssetManager::Get().GetPrimaryAssetDataList(AssetType, Assets);
+	}
 	
 	const UConsoleSettings* ConsoleSettings = GetDefault<UConsoleSettings>();
 	
@@ -62,6 +79,21 @@ void UItemizationCoreCheatManagerExtension::PopulateAutoCompleteEntries(TArray<F
 			ConsoleSettings->AutoCompleteCommandColor
 		);
 
+		auto ContainsPred = [Cmd](const FAutoCompleteCommand& Existing) -> bool
+		{
+			if (Existing.Command == Cmd.Command)
+			{
+				return true;
+			}
+			
+			return false;
+		};
+		
+		if (AutoCompleteCommands.ContainsByPredicate(ContainsPred))
+		{
+			continue;
+		}
+		
 		AutoCompleteCommands.Add(MoveTemp(Cmd));
 	}
 #endif

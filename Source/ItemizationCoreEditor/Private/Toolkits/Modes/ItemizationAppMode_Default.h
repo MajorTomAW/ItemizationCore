@@ -14,4 +14,5 @@ protected:
 	//~ Begin FItemizationEditorAppMode Interface
 	virtual void PostActivateMode() override;
 	//~ End FItemizationEditorAppMode Interface
+	virtual bool CanShowMode() const override;
 };

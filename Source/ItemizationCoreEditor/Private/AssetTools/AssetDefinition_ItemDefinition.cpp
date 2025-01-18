@@ -89,12 +89,7 @@ FText UAssetDefinition_ItemDefinition::GetAssetDisplayName() const
 
 FText UAssetDefinition_ItemDefinition::GetAssetDisplayName(const FAssetData& AssetData) const
 {
-	if (const UItemDefinition* ItemDefinition = Cast<UItemDefinition>(AssetData.GetAsset()))
-	{
-		return FText::FromString(ItemDefinition->GetPrimaryAssetId().PrimaryAssetType.ToString());
-	}
-
-	return GetAssetDisplayName();
+	return FText::FromName(AssetData.GetPrimaryAssetId().PrimaryAssetType);
 }
 
 FText UAssetDefinition_ItemDefinition::GetAssetDescription(const FAssetData& AssetData) const

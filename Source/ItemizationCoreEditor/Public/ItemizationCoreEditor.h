@@ -3,6 +3,11 @@
 #include "CoreMinimal.h"
 #include "Modules/ModuleManager.h"
 
+namespace UE::ItemizationCore::Editor
+{
+	class FItemizationEditorAssetConfig;
+}
+
 class FWorkflowCentricApplication;
 class FApplicationMode;
 
@@ -123,6 +128,12 @@ public:
 	 * Mapped to a specific class to allow different modes to be created.
 	 */
 	ITEMIZATIONCOREEDITOR_API virtual void RegisterApplicationMode(UClass* AssetClass, FOnGetApplicationMode& OnGetApplicationMode, FName ModeId, FName CommandId = FName()) = 0;
+
+	/** Registers a new asset config for the itemization editor. */
+	ITEMIZATIONCOREEDITOR_API virtual void RegisterAssetConfig(const TSharedPtr<UE::ItemizationCore::Editor::FItemizationEditorAssetConfig>& AssetConfig) = 0;
+
+	/** Returns the asset config for the given asset class. */
+	ITEMIZATIONCOREEDITOR_API virtual const TSharedPtr<UE::ItemizationCore::Editor::FItemizationEditorAssetConfig> GetAssetConfig(const UClass* AssetClass) const = 0;
 
 	/**
 	 * Finds all application mode delegates mapped to the given asset class.

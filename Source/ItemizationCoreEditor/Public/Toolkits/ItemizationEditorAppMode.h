@@ -25,8 +25,8 @@ public:
 	virtual void PostActivateMode() override;
 	//~ End FApplicationMode Interface
 
-	virtual bool CanActivateMode() const { return true; }
-	virtual bool CanShowMode() const { return true; }
+	virtual bool CanActivateMode() const;
+	virtual bool CanShowMode() const;
 
 protected:
 	TSharedPtr<FItemizationEditorApplication> GetApp() const { return WeakApp.Pin(); }

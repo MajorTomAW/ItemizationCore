@@ -195,7 +195,6 @@ bool SItemizationEditorViewport::NeedsToRebuildScene(
 	{
 		if (LastSourceBP.IsValid()) // Source null but we have a valid last source
 		{
-			//UE_LOG(LogTemp, Warning, TEXT("Source null but we have a valid last source"));
 			return true;
 		}
 	}

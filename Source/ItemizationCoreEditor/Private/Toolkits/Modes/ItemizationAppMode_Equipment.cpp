@@ -88,6 +88,11 @@ bool FItemizationAppMode_Equipment::CanActivateMode() const
 
 bool FItemizationAppMode_Equipment::CanShowMode() const
 {
+	if (!FItemizationEditorAppMode::CanShowMode())
+	{
+		return false;
+	}
+	
 	const UItemDefinition* ItemDefinition = GetApp() ? GetApp()->GetItemDefinition() : nullptr;
 	if (ItemDefinition == nullptr)
 	{

@@ -34,10 +34,18 @@ void FItemizationEditorApplication::InitItemizationEditorApp(
 	TArray<UObject*> ObjectsToEdit;
 	ObjectsToEdit.Add(ItemDefinition);
 
+	// Create the toolbar builder if it doesn't exist
 	if (!ToolbarBuilder.IsValid())
 	{
 		ToolbarBuilder = MakeShareable(new FItemizationEditorToolbar(ThisPtr));
 	}
+
+	// Re-assign the asset config if it has changed
+	if (AssetConfig.IsValid())
+	{
+		AssetConfig.Reset();
+	}
+	AssetConfig = IItemizationCoreEditorModule::Get().GetAssetConfig(InItem->GetClass());
 	
 	const TArray<UObject*>* EditedObjects = GetObjectsCurrentlyBeingEdited();
 	if (EditedObjects == nullptr || EditedObjects->Num() == 0)

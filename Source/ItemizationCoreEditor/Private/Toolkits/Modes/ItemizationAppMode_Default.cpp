@@ -88,3 +88,8 @@ void FItemizationAppMode_Default::PostActivateMode()
 	App->GetPlacementView()->SetObject(Item, true);
 	App->GetDisplayInfoView()->SetObject(Item, true);
 }
+
+bool FItemizationAppMode_Default::CanShowMode() const
+{
+	return true;
+}

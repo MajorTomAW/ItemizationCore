@@ -3,6 +3,7 @@
 #include "ContentBrowserMenuContexts.h"
 #include "GameDelegates.h"
 #include "ItemDefinition.h"
+#include "ItemizationCoreEditorHelpers.h"
 #include "Commands/ItemizationEditorCommands.h"
 #include "Customization/ItemComponentDataCustomization.h"
 #include "LevelEditor/ItemizationLevelEditorToolbar.h"
@@ -18,6 +19,7 @@
 
 #define LOCTEXT_NAMESPACE "ItemizationCoreEditorModule"
 
+using namespace UE::ItemizationCore::Editor;
 
 class FItemizationCoreEditorModule final : public IItemizationCoreEditorModule
 {
@@ -30,6 +32,8 @@ public:
 	//~ Begin IItemizationCoreEditorModule
 	virtual TSharedRef<FWorkflowCentricApplication> CreateItemizationApplication(const EToolkitMode::Type Mode, const TSharedPtr<IToolkitHost>& InitToolkitHost, UObject* InObject) override;
 	virtual void RegisterApplicationMode(UClass* AssetClass, FOnGetApplicationMode& OnGetApplicationMode, FName ModeId, FName CommandId = FName()) override;
+	virtual void RegisterAssetConfig(const TSharedPtr<FItemizationEditorAssetConfig>& AssetConfig) override;
+	virtual const TSharedPtr<FItemizationEditorAssetConfig> GetAssetConfig(const UClass* AssetClass) const override;
 	virtual bool FindApplicationModesForAsset(UClass* AssetClass, TArray<FOnGetApplicationMode>& OutGetApplicationModes, bool bExactMatch = false) override;
 	virtual TArray<FOnGetApplicationMode> GetAllApplicationModes() const override;
 	virtual int32 GetNumApplicationModes() const override;
@@ -50,10 +54,10 @@ private:
 	typedef TArray<FOnGetApplicationMode> FOnGetApplicationModeArray;
 	TMap</*ClassName*/ FName, FOnGetApplicationModeArray> RegisteredApplicationModes;
 	TMap</*ModeId*/ FName, /*CommandId*/ FName> AllModeIds;
-	
+
+	TArray<TSharedPtr<FItemizationEditorAssetConfig>> AssetConfigs;
 };
 IMPLEMENT_MODULE(FItemizationCoreEditorModule, ItemizationCoreEditor)
-using namespace UE::ItemizationCore::Editor;
 
 //********************************************************************************************************************
 //
@@ -107,6 +111,18 @@ void FItemizationCoreEditorModule::OnPreEngineExit()
 
 void FItemizationCoreEditorModule::RegisterDefaultApplicationModes()
 {
+	// Register default asset config
+	{
+		TSharedPtr<FItemizationEditorAssetConfig> DefaultConfig = MakeShared<FItemizationEditorAssetConfig>();
+		DefaultConfig->AssetName = UItemDefinition::StaticClass()->GetFName();
+
+		TSharedPtr<FItemizationEditorAssetRuleSet> RuleSet = MakeShared<FItemizationEditorAssetRuleSet>();
+		RuleSet->AddAllowedModeIds({IDs::AppMode_Components(), IDs::AppMode_Equipment(), IDs::AppMode_Default()});
+		DefaultConfig->SetRuleSet(RuleSet);
+
+		RegisterAssetConfig(DefaultConfig);
+	}
+	
 	{ // Default Mode
 		FOnGetApplicationMode OnGetApplicationMode
 		(
@@ -119,7 +135,8 @@ void FItemizationCoreEditorModule::RegisterDefaultApplicationModes()
 					FText::Format(
 						LOCTEXT("DefaultModeTooltip", "The default settings for the item. ({0})"),
 						FItemizationEditorCommands::Get().AppMode_Default->GetInputText()),
-					FSlateIcon(FItemizationEditorStyle::Get()->GetStyleSetName(), "Icons.Details")
+					FSlateIcon(FItemizationEditorStyle::Get()->GetStyleSetName(), "Icons.Details"),
+					INT_MIN
 				);
 
 				TSharedPtr<FItemizationEditorApplication> MutableApp = StaticCastSharedPtr<FItemizationEditorApplication>(App);
@@ -183,6 +200,49 @@ void FItemizationCoreEditorModule::RegisterDefaultApplicationModes()
 
 		RegisterApplicationMode(UItemDefinition::StaticClass(), OnGetApplicationMode, IDs::AppMode_Equipment());
 	}
+}
+
+void FItemizationCoreEditorModule::RegisterAssetConfig(
+	const TSharedPtr<FItemizationEditorAssetConfig>& AssetConfig)
+{
+	if (AssetConfig == nullptr || AssetConfig->AssetName == NAME_None)
+	{
+		return;
+	}
+
+	AssetConfigs.Add(AssetConfig);
+}
+
+const TSharedPtr<FItemizationEditorAssetConfig> FItemizationCoreEditorModule::GetAssetConfig(const UClass* AssetClass) const
+{
+	if (AssetClass == nullptr)
+	{
+		return nullptr;
+	}
+
+	if (AssetConfigs.Num() == 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No asset configs registered"));
+		return nullptr;
+	}
+		
+	// Recursively search for the asset config that matches exactly the asset class or its parent
+	const UClass* SuperClass = AssetClass;
+	while (SuperClass && ( SuperClass->IsChildOf(UItemDefinition::StaticClass()) || SuperClass == UItemDefinition::StaticClass()) )
+	{
+		for (const TSharedPtr Config : AssetConfigs)
+		{
+			if (Config->AssetName == SuperClass->GetFName())
+			{
+				return Config;
+			}
+		}
+
+		UE_LOG(LogTemp, Warning, TEXT("No asset config found for class %s"), *SuperClass->GetName());
+		SuperClass = SuperClass->GetSuperClass();
+	}
+
+	return nullptr;
 }
 
 TSharedRef<FWorkflowCentricApplication> FItemizationCoreEditorModule::CreateItemizationApplication(

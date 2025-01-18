@@ -92,4 +92,99 @@ namespace UE::ItemizationCore::Editor
 				InFilterFuncs->IfInChildOfClassesSet(AllowedChildrenOfClasses, InUnloadedClassData) != EFilterReturn::Failed;
 		}
 	};
+
+	/** Defines a set of rules for a given asset type of item definition */
+	class ITEMIZATIONCOREEDITOR_API FItemizationEditorAssetRuleSet : public TSharedFromThis<FItemizationEditorAssetRuleSet>
+	{
+	public:
+		friend class FItemizationEditorAssetConfig;
+		void AddAllowedItemComponent(FName ComponentName)
+		{
+			AllowedItemComponents.Add(ComponentName);
+		}
+		void AddAllowedItemComponents(const TArray<FName>& ComponentNames)
+		{
+			AllowedItemComponents.Append(ComponentNames);
+		}
+		
+		void AddDisallowedItemComponent(FName ComponentName)
+		{
+			DisallowedItemComponents.Add(ComponentName);
+		}
+		void AddDisallowedItemComponents(const TArray<FName>& ComponentNames)
+		{
+			DisallowedItemComponents.Append(ComponentNames);
+		}
+		
+		void AddAllowedModeId(FName ModeId)
+		{
+			AllowedModeIds.Add(ModeId);
+		}
+		void AddAllowedModeIds(const TArray<FName>& ModeIds)
+		{
+			AllowedModeIds.Append(ModeIds);
+		}
+		
+		void AddDisallowedModeId(FName ModeId)
+		{
+			DisallowedModeIds.Add(ModeId);
+		}
+		void AddDisallowedModeIds(const TArray<FName>& ModeIds)
+		{
+			DisallowedModeIds.Append(ModeIds);
+		}
+
+	protected:
+		//-------------------------------------------------------------------------
+		// Black & White Lists
+		//-------------------------------------------------------------------------
+
+		/** The set of allowed item components for the given asset. */
+		TSet<FName> AllowedItemComponents;
+
+		/** The set of disallowed item components for the given asset. */
+		TSet<FName> DisallowedItemComponents;
+
+		/** The set of allowed editor modes for the given asset. */
+		TSet<FName> AllowedModeIds;
+
+		/** The set of disallowed editor modes for the given asset. */
+		TSet<FName> DisallowedModeIds;
+	};
+
+	class ITEMIZATIONCOREEDITOR_API FItemizationEditorAssetConfig : public TSharedFromThis<FItemizationEditorAssetConfig>
+	{
+	public:
+		/** The asset name that this config is for */
+		FName AssetName;
+
+		void SetRuleSet(const TSharedPtr<FItemizationEditorAssetRuleSet>& InRuleSet)
+		{
+			RuleSet = InRuleSet;
+		}
+
+		bool CanShowAppMode(const FName& ModeId) const
+		{
+			if (!RuleSet->AllowedModeIds.IsEmpty())
+			{
+				return RuleSet->AllowedModeIds.Contains(ModeId);
+			}
+			
+			return !RuleSet->DisallowedModeIds.Contains(ModeId);
+		}
+
+		bool CanShowItemComponent(const FName& ComponentName) const
+		{
+			if (!RuleSet->AllowedItemComponents.IsEmpty())
+			{
+				return RuleSet->AllowedItemComponents.Contains(ComponentName);
+			}
+			
+			return !RuleSet->DisallowedItemComponents.Contains(ComponentName);
+		}
+		
+	protected:
+		/** The rule set for this asset */
+		TSharedPtr<FItemizationEditorAssetRuleSet> RuleSet;
+	};
 }

@@ -10,6 +10,8 @@
 class SItemizationEditorViewport;
 class UItemDefinition;
 
+using namespace UE::ItemizationCore::Editor;
+
 class ITEMIZATIONCOREEDITOR_API FItemizationEditorApplication : public FWorkflowCentricApplication, public FSelfRegisteringEditorUndoClient, public FNotifyHook, public FGCObject
 {
 public:
@@ -36,6 +38,7 @@ public:
 	UItemDefinition* GetItemDefinition() const { return ItemDefinition; }
 	const TMap<FName, TSharedPtr<FApplicationMode>>& GetRegisteredApplicationModes() const { return RegisteredApplicationModes; }
 	TSharedPtr<FItemizationEditorToolbar> GetToolbarBuilder() const { return ToolbarBuilder; }
+	TSharedPtr<FItemizationEditorAssetConfig> GetAssetConfig() const { return AssetConfig; }
 
 	bool CanActivateMode(FName ModeId) const;
 	bool CanShowMode(FName ModeId) const;
@@ -87,6 +90,7 @@ private:
 	TMap<FName, TSharedPtr<FApplicationMode>> RegisteredApplicationModes;
 	TObjectPtr<UItemDefinition> ItemDefinition;
 	TSharedPtr<FItemizationEditorToolbar> ToolbarBuilder;
+	TSharedPtr<FItemizationEditorAssetConfig> AssetConfig;
 
 	TSharedPtr<IDetailsView> DetailsView;
 	TSharedPtr<IDetailsView> DisplayInfoView;

@@ -12,4 +12,5 @@ public:
 
 protected:
 	virtual void PostActivateMode() override;
+	virtual bool CanShowMode() const override;
 };

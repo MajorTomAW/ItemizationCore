@@ -8,6 +8,8 @@
 #include "IDetailChildrenBuilder.h"
 #include "InstancedStruct.h"
 #include "InstancedStructDetails.h"
+#include "ItemizationCoreEditor.h"
+#include "ItemizationCoreEditorHelpers.h"
 #include "Components/ItemComponentData.h"
 #include "StructViewerFilter.h"
 #include "StructViewerModule.h"
@@ -63,6 +65,9 @@ auto GetCommonScriptStruct = [](TSharedPtr<IPropertyHandle> StructProperty, cons
 class FItemComponentDataStructFilter : public IStructViewerFilter
 {
 public:
+	/** optimal outer class for the filter */
+	const UClass* OuterClass = nullptr;
+	
 	/** The base struct for the property that classes must be a child-of. */
 	const UScriptStruct* BaseStruct = nullptr;
 
@@ -114,6 +119,19 @@ public:
 		if (!bIsCosmetic && !bAllowNonCosmeticStructs)
 		{
 			return false;
+		}
+
+		if (OuterClass)
+		{
+			TSharedPtr<UE::ItemizationCore::Editor::FItemizationEditorAssetConfig> Config = IItemizationCoreEditorModule::Get().GetAssetConfig(OuterClass);
+
+			if (Config.IsValid())
+			{
+				if (!Config->CanShowItemComponent(InStruct->GetFName()))
+				{
+					return false;
+				}
+			}
 		}
 		
 		if (InStruct == BaseStruct)
@@ -260,6 +278,7 @@ TSharedRef<SWidget> FItemComponentDataCustomization::GenerateStructPicker()
 	StructFilter->bAllowBaseStruct = !bExcludeBaseStruct;
 	StructFilter->bAllowCosmeticStructs = bAllowCosmeticComponents;
 	StructFilter->bAllowNonCosmeticStructs = bAllowNonCosmeticComponents;
+	StructFilter->OuterClass = ProxyProperty->GetOuterBaseClass();
 
 	// Find disallowed structs
 	for (TSharedPtr<IPropertyHandle> Handle = StructProperty; Handle.IsValid(); Handle = Handle->GetParentHandle())

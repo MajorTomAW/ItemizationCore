@@ -240,7 +240,7 @@ void FGameplayDebuggerCategory_Itemization::DrawInventoryItems(FGameplayDebugger
 		float TempSizeY = 0.f;
 
 		CanvasContext.MeasureString(*LongestDebugObjectName, ObjNameSize, TempSizeY);
-		CanvasContext.MeasureString(TEXT("source: "), SourceNameSize, TempSizeY);
+		CanvasContext.MeasureString(TEXT("source: MyDebugInventoryComponent_C"), SourceNameSize, TempSizeY);
 		CanvasContext.MeasureString(TEXT("stack: 00/00"), StackNameSize, TempSizeY);
 
 		if (bShowItemHandles)
@@ -321,6 +321,13 @@ void FGameplayDebuggerCategory_Itemization::DrawInventoryItems(FGameplayDebugger
 		// PrintAt would have reset these values, restore them.
 		CanvasContext.CursorX = CurX + (CanvasWidth / NumColumns);
 		CanvasContext.CursorY = CurY;
+
+		// If we had any equipment data, make sure to move to the next line
+		if (Item.Equipment.HasAnyData())
+		{
+			CanvasContext.MoveToNewLine();
+			CanvasContext.CursorX += Padding;	
+		}
 
 		// If overflowed, move to the next column
 		if (CanvasContext.CursorX + CanvasWidth >= CanvasWidth)

@@ -3,6 +3,7 @@
 
 #include "Toolkits/ItemizationEditorAppMode.h"
 
+#include "ItemizationCoreEditorHelpers.h"
 #include "Toolkits/ItemizationEditorApplication.h"
 
 
@@ -30,4 +31,22 @@ void FItemizationEditorAppMode::PreDeactivateMode()
 void FItemizationEditorAppMode::PostActivateMode()
 {
 	FApplicationMode::PostActivateMode();
+}
+
+bool FItemizationEditorAppMode::CanActivateMode() const
+{
+	return true;
+}
+
+bool FItemizationEditorAppMode::CanShowMode() const
+{
+	TSharedPtr<FItemizationEditorApplication> App = GetApp();
+	const TSharedPtr<FItemizationEditorAssetConfig> Config = App->GetAssetConfig();
+	if (Config.IsValid())
+	{
+		return Config->CanShowAppMode(Args.ModeId);
+	}
+	
+	
+	return true;
 }

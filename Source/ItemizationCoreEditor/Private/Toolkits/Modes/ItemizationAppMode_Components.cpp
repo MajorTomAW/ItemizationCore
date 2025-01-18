@@ -37,3 +37,8 @@ void FItemizationAppMode_Components::PostActivateMode()
 	UItemDefinition* Item = App->GetItemDefinition();
 	App->GetComponentsView()->SetObject(Item, true);
 }
+
+bool FItemizationAppMode_Components::CanShowMode() const
+{
+	return FItemizationEditorAppMode::CanShowMode();
+}
