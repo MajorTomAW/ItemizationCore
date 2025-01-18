@@ -349,6 +349,10 @@ void SItemizationEditorViewport::CleanUpScene(TSharedPtr<FAdvancedPreviewScene> 
 	for (auto It = SceneComponents.CreateIterator(); It; ++It)
 	{
 		USceneComponent* Component = *It;
+		if (!IsValid(Component))
+		{
+			continue;
+		}
 
 		TArray<USceneComponent*> Children;
 		Component->GetChildrenComponents(true, Children);
@@ -356,6 +360,10 @@ void SItemizationEditorViewport::CleanUpScene(TSharedPtr<FAdvancedPreviewScene> 
 		//UE_LOG(LogTemp, Display, TEXT("		Removing component %s"), *Component->GetName());
 		for (USceneComponent* Child : Children)
 		{
+			if (!IsValid(Child))
+			{
+				continue;
+			}
 			InScene->RemoveComponent(Child);
 		}
 		
