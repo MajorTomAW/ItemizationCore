@@ -54,7 +54,7 @@ BEGIN_SLATE_FUNCTION_BUILD_OPTIMIZATION
 void SItemizationEditorViewport::Construct(const FArguments& InArgs, const UItemDefinition* InOwningItem)
 {
 	PreviewScene = MakeShareable(new FAdvancedPreviewScene(FPreviewScene::ConstructionValues()));
-	PreviewScene->SetFloorVisibility(true);
+	PreviewScene->SetFloorVisibility(false);
 	PreviewScene->SetFloorOffset(5.f);
 	PreviewScene->SetEnvironmentVisibility(true);
 	PreviewScene->SetLightDirection(FRotator(-40.f, 128.f, 0.f));
