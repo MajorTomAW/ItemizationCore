@@ -3,7 +3,10 @@
 #pragma once
 
 #include "ClassViewerFilter.h"
+#include "ItemDefinition.h"
 #include "AssetRegistry/AssetRegistryModule.h"
+
+class UItemDefinition;
 
 namespace UE::ItemizationCore::Editor
 {
@@ -155,33 +158,20 @@ namespace UE::ItemizationCore::Editor
 	class ITEMIZATIONCOREEDITOR_API FItemizationEditorAssetConfig : public TSharedFromThis<FItemizationEditorAssetConfig>
 	{
 	public:
+		virtual ~FItemizationEditorAssetConfig() = default;
+		
 		/** The asset name that this config is for */
 		FName AssetName;
 
-		void SetRuleSet(const TSharedPtr<FItemizationEditorAssetRuleSet>& InRuleSet)
-		{
-			RuleSet = InRuleSet;
-		}
+		void SetRuleSet(const TSharedPtr<FItemizationEditorAssetRuleSet>& InRuleSet);
 
-		bool CanShowAppMode(const FName& ModeId) const
-		{
-			if (!RuleSet->AllowedModeIds.IsEmpty())
-			{
-				return RuleSet->AllowedModeIds.Contains(ModeId);
-			}
-			
-			return !RuleSet->DisallowedModeIds.Contains(ModeId);
-		}
+		/** Returns true if the specified asset can show the given application mode */
+		virtual bool CanShowAppMode(const FName& ModeId) const;
 
-		bool CanShowItemComponent(const FName& ComponentName) const
-		{
-			if (!RuleSet->AllowedItemComponents.IsEmpty())
-			{
-				return RuleSet->AllowedItemComponents.Contains(ComponentName);
-			}
-			
-			return !RuleSet->DisallowedItemComponents.Contains(ComponentName);
-		}
+		/** Returns true if the specified asset can show the given item component */
+		virtual bool CanShowItemComponent(const FName& ComponentName) const;
+
+		virtual UStaticMesh* FindPreviewMesh(const UItemDefinition* Item) const;
 		
 	protected:
 		/** The rule set for this asset */

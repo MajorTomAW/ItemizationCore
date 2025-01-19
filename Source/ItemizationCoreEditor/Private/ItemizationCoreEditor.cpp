@@ -5,6 +5,7 @@
 #include "ItemDefinition.h"
 #include "ItemizationCoreEditorHelpers.h"
 #include "Commands/ItemizationEditorCommands.h"
+#include "Components/ItemComponentData_Equipment.h"
 #include "Customization/ItemComponentDataCustomization.h"
 #include "LevelEditor/ItemizationLevelEditorToolbar.h"
 #include "Styles/ItemizationEditorStyle.h"
@@ -20,6 +21,50 @@
 #define LOCTEXT_NAMESPACE "ItemizationCoreEditorModule"
 
 using namespace UE::ItemizationCore::Editor;
+
+//////////////////////////////////////////////////////////////////////////
+/// FItemizationCoreEditorHelpers
+
+void FItemizationEditorAssetConfig::SetRuleSet(const TSharedPtr<FItemizationEditorAssetRuleSet>& InRuleSet)
+{
+	RuleSet = InRuleSet;
+}
+
+bool FItemizationEditorAssetConfig::CanShowAppMode(const FName& ModeId) const
+{
+	if (!RuleSet->AllowedModeIds.IsEmpty())
+	{
+		return RuleSet->AllowedModeIds.Contains(ModeId);
+	}
+			
+	return !RuleSet->DisallowedModeIds.Contains(ModeId);
+}
+
+bool FItemizationEditorAssetConfig::CanShowItemComponent(const FName& ComponentName) const
+{
+	if (!RuleSet->AllowedItemComponents.IsEmpty())
+	{
+		return RuleSet->AllowedItemComponents.Contains(ComponentName);
+	}
+			
+	return !RuleSet->DisallowedItemComponents.Contains(ComponentName);
+}
+
+UStaticMesh* FItemizationEditorAssetConfig::FindPreviewMesh(const UItemDefinition* Item) const
+{
+	return nullptr;
+}
+
+
+
+
+
+
+
+
+//////////////////////////////////////////////////////////////////////////
+/// FItemizationCoreEditorModule
+
 
 class FItemizationCoreEditorModule final : public IItemizationCoreEditorModule
 {
