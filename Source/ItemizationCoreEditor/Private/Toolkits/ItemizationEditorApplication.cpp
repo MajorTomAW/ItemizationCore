@@ -288,7 +288,7 @@ void FItemizationEditorApplication::NotifyPreChange(FProperty* PropertyAboutToCh
 
 void FItemizationEditorApplication::NotifyPostChange(const FPropertyChangedEvent& PropertyChangedEvent, FProperty* PropertyThatChanged)
 {
-	if (PropertyThatChanged == nullptr || PropertyChangedEvent.Property == nullptr)
+	/*if (PropertyThatChanged == nullptr || PropertyChangedEvent.Property == nullptr)
 	{
 		return;
 	}
@@ -312,7 +312,7 @@ void FItemizationEditorApplication::NotifyPostChange(const FPropertyChangedEvent
 	if (Viewport.IsValid() && (bHasPropsChanged || bHasActorListChanged))
 	{
 		Viewport->UpdateViewport(ItemDefinition, bHasActorListChanged);
-	}
+	}*/
 }
 
 void FItemizationEditorApplication::PostUndo(bool bSuccess)
@@ -346,7 +346,7 @@ void FItemizationEditorApplication::CreateInternalWidgets()
 		.Cursor(EMouseCursor::Crosshairs)
 		.AddMetaData<FTagMetaData>(FTagMetaData(TEXT("ItemizationEditorViewport")));
 
-		Viewport = SNew(SItemizationEditorViewport).ViewportArgs(ViewportArgs);
+		Viewport = SNew(SItemizationEditorViewport, GetItemDefinition()).ViewportArgs(ViewportArgs);
 	}
 
 	if (!DetailsView.IsValid())
@@ -544,7 +544,7 @@ TSharedRef<SWidget> FItemizationEditorApplication::SpawnTab_Viewport() const
 			Viewport.ToSharedRef()	
 		];
 
-	Viewport->UpdateViewport(ItemDefinition);
+	Viewport->UpdateViewport();
 	return SpawnedTab;
 }
 

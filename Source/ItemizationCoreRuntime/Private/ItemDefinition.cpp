@@ -18,7 +18,6 @@ UItemDefinition::UItemDefinition(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 	, PrimaryAssetType(TEXT("ItemDefinition"))
 	, PrimaryAssetName(GetFName())
-	, bAdjustForWorldCollision(false)
 	, DefaultInstanceClass(UInventoryItemInstance::StaticClass())
 {
 	EquipmentData.InitializeAs<FEquipmentComponentData_Default>();

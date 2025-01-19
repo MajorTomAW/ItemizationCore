@@ -28,14 +28,9 @@ public:
 	SLATE_END_ARGS()
 
 public:
-	void Construct(const FArguments& InArgs);
+	void Construct(const FArguments& InArgs, const UItemDefinition* OwningItem);
 	
-	void UpdateViewport(UItemDefinition* OwningItem, bool bForceRebuild = false);
-	bool HasAnyViewportData(const UItemDefinition* OwningItem) const;
-	bool SceneHasAnyData(TSharedPtr<FAdvancedPreviewScene> InScene) const;
-	bool NeedsToRebuildScene(const UItemDefinition* OwningItem, TSharedPtr<FAdvancedPreviewScene> InScene) const;
-	void RebuildScene(const UItemDefinition* OwningItem, TSharedPtr<FAdvancedPreviewScene> InScene);
-	void CleanUpScene(TSharedPtr<FAdvancedPreviewScene> InScene);
+	void UpdateViewport(bool bForceRebuild = false);
 
 protected:
 	//~ Begin FGCObject Interface
@@ -47,11 +42,17 @@ protected:
 	virtual TSharedRef<FEditorViewportClient> MakeEditorViewportClient() override;
 	virtual TSharedPtr<SWidget> MakeViewportToolbar() override;
 	virtual void PopulateViewportOverlays(TSharedRef<SOverlay> Overlay) override;
+
+	virtual void Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime) override;
 	//~ End SEditorViewport Interface
 
+	void SetPreview(UStaticMesh* InPreviewMesh);
+
 private:
-	TWeakObjectPtr<UClass> LastSourceBP;
 	TSharedPtr<FItemizationEditorViewportClient> ViewportClient;
-	TArray<TObjectPtr<USceneComponent>> SceneComponents;
+	TObjectPtr<UStaticMeshComponent> SourceComponent;
 	TSharedPtr<FAdvancedPreviewScene> PreviewScene;
+	const UItemDefinition* OwningItem = nullptr;
+
+	bool bViewportDirty = false;
 };

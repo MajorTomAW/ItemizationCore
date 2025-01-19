@@ -32,7 +32,10 @@ namespace UM
 UCLASS(BlueprintType, Config = Game)
 class ITEMIZATIONCORERUNTIME_API UItemDefinition : public UPrimaryDataAsset
 {
-	GENERATED_UCLASS_BODY()
+	GENERATED_BODY()
+
+public:
+	UItemDefinition(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 	//~ Begin UPrimaryDataAsset Interface
 	virtual FPrimaryAssetId GetPrimaryAssetId() const override;
@@ -98,34 +101,6 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Equipment", NoClear, meta = (ExcludeBaseStruct = true))
 	TInstancedStruct<FEquipmentComponentData> EquipmentData;
-
-	/** The source actor blueprint that will be used to spawn the playset. If not set, the playset will try to spawn actors from the data list. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Actor Data", AssetRegistrySearchable, meta = (ForceShowPluginContent = true))
-	TSoftClassPtr<AActor> SourceActorBlueprint;
-
-	/** Whether this playset should adjust for world collision when dragged into the world. */
-	UPROPERTY(EditDefaultsOnly, Category = "Placement", meta = (DisplayName = "Adjust for World Collision"))
-	uint32 bAdjustForWorldCollision : 1;
-
-	/** The extent of the playset that will be used to adjust for world collision. */
-	UPROPERTY(EditDefaultsOnly, Category = "Placement", meta = (DisplayName = "Collision Extent"))
-	FVector CollisionExtent;
-
-	/** The default location offset to use when spawning the playset. */
-	UPROPERTY(EditDefaultsOnly, Category = "Placement|Offset", meta = (DisplayName = "Default Location"))
-	FVector DefaultLocation;
-
-	/** The default rotation offset to use when spawning the playset. */
-	UPROPERTY(EditDefaultsOnly, Category = "Placement|Offset", meta = (DisplayName = "Default Rotation"))
-	FRotator DefaultRotation;
-
-	/** The actor class map used as a fast lookup for spawning actors. */
-	UPROPERTY(EditDefaultsOnly, Category = "Placement")
-	TMap<TSoftClassPtr<AActor>, int32> ActorClassCount;
-
-	/** The list of actors that will be spawned when the item definition is placed in the world. */
-	UPROPERTY(EditDefaultsOnly, Category = "Placement")
-	TArray<FItemActorData> ActorDataList;
 
 	/** The URL to the documentation for this item. */ 
 	UPROPERTY(EditDefaultsOnly, Category = "Development", meta = (DisplayName = "Documentation URL"))

@@ -19,7 +19,7 @@ FItemizationAppMode_Default::FItemizationAppMode_Default(
 	TSharedPtr<FItemizationEditorApplication> InApp, const IItemizationCoreEditorModule::FItemizationAppModeArgs& InArgs)
 		: FItemizationEditorAppMode(InApp, InArgs)
 {
-	TabLayout = FTabManager::NewLayout("Standalone_TabLayout_ItemizationAppMode_Default_v2")
+	TabLayout = FTabManager::NewLayout("Standalone_TabLayout_ItemizationAppMode_Default_v3")
 	->AddArea
 	(
 		FTabManager::NewPrimaryArea()
@@ -63,7 +63,6 @@ FItemizationAppMode_Default::FItemizationAppMode_Default(
 			(
 				FTabManager::NewStack()
 				->AddTab(IDs::TabID_Details(), ETabState::OpenedTab)
-				->AddTab(IDs::TabID_Placement(), ETabState::OpenedTab)
 				->SetForegroundTab(IDs::TabID_Details())
 			)
 		)
@@ -73,7 +72,6 @@ FItemizationAppMode_Default::FItemizationAppMode_Default(
 	TabSet.RegisterFactory(MakeShareable(new FItemizationTabFactory_DisplayInfo(InApp)));
 	TabSet.RegisterFactory(MakeShareable(new FItemizationTabFactory_Development(InApp)));
 	TabSet.RegisterFactory(MakeShareable(new FItemizationTabFactory_Details(InApp)));
-	TabSet.RegisterFactory(MakeShareable(new FItemizationTabFactory_Placement(InApp)));
 
 	InApp->GetToolbarBuilder()->AddModesToolbar(ToolbarExtender);
 }
@@ -85,7 +83,6 @@ void FItemizationAppMode_Default::PostActivateMode()
 
 	App->GetDetailsView()->SetObject(Item, true);
 	App->GetDevelopmentView()->SetObject(Item, true);
-	App->GetPlacementView()->SetObject(Item, true);
 	App->GetDisplayInfoView()->SetObject(Item, true);
 }
 
