@@ -331,7 +331,7 @@ UObject* UInventoryEquipmentInstance::GetInstigatorTyped(TSubclassOf<UInventoryI
 	UObject* Instigator = nullptr;
 	const FInventoryEquipmentEntry* EquipmentEntry = GetCurrentEquipmentEntry();
 
-	if (EquipmentEntry->SourceObject->IsA(Type))
+	if (EquipmentEntry && EquipmentEntry->SourceObject->IsA(Type))
 	{
 		return EquipmentEntry->SourceObject.Get();
 	}
