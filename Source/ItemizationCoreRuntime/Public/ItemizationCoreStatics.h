@@ -48,4 +48,9 @@ public:
 	 */
 	UFUNCTION(BlueprintPure, Category = "Itemization Core|Item Handle", meta = (DisplayName = "Get Item Instance From Handle"))
 	static const UInventoryItemInstance* GetItemInstanceFromHandle(UInventoryManager* InventoryManager, const FInventoryItemEntryHandle& ItemHandle);
+
+
+	/** Attempts to find an icon for the given item definition. */
+	UFUNCTION(BlueprintCallable, Category = "Itemization Core|Item Definition")
+	static TSoftObjectPtr<UTexture2D> GetItemIcon(const UItemDefinition* ItemDefinition);
 };

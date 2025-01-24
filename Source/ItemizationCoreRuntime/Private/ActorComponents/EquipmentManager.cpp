@@ -142,6 +142,28 @@ FInventoryItemEntryHandle UEquipmentManager::EquipItem(const FInventoryItemEntry
 	return NewEquipment.Handle;
 }
 
+FInventoryItemEntryHandle UEquipmentManager::EquipItem(const FInventoryItemEntryHandle& ItemHandle)
+{
+	// Temp: Create a non-evaluated context data. Will be evaluated in EquipItem().
+	FItemActionContextData ContextData;
+	ContextData.InventoryManager = GetInventoryManager();
+
+	if (const FInventoryItemEntry* ItemEntry = FindItemEntryFromHandle(ItemHandle))
+	{
+		ContextData.Instigator = ItemEntry->Instance;
+	}
+	else
+	{
+		ITEMIZATION_LOG(Error, TEXT("[%hs] (%s): Attempted to equip an item that doesn't exist in the inventory."),
+			__FUNCTION__, *GetName());
+		return FInventoryItemEntryHandle::NullHandle;
+	}
+
+	// Equip the item and return its handle.
+	// Will run validation and authority checks.
+	return EquipItem(ItemHandle, ContextData);
+}
+
 FInventoryItemEntryHandle UEquipmentManager::K2_EquipItem(FInventoryItemEntryHandle ItemHandle)
 {
 	// Temp: Create a non-evaluated context data. Will be evaluated in EquipItem().
@@ -186,6 +208,34 @@ void UEquipmentManager::OnEquipItem(FInventoryEquipmentEntry& EquipmentEntry)
 	{
 		Instance->OnEquipped(EquipmentEntry, GetInventoryDataPtr());
 	}
+}
+
+bool UEquipmentManager::UnequipItem(
+	const FInventoryItemEntryHandle& ItemHandle, const FItemActionContextData& ContextData)
+{
+	return true;
+}
+
+bool UEquipmentManager::UnequipItem(const FInventoryItemEntryHandle& ItemHandle)
+{
+	// Temp: Create a non-evaluated context data. Will be evaluated in UnequipItem().
+	FItemActionContextData ContextData;
+	ContextData.InventoryManager = GetInventoryManager();
+
+	if (const FInventoryItemEntry* ItemEntry = FindItemEntryFromHandle(ItemHandle))
+	{
+		ContextData.Instigator = ItemEntry->Instance;
+	}
+	else
+	{
+		ITEMIZATION_LOG(Error, TEXT("[%hs] (%s): Attempted to unequip an item that doesn't exist in the inventory."),
+			__FUNCTION__, *GetName());
+		return false;
+	}
+
+	// Unequip the item and return its handle.
+	// Will run validation and authority checks.
+	return UnequipItem(ItemHandle, ContextData);
 }
 
 void UEquipmentManager::OnUnequipItem(FInventoryEquipmentEntry& EquipmentEntry)

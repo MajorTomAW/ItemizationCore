@@ -7,6 +7,7 @@
 #include "ItemizationCoreLog.h"
 #include "ItemizationCoreTypes.h"
 #include "ActorComponents/InventoryManager.h"
+#include "Components/ItemComponentData_Icon.h"
 
 FString UItemizationCoreStatics::Conv_ItemHandleToString(const FInventoryItemEntryHandle& Handle)
 {
@@ -48,4 +49,14 @@ const UInventoryItemInstance* UItemizationCoreStatics::GetItemInstanceFromHandle
 	}
 
 	return Instance;
+}
+
+TSoftObjectPtr<UTexture2D> UItemizationCoreStatics::GetItemIcon(const UItemDefinition* ItemDefinition)
+{
+	if (const FItemComponentData_Icon* IconComp = ItemDefinition->GetDisplayComponent<FItemComponentData_Icon>())
+	{
+		return IconComp->Icon;
+	}
+
+	return nullptr;
 }

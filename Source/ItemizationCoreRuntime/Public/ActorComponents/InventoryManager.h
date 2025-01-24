@@ -255,6 +255,9 @@ protected:
 	/** Remove an item instance from the inventory. */
 	void RemoveReplicatedItemInstance(UInventoryItemInstance* ItemInstance);
 
+	/** Native version of GiveItem(). DON'T call this directly. */
+	virtual FInventoryItemEntryHandle NativeGiveItem(const FInventoryItemEntry& ItemEntry, const FItemActionContextData& ContextData, int32& Excess);
+
 private:
 	/** The actor that owns this component logically. */
 	UPROPERTY(ReplicatedUsing = OnRep_OwnerActor, Transient)

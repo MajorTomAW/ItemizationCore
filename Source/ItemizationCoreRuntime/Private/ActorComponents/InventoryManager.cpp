@@ -139,26 +139,45 @@ FInventoryItemEntryHandle UInventoryManager::GiveItem(const FInventoryItemEntry&
 	FItemActionContextData CurrentContext = ContextData;
 	EvaluateCurrentContext(ItemEntry, CurrentContext);
 
-	// See if we can stack the item with an existing item.
-	FInventoryItemEntryHandle LastHandle;
-
 	ITEMIZATION_LOG(Display, TEXT("[%hs] (%s): Giving Item [%s] %s. Stack Count: %d, Max Stack Size: %d"),
 		__FUNCTION__, *GetName(), *ItemEntry.Handle.ToString(), *GetNameSafe(ItemEntry.Instance), CurrentContext.Delta, CurrentContext.MaxStackSize);
 
+	return NativeGiveItem(ItemEntry, CurrentContext, Excess);
+}
+
+FInventoryItemEntryHandle UInventoryManager::GiveItem(const FInventoryItemEntry& ItemEntry, const FItemActionContextData& ContextData)
+{
+	int32 Excess;
+	return GiveItem(ItemEntry, ContextData, Excess);
+}
+
+FInventoryItemEntryHandle UInventoryManager::GiveItem(const FInventoryItemEntry& ItemEntry)
+{
+	int32 Excess;
+	return GiveItem(ItemEntry, Excess);
+}
+
+FInventoryItemEntryHandle UInventoryManager::NativeGiveItem(
+	const FInventoryItemEntry& ItemEntry, const FItemActionContextData& ContextData, int32& Excess)
+{
+	FInventoryItemEntryHandle LastHandle;
+
+	FItemActionContextData& MutableContext = const_cast<FItemActionContextData&>(ContextData);
+	
 	// Try to find existing items first that we could fill up first before creating a new instance.
-	if (CurrentContext.MaxStackSize > 1)
+	if (MutableContext.MaxStackSize > 1)
 	{
 		for (FInventoryItemEntry& Item : InventoryList.Items)
 		{
 			int32 OutExcess;
-			const bool bCouldCombine = CombineItemEntries(ItemEntry, Item, CurrentContext, OutExcess);
+			const bool bCouldCombine = CombineItemEntries(ItemEntry, Item, MutableContext, OutExcess);
 
 			if (!bCouldCombine)
 			{
 				continue;
 			}
 
-			CurrentContext.Delta = OutExcess;
+			MutableContext.Delta = OutExcess;
 			LastHandle = Item.Handle;
 
 			// Mark dirty for replication
@@ -167,16 +186,16 @@ FInventoryItemEntryHandle UInventoryManager::GiveItem(const FInventoryItemEntry&
 	}
 
 	// Create a new stack if we couldn't fill up an existing one.
-	while (CurrentContext.Delta > 0)
+	while (MutableContext.Delta > 0)
 	{
 		// Check if we can create a new stack.
-		if (!CanCreateNewStack(ItemEntry, CurrentContext))
+		if (!CanCreateNewStack(ItemEntry, MutableContext))
 		{
 			break;
 		}
 		
-		const int32 Delta = FMath::Min(CurrentContext.Delta, CurrentContext.MaxStackSize);
-		CurrentContext.Delta -= Delta;
+		const int32 Delta = FMath::Min(MutableContext.Delta, MutableContext.MaxStackSize);
+		MutableContext.Delta -= Delta;
 
 		FInventoryItemEntry EntryCopy = ItemEntry;
 		EntryCopy.StackCount = Delta;
@@ -195,20 +214,9 @@ FInventoryItemEntryHandle UInventoryManager::GiveItem(const FInventoryItemEntry&
 			__FUNCTION__, *GetName(), *NewItem.Handle.ToString(), *GetNameSafe(NewItem.Instance), NewItem.StackCount);
 	}
 
-	Excess = FMath::Max(0, CurrentContext.Delta);
+	Excess = FMath::Max(0, MutableContext.Delta);
+	
 	return LastHandle;
-}
-
-FInventoryItemEntryHandle UInventoryManager::GiveItem(const FInventoryItemEntry& ItemEntry, const FItemActionContextData& ContextData)
-{
-	int32 Excess;
-	return GiveItem(ItemEntry, ContextData, Excess);
-}
-
-FInventoryItemEntryHandle UInventoryManager::GiveItem(const FInventoryItemEntry& ItemEntry)
-{
-	int32 Excess;
-	return GiveItem(ItemEntry, Excess);
 }
 
 FInventoryItemEntryHandle UInventoryManager::K2_GiveItem(UItemDefinition* ItemDefinition, int32 StackCount, int32& Excess)
@@ -216,7 +224,7 @@ FInventoryItemEntryHandle UInventoryManager::K2_GiveItem(UItemDefinition* ItemDe
 	// Temp: Create a non-evaluated context data. Will be evaluated in GiveItem().
 	FItemActionContextData ContextData;
 	ContextData.InventoryManager = this;
-	ContextData.Instigator = this;
+	ContextData.Instigator = GetOwnerActor();
 
 	// Build and validate item entry
 	FInventoryItemEntry ItemEntry = BuildItemEntryFromDefinition(ItemDefinition, StackCount, ContextData);

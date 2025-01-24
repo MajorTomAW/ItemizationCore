@@ -7,6 +7,11 @@
 
 #include "ItemComponentData_Traits.generated.h"
 
+struct FItemComponentData_Traits;
+
+/** Wrapper for the traits item data, for convenience :p */
+typedef FItemComponentData_Traits FItemTraits;
+
 /**
  * Item data for adding tagged traits to the item.
  */

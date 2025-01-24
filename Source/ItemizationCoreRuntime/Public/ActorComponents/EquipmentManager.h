@@ -71,9 +71,22 @@ public:
 	 * @returns The handle to the item that was equipped (In most cases this will be the same as the input handle).
 	 */
 	FInventoryItemEntryHandle EquipItem(const FInventoryItemEntryHandle& ItemHandle, const FItemActionContextData& ContextData);
+	FInventoryItemEntryHandle EquipItem(const FInventoryItemEntryHandle& ItemHandle);
 
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Itemization Core", meta = (DisplayName = "Equip Item", ScriptName = "EquipItem"))
 	FInventoryItemEntryHandle K2_EquipItem(FInventoryItemEntryHandle ItemHandle);
+
+	/**
+	 * Unequips an item that is currently equipped.
+	 * Will be ignored if the actor is not authoritative.
+	 * @note This will first search for the item in the equipment list before unequipping it.
+	 *
+	 * @param ItemHandle The handle of the item to unequip.
+	 * @param ContextData	The context of how the item is being unequipped.
+	 * @returns True if the item was successfully unequipped.
+	 */
+	bool UnequipItem(const FInventoryItemEntryHandle& ItemHandle, const FItemActionContextData& ContextData);
+	bool UnequipItem(const FInventoryItemEntryHandle& ItemHandle);
 
 	/**
 	 * Returns an item entry from the inventory for a given handle.

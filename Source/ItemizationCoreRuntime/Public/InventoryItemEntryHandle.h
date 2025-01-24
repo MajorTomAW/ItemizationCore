@@ -12,7 +12,7 @@
  * This is useful in networking scenarios where we want to refer to an item spec in the inventory without having to replicate the item spec itself.
  */
 USTRUCT(BlueprintType)
-struct FInventoryItemEntryHandle
+struct ITEMIZATIONCORERUNTIME_API FInventoryItemEntryHandle
 {
 	GENERATED_USTRUCT_BODY()
 
@@ -63,7 +63,7 @@ public:
 	}
 
 	/** An invalid handle. */
-	static ITEMIZATIONCORERUNTIME_API const FInventoryItemEntryHandle NullHandle;
+	static const FInventoryItemEntryHandle NullHandle;
 
 private:
 	/** Handle to the item spec. */
