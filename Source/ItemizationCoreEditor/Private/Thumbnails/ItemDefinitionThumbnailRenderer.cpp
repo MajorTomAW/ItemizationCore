@@ -11,7 +11,6 @@ bool UItemDefinitionThumbnailRenderer::CanVisualizeAsset(UObject* Object)
 {
 	if (GetThumbnailTextureFromItem(Object) == nullptr)
 	{
-		ClearThumbnailCache(Object);
 		return false;
 	}
 
