@@ -213,7 +213,63 @@ void UEquipmentManager::OnEquipItem(FInventoryEquipmentEntry& EquipmentEntry)
 bool UEquipmentManager::UnequipItem(
 	const FInventoryItemEntryHandle& ItemHandle, const FItemActionContextData& ContextData)
 {
-	return true;
+	if (!ItemHandle.IsValid())
+	{
+		ITEMIZATION_LOG(Error, TEXT("[%hs] (%s): Attempted to unequip an item with an invalid handle."),
+			__FUNCTION__, *GetName());
+		return false;
+	}
+
+	if (!IsOwnerActorAuthoritative())
+	{
+		ITEMIZATION_LOG(Error, TEXT("[%hs] (%s): Attempted to unequip item (%s) on the client-side."),
+			__FUNCTION__, *GetName(), *ItemHandle.ToString());
+		return false;
+	}
+
+	FInventoryEquipmentEntry* EquipmentEntry = FindEquipmentEntryFromHandle(ItemHandle);
+	if (EquipmentEntry == nullptr)
+	{
+		ITEMIZATION_LOG(Error, TEXT("[%hs] (%s): Attempted to unequip an item that isn't equipped."),
+			__FUNCTION__, *GetName());
+		return false;
+	}
+
+	APawn* Pawn = GetPawn();
+	UInventoryManager* MutableInventoryManager = GetInventoryManager();
+
+	FItemActionContextData CurrentContext = ContextData;
+
+	if (const FInventoryItemEntry* ItemEntry = FindItemEntryFromHandle(ItemHandle))
+	{
+		MutableInventoryManager->EvaluateCurrentContext(*ItemEntry, CurrentContext);	
+	}
+	else
+	{
+		ensureMsgf(false,
+			TEXT("(%s): Couldn't find item entry for handle %s. Will still continue un-equipping the item but some functionality might not work.")
+			, *GetName(), *ItemHandle.ToString());
+	}
+
+	bool bDidUnequip = false;
+	for (auto It = EquipmentList.Items.CreateIterator(); It; ++It)
+	{
+		FInventoryEquipmentEntry& EquipmentIt = *It;
+		check(EquipmentIt.Instance);
+
+		if (EquipmentIt.Handle != ItemHandle)
+		{
+			continue;
+		}
+
+		OnUnequipItem(EquipmentIt);
+		bDidUnequip = true;
+
+		It.RemoveCurrent();
+		EquipmentList.MarkArrayDirty();
+	}
+
+	return bDidUnequip;
 }
 
 bool UEquipmentManager::UnequipItem(const FInventoryItemEntryHandle& ItemHandle)
