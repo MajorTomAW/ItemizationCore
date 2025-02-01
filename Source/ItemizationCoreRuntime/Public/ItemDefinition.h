@@ -63,6 +63,20 @@ public:
 	FORCEINLINE const T* GetItemComponent() const;
 	TArray<const FItemComponentData*> GetItemComponents() const;
 
+	UFUNCTION(BlueprintCallable, BlueprintInternalUseOnly, Category = "Itemization Core")
+	static FItemComponentData FindItemComponent(UItemDefinition* InItemDefinition, UScriptStruct* ComponentType)
+	{
+		for (const FItemComponentData* Comp : InItemDefinition->GetItemComponents())
+		{
+			if (Comp->StaticStruct() == ComponentType)
+			{
+				return *Comp;
+			}
+		}
+
+		return FItemComponentData();
+	}
+
 #if WITH_EDITOR
 	//~ Begin UObject Interface
 	virtual EDataValidationResult IsDataValid(class FDataValidationContext& Context) const override;

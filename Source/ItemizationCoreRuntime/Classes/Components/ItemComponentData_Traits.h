@@ -9,6 +9,7 @@
 
 struct FItemComponentData_Traits;
 
+
 /** Wrapper for the traits item data, for convenience :p */
 typedef FItemComponentData_Traits FItemTraits;
 
@@ -23,7 +24,7 @@ struct FItemComponentData_Traits : public FItemComponentData
 
 public:
 	/** Traits that this item has */
-	UPROPERTY(EditAnywhere, Category = "Traits", meta = (Categories = "ItemizationCore.Item.Trait"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Traits", meta = (Categories = "ItemizationCore.Item.Trait"))
 	FGameplayTagContainer Traits;
 
 protected:

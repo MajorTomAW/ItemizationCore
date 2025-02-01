@@ -37,8 +37,7 @@ bool FItemComponentData_Traits::CanCreateNewStack(const FInventoryItemEntry& Ite
 			return false;
 		}
 	}
-
-
+	
 	return true;
 }
 

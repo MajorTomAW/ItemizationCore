@@ -353,3 +353,15 @@ const FItemizationCoreInventoryData* UInventoryEquipmentInstance::GetInventoryDa
 {
 	return CurrentInventoryData;
 }
+
+UItemDefinition* UInventoryEquipmentInstance::K2_GetCurrentItemDefinition_Typed(TSubclassOf<UItemDefinition> Type) const
+{
+	UItemDefinition* ItemDef = GetItemDefinition();
+
+	if (ItemDef->GetClass()->IsChildOf(Type))
+	{
+		return ItemDef;
+	}
+
+	return nullptr;
+}

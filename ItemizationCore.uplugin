@@ -25,6 +25,11 @@
 			"Name": "ItemizationCoreEditor",
 			"Type": "Editor",
 			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "ItemizationK2Nodes",
+			"Type": "UncookedOnly",
+			"LoadingPhase": "Default"
 		}
 	],
 	"Plugins": [

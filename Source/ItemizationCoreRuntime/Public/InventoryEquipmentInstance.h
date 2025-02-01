@@ -21,6 +21,10 @@ class AActor;
 class UObject;
 class UFunction;
 class AController;
+class UItemDefinition;
+class UInventoryManager;
+class UEquipmentManager;
+
 struct FItemizationEquipmentSpawnQuery;
 struct FInventoryEquipmentEntry;
 struct FItemizationCoreInventoryData;
@@ -159,11 +163,15 @@ public:
 	FInventoryEquipmentEntry& K2_GetCurrentEquipmentEntry() const { return *GetCurrentEquipmentEntry(); }
 
 	/** retrieves the item definition of the associated equipment entry. */
+	UFUNCTION(BlueprintCallable, Category = "Itemization Core|Equipment", meta = (DisplayName = "Get Item Definition Typed", ScriptName = "GetItemDefinition", DeterminesOutputType = "Type"))
+	UItemDefinition* K2_GetCurrentItemDefinition_Typed(TSubclassOf<UItemDefinition> Type) const;
+
+	/** retrieves the item definition of the associated equipment entry. */
 	UFUNCTION(BlueprintCallable, Category = "Itemization Core|Equipment", meta = (DisplayName = "Get Item Definition", ScriptName = "GetItemDefinition"))
 	UItemDefinition* K2_GetCurrentItemDefinition() const { return GetItemDefinition(); }
 
 	/** True if this is the server or single player. */
-	UFUNCTION(BlueprintCallable, Category = "Itemization Core|Equipment", meta = (DisplayName = "Has Authority", ScriptName = "HasAuthority"))
+	UFUNCTION(BlueprintCallable, BlueprintPure = false, Category = "Itemization Core|Equipment", meta = (DisplayName = "Has Authority", ScriptName = "HasAuthority", ExpandBoolAsExecs = "ReturnValue"))
 	bool K2_HasAuthority() const { return HasAuthority(); }
 
 	/** Returns the list of spawned equipment actors. */

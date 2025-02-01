@@ -37,7 +37,7 @@ namespace UM
 /**
  * Item component data structure that can be extended to add additional data to an item.
  */
-USTRUCT(BlueprintType, meta = (SingletonComponent = true, CosmeticComponent = false), DisplayName = "Item Component Data Item")
+USTRUCT(BlueprintType, Blueprintable, meta = (SingletonComponent = true, CosmeticComponent = false), DisplayName = "Item Component Data Item")
 struct ITEMIZATIONCORERUNTIME_API FItemComponentData
 {
 	GENERATED_BODY()

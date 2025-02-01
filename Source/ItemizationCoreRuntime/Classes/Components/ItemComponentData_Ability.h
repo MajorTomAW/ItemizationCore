@@ -19,19 +19,19 @@ struct FAbilityItemComponent_Ability
 
 public:
 	/** When should this ability be active (when this item is equipped, ...)? */
-	UPROPERTY(EditDefaultsOnly, Category = "Ability")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability")
 	EUserFacingItemState ActiveState;
 
 	/** The ability itself. */
-	UPROPERTY(EditDefaultsOnly, Category = "Ability", meta = (MetaClass = "/Script/GameplayAbilities.GameplayAbility"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (MetaClass = "/Script/GameplayAbilities.GameplayAbility"))
 	FSoftClassPath Ability;
 
 	/** The input gameplay tag associated with an input action used to trigger this ability. */
-	UPROPERTY(EditDefaultsOnly, Category = "Ability", meta = (Categories = "Input.InputTag"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability", meta = (Categories = "Input.InputTag"))
 	FGameplayTag InputTag;
 
 	/** The default level of the ability. */
-	UPROPERTY(EditDefaultsOnly, Category = "Ability")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability")
 	FScalableFloat DefaultLevel;
 };
 
@@ -48,7 +48,7 @@ public:
 	FItemComponentData_Ability();
 	
 	/** List of abilities that will be added to the item owner. */
-	UPROPERTY(EditDefaultsOnly, Category = "Ability")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability")
 	TArray<FAbilityItemComponent_Ability> AbilityList;
 
 protected:
