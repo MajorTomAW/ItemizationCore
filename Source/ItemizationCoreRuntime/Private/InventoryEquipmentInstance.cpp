@@ -302,7 +302,7 @@ void UInventoryEquipmentInstance::SpawnEquipmentActorsDeferred(TArray<FItemizati
 	for (const auto& Query : Queries)
 	{
 		AActor* NewActor = GetWorld()->SpawnActorDeferred<AActor>(
-			Query.ActorToSpawn.Get(), FTransform::Identity, GetPawn());
+			Query.ActorToSpawn.Get(), FTransform::Identity, GetPawn(), GetPawn());
 		check(NewActor);
 		
 		NewActor->FinishSpawning(FTransform::Identity, true);
