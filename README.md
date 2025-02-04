@@ -1,6 +1,6 @@
 # Itemization Core
 
-Plugin for an inventory and item gameplay system.
+Plugin for an inventory gameplay system.
 
 ### Modules:
 - Itemization Core Runtime
