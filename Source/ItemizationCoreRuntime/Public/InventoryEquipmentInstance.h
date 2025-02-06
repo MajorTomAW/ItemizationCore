@@ -163,7 +163,7 @@ public:
 	FInventoryEquipmentEntry& K2_GetCurrentEquipmentEntry() const { return *GetCurrentEquipmentEntry(); }
 
 	/** retrieves the item definition of the associated equipment entry. */
-	UFUNCTION(BlueprintCallable, Category = "Itemization Core|Equipment", meta = (DisplayName = "Get Item Definition Typed", ScriptName = "GetItemDefinition", DeterminesOutputType = "Type"))
+	UFUNCTION(BlueprintCallable, Category = "Itemization Core|Equipment", meta = (DisplayName = "Get Item Definition Typed", ScriptName = "GetItemDefinitionTyped", DeterminesOutputType = "Type"))
 	UItemDefinition* K2_GetCurrentItemDefinition_Typed(TSubclassOf<UItemDefinition> Type) const;
 
 	/** retrieves the item definition of the associated equipment entry. */
