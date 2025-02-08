@@ -311,6 +311,8 @@ void UInventoryEquipmentInstance::SpawnEquipmentActorsDeferred(TArray<FItemizati
 
 		SpawnedEquipmentActors.AddUnique(NewActor);
 	}
+
+	PostSpawnEquipmentActors();
 }
 
 void UInventoryEquipmentInstance::DestroyEquipmentActors()

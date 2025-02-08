@@ -128,6 +128,9 @@ public:
 	/** Deferred version of OnSpawnEquipmentActors, which gets called after the asset manager has loaded all equipment actors. */
 	virtual void SpawnEquipmentActorsDeferred(TArray<FItemizationEquipmentSpawnQuery> Queries);
 
+	/** Called after the equipment actors have been spawned. */
+	virtual void PostSpawnEquipmentActors() {}
+
 	/** Destroys all equipment actors that have been spawned by this equipment instance. */
 	virtual void DestroyEquipmentActors();
 
