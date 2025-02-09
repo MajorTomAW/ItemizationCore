@@ -141,7 +141,7 @@ protected:
 
 protected:
 	/** The replicated equipment list. */
-	UPROPERTY(Replicated, BlueprintReadOnly, Transient, Category = "Equipment")
+	UPROPERTY(Replicated, BlueprintReadOnly, Transient, Category = Equipment)
 	FInventoryEquipmentContainer EquipmentList;
 	
 private:
@@ -149,7 +149,7 @@ private:
 	 * Cached data about the equipment system such as the inventory manager, etc.
 	 * Utility-struct for easy access to those data.
 	 *
-	 * For simulated proxies this will be its own inventory data that is not linked to the inventory manager.
+	 * For simulated proxies this will be its own inventory data not linked to the inventory manager.
 	 */
 	TSharedPtr<FItemizationCoreInventoryData> CachedInventoryData;
 };

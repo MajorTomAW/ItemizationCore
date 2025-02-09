@@ -453,7 +453,7 @@ FItemActionContextData UInventoryManager::CreateItemActionContextData(const FInv
 void UInventoryManager::GetAllItemHandles(TArray<FInventoryItemEntryHandle>& OutHandles) const
 {
 	// Reset the output array
-	OutHandles.Empty();
+	OutHandles.Empty(InventoryList.Items.Num());
 
 	// Iterate through the inventory list and add all handles to the output array
 	for (const FInventoryItemEntry& ItemEntry : InventoryList.Items)

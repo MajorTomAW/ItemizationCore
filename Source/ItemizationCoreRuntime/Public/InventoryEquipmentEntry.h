@@ -25,7 +25,7 @@ struct ITEMIZATIONCORERUNTIME_API FInventoryEquipmentEntry : public FFastArraySe
 	friend struct FInventoryEquipmentContainer;
 
 	FInventoryEquipmentEntry();
-	FInventoryEquipmentEntry(const FInventoryItemEntryHandle& InHandle);
+	explicit FInventoryEquipmentEntry(const FInventoryItemEntryHandle& InHandle);
 
 public:
 	/** The item entry that owns this equipment. */
@@ -40,7 +40,7 @@ public:
 	UPROPERTY()
 	TObjectPtr<UInventoryEquipmentInstance> Instance;
 
-	/** Object this item was equipped from, should always be the UInventoryItemInstance. */
+	/** Object this item was equipped from. Should always be the UInventoryItemInstance. */
 	UPROPERTY()
 	TObjectPtr<UObject> SourceObject;
 

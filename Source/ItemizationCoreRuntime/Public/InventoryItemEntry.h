@@ -19,8 +19,9 @@ class UInventoryManager;
 USTRUCT(BlueprintType)
 struct ITEMIZATIONCORERUNTIME_API FInventoryItemEntry : public FFastArraySerializerItem
 {
+	GENERATED_BODY()
+	
 public:
-	GENERATED_USTRUCT_BODY()
 	friend struct FInventoryItemContainer;
 	friend class UInventoryItemInstance;
 	friend class UInventoryManager;
@@ -64,7 +65,7 @@ public:
 	bool IsStackFull() const;
 
 	/** Returns the current stack count of the item. */
-	int32 GetStackCount() const { return StackCount; }
+	FORCEINLINE int32 GetStackCount() const { return StackCount; }
 
 	//~ Begin FFastArraySerializerItem Interface
 	void PreReplicatedRemove(const FInventoryItemContainer& InArraySerializer);
