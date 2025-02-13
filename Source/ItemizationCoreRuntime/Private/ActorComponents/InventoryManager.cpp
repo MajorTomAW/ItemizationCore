@@ -266,6 +266,31 @@ bool UInventoryManager::RemoveItem(const FInventoryItemEntryHandle& Handle, int3
 	return RemoveItemByPredicate(Pred, StackCount);
 }
 
+void UInventoryManager::K2_ConsumeItem(UItemDefinition* ItemDefinition, int32 StackCount)
+{
+	if (ItemDefinition == nullptr)
+	{
+		ITEMIZATION_LOG(Error, TEXT("[%hs] (%s): Attempted to consume an item with an invalid item definition.")
+			, __FUNCTION__, *GetName());
+		return;
+	}
+
+	if (!IsOwnerActorAuthoritative())
+	{
+		ITEMIZATION_LOG(Error, TEXT("[%hs] (%s): Attempted to consume item (%s) on the client-side.")
+			, __FUNCTION__, *GetName(), *GetNameSafe(ItemDefinition));
+		return;
+	}
+
+	const TFunction<bool(const FInventoryItemEntry&)> Pred = [ItemDefinition](const FInventoryItemEntry& Other) -> bool
+	{
+		return Other.Definition == ItemDefinition;
+	};
+
+	//@TODO: More consume logic here?
+	RemoveItemByPredicate(Pred, StackCount);
+}
+
 FInventoryItemEntry UInventoryManager::BuildItemEntryFromDefinition(UItemDefinition* ItemDefinition, int32 StackCount, const FItemActionContextData& ContextData)
 {
 	// Validate the item definition
@@ -460,6 +485,97 @@ void UInventoryManager::GetAllItemHandles(TArray<FInventoryItemEntryHandle>& Out
 	{
 		OutHandles.Add(ItemEntry.Handle);
 	}
+}
+
+int32 UInventoryManager::GetTotalItemCountByDefinition(const UItemDefinition* Type)
+{
+	auto MatchesType = [Type](const FInventoryItemEntry& Item) -> bool
+	{
+		if (Item.Instance == nullptr)
+		{
+			return false;
+		}
+
+		if (Item.Definition == nullptr)
+		{
+			return false;
+		}
+
+		if (Item.Definition != Type)
+		{
+			return false;
+		}
+		
+		return true;
+	};
+
+	return GetTotalItemCountByPredicate(MatchesType);
+}
+
+int32 UInventoryManager::GetTotalItemCountByClass(TSubclassOf<UItemDefinition> Type)
+{
+	auto MatchesType = [Type](const FInventoryItemEntry& Item) -> bool
+	{
+		if (Item.Instance == nullptr)
+		{
+			return false;
+		}
+
+		if (Item.Definition == nullptr)
+		{
+			return false;
+		}
+
+		if (!Item.Definition->GetClass()->IsChildOf(Type))
+		{
+			return false;
+		}
+		
+		return true;
+	};
+
+	return GetTotalItemCountByPredicate(MatchesType);
+}
+
+int32 UInventoryManager::GetTotalItemCountByClass_Exact(TSubclassOf<UItemDefinition> Type)
+{
+	auto MatchesType = [Type](const FInventoryItemEntry& Item) -> bool
+	{
+		if (Item.Instance == nullptr)
+		{
+			return false;
+		}
+
+		if (Item.Definition == nullptr)
+		{
+			return false;
+		}
+
+		if (Item.Definition->GetClass() != Type)
+		{
+			return false;
+		}
+		
+		return true;
+	};
+
+	return GetTotalItemCountByPredicate(MatchesType);
+}
+
+int32 UInventoryManager::GetTotalItemCountByPredicate(const TFunctionRef<bool(const FInventoryItemEntry&)>& Predicate)
+{
+	int32 Count = 0;
+	for (const auto& Item : InventoryList.Items)
+	{
+		if (!Predicate(Item))
+		{
+			continue;
+		}
+
+		Count += Item.StackCount;
+	}
+
+	return Count;
 }
 
 void UInventoryManager::PreNetReceive()

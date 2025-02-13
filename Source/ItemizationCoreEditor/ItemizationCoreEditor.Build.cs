@@ -34,12 +34,11 @@ public class ItemizationCoreEditor : ModuleRules
                 "PropertyEditor",
                 "WorkspaceMenuStructure",
                 "ContentBrowserData",
-                "StructUtils",
-                "StructUtilsEditor",
                 "ItemizationCoreRuntime",
                 "Projects",
                 "AssetManagerEditor",
                 "DataValidation",
+                "StructUtilsEditor",
             }
         );
     }

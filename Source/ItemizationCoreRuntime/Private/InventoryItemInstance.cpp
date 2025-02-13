@@ -321,6 +321,20 @@ UObject* UInventoryItemInstance::GetSourceObject() const
 	return nullptr;
 }
 
+const UItemDefinition* UInventoryItemInstance::K2_GetCurrentItemDefinition_Typed(
+	TSubclassOf<UItemDefinition> Type) const
+{
+	if (const UItemDefinition* ItemDefinition = GetCurrentItemDefinition())
+	{
+		if (ItemDefinition->GetClass()->IsChildOf(Type))
+		{
+			return ItemDefinition;
+		}
+	}
+
+	return nullptr;
+}
+
 void UInventoryItemInstance::IncrementListLock() const
 {
 	++ScopeLockCount;

@@ -13,7 +13,6 @@
 #include "InventoryManager.generated.h"
 
 struct FItemActionContextData;
-struct FItemActionContextData;
 
 /**
  * Manages the inventory of an actor.
@@ -86,6 +85,17 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Itemization Core")
 	bool RemoveItem(const FInventoryItemEntryHandle& Handle, int32 StackCount = -1);
+
+	/**
+	 * Removes an item by its definition from the inventory.
+	 * Meaning that all items with the same definition, no matter the handle, will be removed.
+	 * Will be ignored if the actor is not authoritative.
+	 *
+	 * @param ItemDefinition The definition of the item to remove.
+	 * @param StackCount The number of items to remove. If -1, all items will be removed.
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Itemization Core", meta = (DisplayName = "Remove Item By Definition", ScriptName = "RemoveItemByDefinition"))
+	void K2_ConsumeItem(UItemDefinition* ItemDefinition, int32 StackCount = -1);
 
 	/**
 	 * Builds a simple FInventoryItemEntry from a definition and stack count.
@@ -170,6 +180,18 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Itemization Core")
 	void GetAllItemHandles(TArray<FInventoryItemEntryHandle>& OutHandles) const;
+
+	/** Returns the total number of all items in the inventory of the given type. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Itemization Core")
+	int32 GetTotalItemCountByDefinition(const UItemDefinition* Type);
+
+	/** Returns the total number of all items in the inventory of the given class. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Itemization Core")
+	int32 GetTotalItemCountByClass(TSubclassOf<UItemDefinition> Type);
+
+	/** Returns the total number of all items in the inventory of the given class exact. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Itemization Core")
+	int32 GetTotalItemCountByClass_Exact(TSubclassOf<UItemDefinition> Type);
 
 	//~ Begin UObject Interface
 	virtual void PreNetReceive() override;
@@ -257,6 +279,9 @@ protected:
 
 	/** Native version of GiveItem(). DON'T call this directly. */
 	virtual FInventoryItemEntryHandle NativeGiveItem(const FInventoryItemEntry& ItemEntry, const FItemActionContextData& ContextData, int32& Excess);
+
+	/** Returns the total number of all items in the inventory that match the predicate. */
+	int32 GetTotalItemCountByPredicate(const TFunctionRef<bool(const FInventoryItemEntry&)>& Predicate);
 
 private:
 	/** The actor that owns this component logically. */

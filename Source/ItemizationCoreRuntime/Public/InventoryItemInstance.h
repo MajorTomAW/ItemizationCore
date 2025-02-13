@@ -68,6 +68,12 @@ public:
 
 	/** Retrieves the item definition of the associated item entry. */
 	UItemDefinition* GetCurrentItemDefinition() const;
+	template <class T>
+	T* GetCurrentItemDefinition() const
+	{
+		static_assert(TIsDerivedFrom<T, UItemDefinition>::IsDerived, "T must be a subclass of UItemDefinition");
+		return Cast<T>(GetCurrentItemDefinition());
+	}
 
 	/** Gets the current inventory data associated with this instance. */
 	const FItemizationCoreInventoryData* GetCurrentInventoryData() const;
@@ -119,6 +125,10 @@ public:
 	/** Retrieves the item definition of the associated item entry. */
 	UFUNCTION(BlueprintCallable, Category = "Itemization Core|Item", meta = (DisplayName = "Get Item Definition"))
 	const UItemDefinition* K2_GetCurrentItemDefinition() const { return GetCurrentItemDefinition(); }
+
+	/** Retrieves the item typed definition of the associated item entry. */
+	UFUNCTION(BlueprintCallable, Category = "Itemization Core|Item", meta = (DisplayName = "Get Item Definition (Typed)", DeterminesOutputType = "Type"))
+	const UItemDefinition* K2_GetCurrentItemDefinition_Typed(TSubclassOf<UItemDefinition> Type) const;
 
 	/** Gets the current item definition of the associated item entry. */
 	UFUNCTION(BlueprintCallable, Category = "Itemization Core|Item", meta = (DisplayName = "Get Current State"))

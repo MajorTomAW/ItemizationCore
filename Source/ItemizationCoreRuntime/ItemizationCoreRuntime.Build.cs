@@ -15,13 +15,13 @@ public class ItemizationCoreRuntime : ModuleRules
         PublicDependencyModuleNames.AddRange(new []
         {
             "Core",
-            "StructUtils",
             "NetCore",
             "Iris",
             "IrisCore",
             "GameplayTags",
             "GameplayAbilities",
             "DeveloperSettings",
+            "ModularGameplay",
         });
 
         PrivateDependencyModuleNames.AddRange(new []

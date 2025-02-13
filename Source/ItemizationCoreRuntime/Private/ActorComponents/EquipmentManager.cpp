@@ -27,6 +27,8 @@ UEquipmentManager::UEquipmentManager(const FObjectInitializer& ObjectInitializer
 	bWantsInitializeComponent = true;
 	bAutoActivate = true;
 
+	bWantsInventoryData = true;
+
 	SetIsReplicatedByDefault(true);
 }
 
@@ -51,37 +53,6 @@ UEquipmentManager* UEquipmentManager::GetEquipmentManager(AActor* Actor)
 	}
 
 	return Mgr;
-}
-
-void UEquipmentManager::SetInventoryManager(UInventoryManager* InInventoryManager)
-{
-	check(InInventoryManager);
-	CachedInventoryData = InInventoryManager->GetInventoryData();
-
-	ITEMIZATION_Net_LOG(Log, this, TEXT("Equipment Manager (%s) linked to Inventory Manager (%s) [%s]"),
-		*GetName(), *GetNameSafe(InInventoryManager), GetInventoryData().IsValid() ? *GetInventoryData()->ToString() : TEXT("null"));
-}
-
-
-
-UInventoryManager* UEquipmentManager::GetInventoryManager() const
-{
-	if (CachedInventoryData.IsValid())
-	{
-		return CachedInventoryData->InventoryManager.Get();
-	}
-
-	return UInventoryManager::GetInventoryManager(GetPawn()->GetController());
-}
-
-bool UEquipmentManager::IsOwnerActorAuthoritative() const
-{
-	if (!GetPawn())
-	{
-		return false;
-	}
-
-	return GetPawn()->HasAuthority();
 }
 
 FInventoryItemEntryHandle UEquipmentManager::EquipItem(const FInventoryItemEntryHandle& ItemHandle, const FItemActionContextData& ContextData)
@@ -432,60 +403,6 @@ UInventoryEquipmentInstance* UEquipmentManager::GetFirstInstanceOfType(
 	return nullptr;
 }
 
-void UEquipmentManager::PreNetReceive()
-{
-	Super::PreNetReceive();
-
-	TryInitializeWithInventoryManager();
-}
-
-void UEquipmentManager::BeginPlay()
-{
-	Super::BeginPlay();
-
-	TryInitializeWithInventoryManager();
-}
-
-void UEquipmentManager::TryInitializeWithInventoryManager()
-{
-	if (APawn* Pawn = GetPawn())
-	{
-		if (UInventoryManager* MutableInventoryManager = UInventoryManager::GetInventoryManager(Pawn))
-		{
-			SetInventoryManager(MutableInventoryManager);
-			MutableInventoryManager->SetAvatarActor(Pawn);
-			MutableInventoryManager->ForceAvatarReplication();
-			return;
-		}
-
-		// For non-autonomous proxies we need to create our own inventory data.
-		if (!Pawn->IsLocallyControlled() || Pawn->GetLocalRole() == ROLE_SimulatedProxy)
-		{
-			if (!CachedInventoryData.IsValid())
-			{
-				CachedInventoryData = MakeShareable(new FItemizationCoreInventoryData());
-				CachedInventoryData->AvatarActor = Pawn;
-			}
-		}
-	}
-
-	// Try again next tick.
-	GetWorld()->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateLambda([this]()
-	{
-		TryInitializeWithInventoryManager();
-	}));
-}
-
-const TSharedPtr<FItemizationCoreInventoryData>& UEquipmentManager::GetInventoryData() const
-{
-	return CachedInventoryData;
-}
-
-FItemizationCoreInventoryData* UEquipmentManager::GetInventoryDataPtr() const
-{
-	return CachedInventoryData.Get();
-}
-
 void UEquipmentManager::OnRegister()
 {
 	Super::OnRegister();
@@ -512,20 +429,6 @@ void UEquipmentManager::OnRegister()
 	}
 
 	EquipmentList.RegisterWithOwner(this);
-
-	TryInitializeWithInventoryManager();
-}
-
-void UEquipmentManager::InitializeComponent()
-{
-	Super::InitializeComponent();
-
-	TryInitializeWithInventoryManager();
-}
-
-void UEquipmentManager::UninitializeComponent()
-{
-	Super::UninitializeComponent();
 }
 
 bool UEquipmentManager::ReplicateSubobjects(UActorChannel* Channel, FOutBunch* Bunch, FReplicationFlags* RepFlags)
@@ -572,11 +475,6 @@ void UEquipmentManager::ReadyForReplication()
 
 void UEquipmentManager::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
 {
-	/*FDoRepLifetimeParams Params;
-	Params.bIsPushBased = true;
-	Params.Condition = COND_None;
-	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, EquipmentList, Params);*/
-	
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(ThisClass, EquipmentList);
@@ -585,4 +483,11 @@ void UEquipmentManager::GetLifetimeReplicatedProps(TArray<class FLifetimePropert
 void UEquipmentManager::GetReplicatedCustomConditionState(FCustomPropertyConditionState& OutActiveState) const
 {
 	Super::GetReplicatedCustomConditionState(OutActiveState);
+}
+
+void UEquipmentManager::PreInitializeWithInventoryManager(UInventoryManager* InInventoryManager)
+{
+	check(InInventoryManager);
+	InInventoryManager->SetAvatarActor(GetPawn());
+	InInventoryManager->ForceAvatarReplication();
 }

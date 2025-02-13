@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "InventoryExtensionComponent.h"
 #include "InventorySlotEntry.h"
 #include "Components/ActorComponent.h"
 #include "InventorySlotManager.generated.h"
@@ -23,7 +24,7 @@ struct FItemizationCoreInventoryData;
  * @see UInventoryManager
  */
 UCLASS(ClassGroup=(Itemization), meta=(BlueprintSpawnableComponent), BlueprintType, Blueprintable)
-class ITEMIZATIONCORERUNTIME_API UInventorySlotManager : public UActorComponent
+class ITEMIZATIONCORERUNTIME_API UInventorySlotManager : public UInventoryExtensionComponent
 {
 	GENERATED_BODY()
 	friend class UInventoryManager;
@@ -35,56 +36,8 @@ public:
 	/** Static getter to find the slot manager on an actor. */
 	static UInventorySlotManager* GetSlotManager(AActor* Actor);
 
-	/** Called to link up this equipment manager with an inventory manager. */
-	virtual void SetInventoryManager(UInventoryManager* InInventoryManager);
-
-	/** Called to initialize the equipment manager with the inventory manager. */
-	virtual void TryInitializeWithInventoryManager();
-
-	/** Returns the inventory data. */
-	const TSharedPtr<FItemizationCoreInventoryData>& GetInventoryData() const;
-	FItemizationCoreInventoryData* GetInventoryDataPtr() const;
-
-	/**
-	 * Retrieves the Inventory Manager that owns the inventory.
-	 * Will first try to resolve the weak reference, if that fails from the inventory data and lastly from the owning actor.
-	 */
-	UInventoryManager* GetInventoryManager() const;
-
-	/** Gets the pawn that owns the component, this should always be valid during gameplay but can return null in the editor */
-	template <class T>
-	T* GetPawn() const
-	{
-		static_assert(TPointerIsConvertibleFromTo<T, APawn>::Value, "'T' template parameter to 'GetPawn' must be a subclass of APawn");
-		return Cast<T>(GetPawn());
-	}
-
-	/** Gets the pawn that owns the component, this should always be valid during gameplay but can return null in the editor */
-	APawn* GetPawn() const;
-
-	/** Gets the controller that owns the component, this should always be valid during gameplay but can return null in the editor */
-	template <class T>
-	T* GetController() const
-	{
-		static_assert(TPointerIsConvertibleFromTo<T, AController>::Value, "'T' template parameter to 'GetController' must be a subclass of AController");
-		return Cast<T>(GetController());
-	}
-
-	/** Gets the controller that owns the component, this should always be valid during gameplay but can return null in the editor */
-	AController* GetController() const;
-
-	/** Returns true if this component's actor has authority. */
-	virtual bool IsOwnerActorAuthoritative() const;
-
-	//~ Begin UObject Interface
-	virtual void PreNetReceive() override;
-	virtual void BeginPlay() override;
-	//~ End UObject Interface
-
 	//~ Begin UActorComponent Interface
-	virtual void OnRegister() override;
 	virtual void InitializeComponent() override;
-	virtual void UninitializeComponent() override;
 	virtual bool ReplicateSubobjects(UActorChannel* Channel, FOutBunch* Bunch, FReplicationFlags* RepFlags) override;
 	virtual void ReadyForReplication() override;
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
@@ -108,11 +61,4 @@ protected:
 	FInventorySlotContainer SlotEntries;
 
 private:
-	/**
-	 * Cached data about the equipment system such as the inventory manager, etc.
-	 * Utility-struct for easy access to those data.
-	 *
-	 * For simulated proxies this will be its own inventory data not linked to the inventory manager.
-	 */
-	TSharedPtr<FItemizationCoreInventoryData> CachedInventoryData;
 };

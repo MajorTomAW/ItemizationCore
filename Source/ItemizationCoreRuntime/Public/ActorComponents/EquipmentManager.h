@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "AbilitySystemComponent.h"
 #include "InventoryEquipmentEntry.h"
+#include "InventoryExtensionComponent.h"
 #include "Components/ActorComponent.h"
 #include "EquipmentManager.generated.h"
 
@@ -12,7 +13,7 @@
  * Manages the equipment of an actor.
  */
 UCLASS(ClassGroup = (Itemization), meta = (BlueprintSpawnableComponent), BlueprintType, Blueprintable)
-class ITEMIZATIONCORERUNTIME_API UEquipmentManager : public UActorComponent
+class ITEMIZATIONCORERUNTIME_API UEquipmentManager : public UInventoryExtensionComponent
 {
 	GENERATED_BODY()
 	friend struct FInventoryEquipmentEntry;
@@ -23,43 +24,6 @@ public:
 
 	/** Static getter to find the equipment manager on an actor. */
 	static UEquipmentManager* GetEquipmentManager(AActor* Actor);
-
-	/** Called to link up this equipment manager with an inventory manager. */
-	virtual void SetInventoryManager(UInventoryManager* InInventoryManager);
-
-	/** Called to initialize the equipment manager with the inventory manager. */
-	virtual void TryInitializeWithInventoryManager();
-
-	/** Returns the inventory data. */
-	const TSharedPtr<FItemizationCoreInventoryData>& GetInventoryData() const;
-	FItemizationCoreInventoryData* GetInventoryDataPtr() const;
-
-	
-	/**
-	 * Retrieves the Inventory Manager that owns the inventory.
-	 * Will first try to resolve the weak reference, if that fails from the inventory data and lastly from the owning actor.
-	 */
-	UInventoryManager* GetInventoryManager() const;
-
-	/** Gets the pawn that owns the component, this should always be valid during gameplay but can return null in the editor */
-	template <class T>
-	T* GetPawn() const
-	{
-		static_assert(TPointerIsConvertibleFromTo<T, APawn>::Value, "'T' template parameter to 'GetPawn' must be a subclass of APawn");
-		return Cast<T>(GetOwner());
-	}
-
-	/** Gets the pawn that owns the component, this should always be valid during gameplay but can return null in the editor */
-	APawn* GetPawn() const
-	{
-		return GetPawn<APawn>();
-	}
-
-	/** Retrieves the controller from the owning pawn. */
-	AController* GetController() const { return GetPawn() ? GetPawn()->GetController() : nullptr; }
-
-	/** Returns true if this component's actor has authority. */
-	virtual bool IsOwnerActorAuthoritative() const;
 
 	/**
 	 * Equips an item that exists in the inventory.
@@ -105,20 +69,17 @@ public:
 		return Cast<T>(GetFirstInstanceOfType(T::StaticClass()));
 	}
 
-	//~ Begin UObject Interface
-	virtual void PreNetReceive() override;
-	virtual void BeginPlay() override;
-	//~ End UObject Interface
-
 	//~ Begin UActorComponent Interface
 	virtual void OnRegister() override;
-	virtual void InitializeComponent() override;
-	virtual void UninitializeComponent() override;
 	virtual bool ReplicateSubobjects(class UActorChannel* Channel, class FOutBunch* Bunch, FReplicationFlags* RepFlags) override;
 	virtual void ReadyForReplication() override;
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void GetReplicatedCustomConditionState(FCustomPropertyConditionState& OutActiveState) const override;
 	//~ End UActorComponent Interface
+
+	//~ Begin UInventoryExtensionComponent Interface
+	virtual void PreInitializeWithInventoryManager(UInventoryManager* InInventoryManager) override;
+	//~ End UInventoryExtensionComponent Interface
 
 protected:
 	/** Will be called from EquipItem or from OnRep. Initializes the given equipment instance. */
@@ -143,13 +104,4 @@ protected:
 	/** The replicated equipment list. */
 	UPROPERTY(Replicated, BlueprintReadOnly, Transient, Category = Equipment)
 	FInventoryEquipmentContainer EquipmentList;
-	
-private:
-	/**
-	 * Cached data about the equipment system such as the inventory manager, etc.
-	 * Utility-struct for easy access to those data.
-	 *
-	 * For simulated proxies this will be its own inventory data not linked to the inventory manager.
-	 */
-	TSharedPtr<FItemizationCoreInventoryData> CachedInventoryData;
 };

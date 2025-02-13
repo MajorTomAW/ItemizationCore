@@ -38,10 +38,6 @@
 			"Enabled": true
 		},
 		{
-			"Name": "StructUtils",
-			"Enabled": true
-		},
-		{
 			"Name": "Iris",
 			"Enabled": true
 		},
@@ -53,6 +49,10 @@
 			"Name": "GameplayMessageRouter",
 			"Enabled": true,
 			"Optional": true
+		},
+		{
+			"Name": "ModularGameplay",
+			"Enabled": true
 		},
 		{
 			"Name": "AssetManagerEditor",
