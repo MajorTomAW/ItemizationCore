@@ -10,7 +10,7 @@ DEFINE_LOG_CATEGORY(LogInventorySystem);
 extern ENGINE_API FString GPlayInEditorContextString;
 #endif
 
-FString Itemization::GetClientServerContextString(const UObject* Object)
+FString Itemization::GetItemizationClientServerContextString(const UObject* Object)
 {
 	ENetRole Role = ROLE_None;
 
