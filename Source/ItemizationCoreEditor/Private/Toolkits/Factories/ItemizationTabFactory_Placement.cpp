@@ -7,7 +7,7 @@
 #include "Styles/ItemizationEditorStyle.h"
 #include "Toolkits/ItemizationEditorApplication.h"
 
-#define LOCTEXT_NAMESPACE "ItemizationEditorTabFactory"
+#define LOCTEXT_NAMESPACE "ItemizationEditor"
 using namespace UE::ItemizationCore::Editor;
 
 FItemizationTabFactory_Placement::FItemizationTabFactory_Placement(TSharedPtr<FItemizationEditorApplication> InApp)
@@ -15,8 +15,8 @@ FItemizationTabFactory_Placement::FItemizationTabFactory_Placement(TSharedPtr<FI
 {
 	TabLabel = LOCTEXT("PlacementTabLabel", "Placement");
 	TabIcon = FSlateIcon(FItemizationEditorStyle::Get()->GetStyleSetName(), "Icons.Placement");
-	ViewMenuDescription = LOCTEXT("PlacementTabLabel", "Placement");
-	ViewMenuTooltip = LOCTEXT("PlacementTabLabel", "Open the Placement tab");
+	ViewMenuDescription = LOCTEXT("PlacementTabDesc", "Placement");
+	ViewMenuTooltip = LOCTEXT("PlacementTabMenuTooltip", "Open the Placement tab");
 }
 
 TSharedRef<SWidget> FItemizationTabFactory_Placement::CreateTabBody(const FWorkflowTabSpawnInfo& Info) const

@@ -26,7 +26,7 @@ static const FName NAME_CosmeticComponent = "CosmeticComponent";
 static const FName NAME_AllowCosmeticComponents = "AllowCosmeticComponents";
 static const FName NAME_AllowNonCosmeticComponents = "AllowNonCosmeticComponents";
 
-#define LOCTEXT_NAMESPACE "ItemComponentDataCustomization"
+#define LOCTEXT_NAMESPACE "ItemizationEditor"
 
 auto GetCommonScriptStruct = [](TSharedPtr<IPropertyHandle> StructProperty, const UScriptStruct*& OutCommonStruct)
 {
@@ -457,7 +457,7 @@ FText FItemComponentDataCustomization::GetDisplayValueStringWrapped() const
 	if (ArrayProperty && ArrayProperty.IsValid())
 	{
 		const int32 Index = ProxyProperty->GetIndexInArray();
-		return FText::Format(LOCTEXT("ArrayElementFormat", "Index [ {0} ] :	{1}"), FText::AsNumber(Index), DisplayValueString);
+		return FText::Format(LOCTEXT("ArrayElementFormat_Array", "Index [ {0} ] :	{1}"), FText::AsNumber(Index), DisplayValueString);
 	}
 	
 	return DisplayValueString;

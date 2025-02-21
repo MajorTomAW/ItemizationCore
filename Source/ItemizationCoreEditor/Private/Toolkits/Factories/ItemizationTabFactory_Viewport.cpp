@@ -7,7 +7,7 @@
 #include "Styles/ItemizationEditorStyle.h"
 #include "Toolkits/ItemizationEditorApplication.h"
 
-#define LOCTEXT_NAMESPACE "ItemizationEditorTabFactory"
+#define LOCTEXT_NAMESPACE "ItemizationEditor"
 using namespace UE::ItemizationCore::Editor;
 
 FItemizationTabFactory_Viewport::FItemizationTabFactory_Viewport(TSharedPtr<FItemizationEditorApplication> InApp)
@@ -15,8 +15,8 @@ FItemizationTabFactory_Viewport::FItemizationTabFactory_Viewport(TSharedPtr<FIte
 {
 	TabLabel = LOCTEXT("ViewportTabLabel", "Viewport");
 	TabIcon = FSlateIcon(FItemizationEditorStyle::Get()->GetStyleSetName(), "Icons.Viewport");
-	ViewMenuDescription = LOCTEXT("ViewportTabLabel", "Viewport");
-	ViewMenuTooltip = LOCTEXT("ViewportTabLabel", "Open the viewport tab");
+	ViewMenuDescription = LOCTEXT("ViewportDesc", "Viewport");
+	ViewMenuTooltip = LOCTEXT("ViewportTabMenuTooltip", "Open the viewport tab");
 }
 
 TSharedRef<SWidget> FItemizationTabFactory_Viewport::CreateTabBody(const FWorkflowTabSpawnInfo& Info) const

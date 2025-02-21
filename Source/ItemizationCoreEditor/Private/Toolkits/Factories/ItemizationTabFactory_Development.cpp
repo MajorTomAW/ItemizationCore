@@ -7,7 +7,7 @@
 #include "Styles/ItemizationEditorStyle.h"
 #include "Toolkits/ItemizationEditorApplication.h"
 
-#define LOCTEXT_NAMESPACE "ItemizationEditorTabFactory"
+#define LOCTEXT_NAMESPACE "ItemizationEditor"
 using namespace UE::ItemizationCore::Editor;
 
 FItemizationTabFactory_Development::FItemizationTabFactory_Development(TSharedPtr<FItemizationEditorApplication> InApp)
