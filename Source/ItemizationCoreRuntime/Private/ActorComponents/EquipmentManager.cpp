@@ -32,7 +32,7 @@ UEquipmentManager::UEquipmentManager(const FObjectInitializer& ObjectInitializer
 	SetIsReplicatedByDefault(true);
 }
 
-UEquipmentManager* UEquipmentManager::GetEquipmentManager(AActor* Actor)
+UEquipmentManager* UEquipmentManager::FindEquipmentManager(AActor* Actor)
 {
 	UEquipmentManager* Mgr = nullptr;
 	if (Actor)

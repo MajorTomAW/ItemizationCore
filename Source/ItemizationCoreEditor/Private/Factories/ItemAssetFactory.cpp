@@ -7,6 +7,7 @@
 #include "ItemDefinition.h"
 #include "ItemizationCoreEditor.h"
 #include "ItemizationCoreEditorHelpers.h"
+#include "PlaysetItemDefinition.h"
 #include "Kismet2/SClassPickerDialog.h"
 #include "Settings/ItemizationCoreEditorSettings.h"
 
@@ -74,6 +75,50 @@ UObject* UItemAssetFactory::FactoryCreateNew(
 	
 	check(InClass->IsChildOf(UItemDefinition::StaticClass()));
 	return NewObject<UItemDefinition>(InParent, InClass, InName, Flags | RF_Transactional, Context);
+}
+
+UActorFactory_PlaysetItemDefinition::UActorFactory_PlaysetItemDefinition()
+{
+	NewActorClass = AActor::StaticClass();
+
+	bShowInEditorQuickMenu = true;
+	bUseSurfaceOrientation = true;
+	bUsePlacementExtent = true;
+}
+
+AActor* UActorFactory_PlaysetItemDefinition::GetDefaultActor(const FAssetData& AssetData)
+{
+	const UPlaysetItemDefinition* Playset = Cast<UPlaysetItemDefinition>(AssetData.GetAsset());
+	if (Playset == nullptr)
+	{
+		return nullptr;
+	}
+
+	if (Playset->SourceActorBlueprint.IsNull())
+	{
+		return nullptr;
+	}
+
+	SpawnPositionOffset = Playset->DefaultLocation;
+
+	return Playset->SourceActorBlueprint.LoadSynchronous()->GetDefaultObject<AActor>();
+}
+
+bool UActorFactory_PlaysetItemDefinition::CanCreateActorFrom(const FAssetData& AssetData, FText& OutErrorMsg)
+{
+	const UPlaysetItemDefinition* Playset = Cast<UPlaysetItemDefinition>(AssetData.GetAsset());
+	if (Playset == nullptr)
+	{
+		OutErrorMsg = LOCTEXT("InvalidAsset", "Invalid asset data.");
+		return false;
+	}
+
+	return true;
+}
+
+void UActorFactory_PlaysetItemDefinition::PostSpawnActor(UObject* Asset, AActor* NewActor)
+{
+	Super::PostSpawnActor(Asset, NewActor);
 }
 
 #undef LOCTEXT_NAMESPACE

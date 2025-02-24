@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "InventoryItemEntry.h"
 #include "InventoryItemEntryHandle.h"
+#include "ItemDefinition.h"
 #include "ItemizationCoreTypes.h"
 #include "Net/Core/PushModel/PushModelMacros.h"
 #include "UObject/Object.h"
@@ -113,6 +114,10 @@ public:
 	/** Retrieves the source object associated with this instance. */
 	UFUNCTION(BlueprintCallable, Category = "Itemization Core|Item")
 	UObject* GetSourceObject() const;
+
+	/** Returns the current stack count of the owning item entry. */
+	UFUNCTION(BlueprintCallable, Category = "Itemization Core|Item")
+	int32 GetStackCount() const;
 	
 	/** Gets the current item handle of the associated item entry. */
 	UFUNCTION(BlueprintCallable, Category = "Itemization Core|Item", meta = (DisplayName = "Get Item Handle"))

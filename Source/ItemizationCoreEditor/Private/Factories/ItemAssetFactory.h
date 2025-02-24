@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "ActorFactories/ActorFactory.h"
 #include "Factories/Factory.h"
 #include "ItemAssetFactory.generated.h"
 
@@ -24,4 +25,19 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = ItemDefinition)
 	TSubclassOf<UItemDefinition> ItemDefinitionClass;
+};
+
+UCLASS(Config = Editor)
+class UActorFactory_PlaysetItemDefinition : public UActorFactory
+{
+	GENERATED_BODY()
+
+public:
+	UActorFactory_PlaysetItemDefinition();
+
+	//~ Begin UActorFactory Interface
+	virtual AActor* GetDefaultActor(const FAssetData& AssetData) override;
+	virtual bool CanCreateActorFrom(const FAssetData& AssetData, FText& OutErrorMsg) override;
+	virtual void PostSpawnActor(UObject* Asset, AActor* NewActor) override;
+	//~ End UActorFactory Interface
 };

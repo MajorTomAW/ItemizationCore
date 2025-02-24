@@ -15,6 +15,7 @@
 #include "Net/UnrealNetwork.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
+#include "ActorComponents/InventorySlotManager.h"
 #include "Engine/BlueprintGeneratedClass.h"
 #include "Engine/NetworkDelegates.h"
 #include "Engine/NetConnection.h"
@@ -46,7 +47,7 @@ UInventoryManager::UInventoryManager(const FObjectInitializer& ObjectInitializer
 	SetIsReplicatedByDefault(true);
 }
 
-UInventoryManager* UInventoryManager::GetInventoryManager(AActor* Actor)
+UInventoryManager* UInventoryManager::FindInventoryManager(AActor* Actor)
 {
 	if (!IsValid(Actor))
 	{
@@ -209,6 +210,12 @@ FInventoryItemEntryHandle UInventoryManager::NativeGiveItem(
 
 		OnGiveItem(NewItem);
 		MarkItemEntryDirty(NewItem, true);
+		
+		// Add the item to the inventory slot.
+		if (UInventorySlotManager* SlotManager = UInventorySlotManager::FindInventorySlotManager(GetOwnerActor()))
+		{
+			SlotManager->AddItemToSlot(NewItem);
+		}
 
 		ITEMIZATION_LOG(Verbose, TEXT("[%hs] (%s): Creating new Item Stack [%s] %s. Stack Count: %d"),
 			__FUNCTION__, *GetName(), *NewItem.Handle.ToString(), *GetNameSafe(NewItem.Instance), NewItem.StackCount);
@@ -1108,7 +1115,7 @@ void UInventoryManager::OnShowDebugInfo(AHUD* HUD, UCanvas* Canvas, const FDebug
 {
 	if (DisplayInfo.IsDisplayOn(TEXT("Itemization")))
 	{
-		if (const UInventoryManager* Mgr = GetInventoryManager(HUD->GetCurrentDebugTargetActor()))
+		if (const UInventoryManager* Mgr = FindInventoryManager(HUD->GetCurrentDebugTargetActor()))
 		{
 			Mgr->DisplayDebug(Canvas, DisplayInfo, YL, YPos);
 		}

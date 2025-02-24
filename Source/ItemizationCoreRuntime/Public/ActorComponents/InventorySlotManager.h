@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "InventoryExtensionComponent.h"
+#include "InventoryItemEntry.h"
 #include "InventorySlotEntry.h"
 #include "Components/ActorComponent.h"
 #include "InventorySlotManager.generated.h"
@@ -34,7 +35,8 @@ public:
 	UInventorySlotManager(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 	/** Static getter to find the slot manager on an actor. */
-	static UInventorySlotManager* GetSlotManager(AActor* Actor);
+	UFUNCTION(BlueprintPure, Category = ItemizationCore)
+	static UInventorySlotManager* FindInventorySlotManager(AActor* Actor);
 
 	//~ Begin UActorComponent Interface
 	virtual void InitializeComponent() override;
@@ -43,6 +45,10 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void GetReplicatedCustomConditionState(FCustomPropertyConditionState& OutActiveState) const override;
 	//~ End UActorComponent Interface
+
+	
+
+	virtual void AddItemToSlot(const FInventoryItemEntry& ItemEntry);
 
 	/**
 	 * Returns a list with all slot entries.

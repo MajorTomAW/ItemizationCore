@@ -32,7 +32,7 @@ void UInventorySlotManager::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	DOREPLIFETIME(ThisClass, SlotEntries);
 }
 
-UInventorySlotManager* UInventorySlotManager::GetSlotManager(AActor* Actor)
+UInventorySlotManager* UInventorySlotManager::FindInventorySlotManager(AActor* Actor)
 {
 	if (!IsValid(Actor))
 	{
@@ -69,12 +69,18 @@ void UInventorySlotManager::InitializeComponent()
 {
 	Super::InitializeComponent();
 
-	// Pre-allocate the slot entries
-	SlotEntries.Slots.Reserve(DefaultSlotCount);
-	for (int i = 0; i < DefaultSlotCount; ++i)
+	if (HasAuthority())
 	{
-		FInventorySlotEntry& SlotEntry = SlotEntries.Slots.AddDefaulted_GetRef();
-		SlotEntry.SlotIndex = i;
+		// Pre-allocate the slot entries
+		SlotEntries.Slots.Reserve(DefaultSlotCount);
+		for (int i = 0; i < DefaultSlotCount; ++i)
+		{
+			FInventorySlotEntry& SlotEntry = SlotEntries.Slots.AddDefaulted_GetRef();
+			SlotEntry.SlotIndex = i;
+		}
+
+		// Replicate the slot entries down to the client
+		SlotEntries.MarkArrayDirty();
 	}
 }
 
@@ -91,6 +97,20 @@ void UInventorySlotManager::ReadyForReplication()
 void UInventorySlotManager::GetReplicatedCustomConditionState(FCustomPropertyConditionState& OutActiveState) const
 {
 	Super::GetReplicatedCustomConditionState(OutActiveState);
+}
+
+void UInventorySlotManager::AddItemToSlot(const FInventoryItemEntry& ItemEntry)
+{
+	for (auto& Slot : SlotEntries.Slots)
+	{
+		if (Slot.Handle.IsValid())
+		{
+			continue;
+		}
+
+		Slot.Handle = ItemEntry.Handle;
+		break;
+	}
 }
 
 void UInventorySlotManager::GetAllSlotEntries(TArray<FInventorySlotEntry>& OutSlotEntries) const

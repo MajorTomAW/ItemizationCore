@@ -12,7 +12,6 @@
 
 #include "InventoryEquipmentEntry.h"
 #include "InventoryItemEntryHandle.h"
-#include "InventoryItemInstance.h"
 
 #include "InventoryEquipmentInstance.generated.h"
 
@@ -22,6 +21,7 @@ class UObject;
 class UFunction;
 class AController;
 class UItemDefinition;
+class UInventoryItemInstance;
 class UInventoryManager;
 class UEquipmentManager;
 
@@ -150,7 +150,7 @@ public:
 	
 	/** Retrieves the instigator of this equipment (Usually the item instance). */
 	UFUNCTION(BlueprintCallable, Category = "Itemization Core|Equipment")
-	UObject* GetInstigator() const { return GetInstigatorTyped(UInventoryItemInstance::StaticClass()); }
+	UObject* GetInstigator() const;
 
 	/** returns the inventory data associated with this instance. */
 	UFUNCTION(BlueprintCallable, Category = "Itemization Core|Equipment")

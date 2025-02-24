@@ -31,7 +31,7 @@ UInventoryManager* UInventoryExtensionComponent::GetInventoryManager() const
 		return CachedInventoryData->InventoryManager.Get();
 	}
 
-	return UInventoryManager::GetInventoryManager(GetOwner());
+	return UInventoryManager::FindInventoryManager(GetOwner());
 }
 
 void UInventoryExtensionComponent::SetInventoryManager(UInventoryManager* InInventoryManager)
@@ -55,7 +55,7 @@ void UInventoryExtensionComponent::TryInitializeWithInventoryManager()
 	if (AActor* Owner = GetOwner())
 	{
 		// This only works for locally controlled pawns and authority.
-		if (UInventoryManager* MutableInventoryMgr = UInventoryManager::GetInventoryManager(Owner))
+		if (UInventoryManager* MutableInventoryMgr = UInventoryManager::FindInventoryManager(Owner))
 		{
 			SetInventoryManager(MutableInventoryMgr);
 			return;

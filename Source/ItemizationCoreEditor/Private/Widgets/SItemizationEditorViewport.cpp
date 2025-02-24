@@ -97,6 +97,44 @@ TSharedPtr<SWidget> SItemizationEditorViewport::MakeViewportToolbar()
 
 void SItemizationEditorViewport::PopulateViewportOverlays(TSharedRef<SOverlay> Overlay)
 {
+	FSlateBrush const* BlackBackground = FAppStyle::GetBrush("Graph.Panel.SolidBackground");
+		
+		
+	Overlay
+	->AddSlot()
+	.VAlign(VAlign_Fill)
+	.HAlign(HAlign_Fill)
+	[
+		SNew(SOverlay)
+		.Visibility_Lambda([this]()
+		{
+			if (SourceComponent->GetStaticMesh() == nullptr)
+			{
+				return EVisibility::Visible;	
+			}
+
+			return EVisibility::Collapsed;
+		})
+			
+		+ SOverlay::Slot()
+		.VAlign(VAlign_Fill)
+		.HAlign(HAlign_Fill)
+		[
+			// Black background
+			SNew(SImage)
+			.Image(BlackBackground)
+		]
+
+		+ SOverlay::Slot()
+		.VAlign(VAlign_Center)
+		.HAlign(HAlign_Center)
+		[
+			SNew(STextBlock)
+			.Text(NSLOCTEXT("ItemizationCoreEditor","NoPreviewAsset","No Preview Available"))
+			.WrappingPolicy(ETextWrappingPolicy::DefaultWrapping)
+			.AutoWrapText(true)
+		]
+	];
 }
 
 void SItemizationEditorViewport::Tick(const FGeometry& AllottedGeometry, const double InCurrentTime,

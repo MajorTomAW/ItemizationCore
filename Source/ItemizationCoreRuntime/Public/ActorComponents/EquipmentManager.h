@@ -23,7 +23,8 @@ public:
 	UEquipmentManager(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 	/** Static getter to find the equipment manager on an actor. */
-	static UEquipmentManager* GetEquipmentManager(AActor* Actor);
+	UFUNCTION(BlueprintPure, Category = ItemizationCore)
+	static UEquipmentManager* FindEquipmentManager(AActor* Actor);
 
 	/**
 	 * Equips an item that exists in the inventory.

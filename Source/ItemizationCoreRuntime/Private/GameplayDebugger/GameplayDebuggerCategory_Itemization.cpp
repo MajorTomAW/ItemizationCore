@@ -47,7 +47,7 @@ TSharedRef<FGameplayDebuggerCategory> FGameplayDebuggerCategory_Itemization::Mak
 
 void FGameplayDebuggerCategory_Itemization::CollectData(APlayerController* OwnerPC, AActor* DebugActor)
 {
-	if (const UInventoryManager* InventoryManager = UInventoryManager::GetInventoryManager(DebugActor))
+	if (const UInventoryManager* InventoryManager = UInventoryManager::FindInventoryManager(DebugActor))
 	{
 		// Cache the package map for serialization
 		const UNetConnection* NetConnection = OwnerPC->GetNetConnection();
@@ -92,7 +92,7 @@ void FGameplayDebuggerCategory_Itemization::CollectData(APlayerController* Owner
 			ItemData.bIsActive = false;
 			ItemData.bIsEquipped = false;	
 
-			if (const UEquipmentManager* EquipmentManager = UEquipmentManager::GetEquipmentManager(DebugActor))
+			if (const UEquipmentManager* EquipmentManager = UEquipmentManager::FindEquipmentManager(DebugActor))
 			{
 				if (const FInventoryEquipmentEntry* EquipmentEntry = EquipmentManager->FindEquipmentEntryFromHandle(ItemEntry.Handle))
 				{

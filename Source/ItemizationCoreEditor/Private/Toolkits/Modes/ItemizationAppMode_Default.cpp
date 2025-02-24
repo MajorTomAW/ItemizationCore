@@ -4,6 +4,7 @@
 #include "ItemizationAppMode_Default.h"
 
 #include "ItemDefinition.h"
+#include "PlaysetItemDefinition.h"
 #include "UnrealEdGlobals.h"
 #include "Editor/UnrealEdEngine.h"
 #include "Toolkits/ItemizationEditorApplication.h"

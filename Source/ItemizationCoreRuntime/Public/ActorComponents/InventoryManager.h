@@ -36,7 +36,8 @@ public:
 	UInventoryManager(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 	/** Static getter to find the inventory manager on an actor. */
-	static UInventoryManager* GetInventoryManager(AActor* Actor);
+	UFUNCTION(BlueprintPure, Category = ItemizationCore)
+	static UInventoryManager* FindInventoryManager(AActor* Actor);
 
 	/** Returns true if this component's actor has authority. */
 	virtual bool IsOwnerActorAuthoritative() const;

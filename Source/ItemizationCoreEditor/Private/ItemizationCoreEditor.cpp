@@ -4,6 +4,7 @@
 #include "GameDelegates.h"
 #include "ItemDefinition.h"
 #include "ItemizationCoreEditorHelpers.h"
+#include "PlaysetItemDefinition.h"
 #include "Commands/ItemizationEditorCommands.h"
 #include "Components/ItemComponentData_Equipment.h"
 #include "Customization/ItemComponentDataCustomization.h"

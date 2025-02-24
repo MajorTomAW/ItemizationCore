@@ -103,7 +103,7 @@ void UItemizationCoreCheatManagerExtension::GiveItem(FString ItemPath, int32 Sta
 {
 #if UE_WITH_CHEAT_MANAGER
 	APlayerController* PC = GetPlayerController();
-	UInventoryManager* InventoryManager = UInventoryManager::GetInventoryManager(PC);
+	UInventoryManager* InventoryManager = UInventoryManager::FindInventoryManager(PC);
 	if (!InventoryManager)
 	{
 		UE_LOG(LogConsoleResponse, Log, TEXT("%s does not have an InventoryManager component."), *GetNameSafe(PC));

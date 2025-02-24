@@ -321,6 +321,16 @@ UObject* UInventoryItemInstance::GetSourceObject() const
 	return nullptr;
 }
 
+int32 UInventoryItemInstance::GetStackCount() const
+{
+	if (const FInventoryItemEntry* Entry = GetCurrentItemEntry())
+	{
+		return Entry->GetStackCount();
+	}
+
+	return 0;
+}
+
 const UItemDefinition* UInventoryItemInstance::K2_GetCurrentItemDefinition_Typed(
 	TSubclassOf<UItemDefinition> Type) const
 {

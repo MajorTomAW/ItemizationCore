@@ -8,6 +8,7 @@
 #endif
 
 #include "InventoryEquipmentEntry.h"
+#include "InventoryItemInstance.h"
 #include "ItemizationCoreLog.h"
 #include "ActorComponents/EquipmentManager.h"
 #include "ActorComponents/InventoryManager.h"
@@ -243,7 +244,7 @@ UEquipmentManager* UInventoryEquipmentInstance::GetOwningEquipmentManager() cons
 		return nullptr;
 	}
 
-	return UEquipmentManager::GetEquipmentManager(CurrentInventoryData->AvatarActor.Get());
+	return UEquipmentManager::FindEquipmentManager(CurrentInventoryData->AvatarActor.Get());
 }
 
 UEquipmentManager* UInventoryEquipmentInstance::GetOwningEquipmentManager_Checked() const
@@ -339,6 +340,11 @@ UObject* UInventoryEquipmentInstance::GetInstigatorTyped(TSubclassOf<UInventoryI
 	}
 
 	return nullptr;
+}
+
+UObject* UInventoryEquipmentInstance::GetInstigator() const
+{
+	return GetInstigatorTyped(UInventoryItemInstance::StaticClass());
 }
 
 FItemizationCoreInventoryData UInventoryEquipmentInstance::GetInventoryData() const
