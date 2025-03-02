@@ -171,6 +171,7 @@ FInventoryItemEntryHandle UInventoryManager::NativeGiveItem(
 		for (FInventoryItemEntry& Item : InventoryList.Items)
 		{
 			int32 OutExcess;
+			const int32 OldStackCount = Item.StackCount;
 			const bool bCouldCombine = CombineItemEntries(ItemEntry, Item, MutableContext, OutExcess);
 
 			if (!bCouldCombine)
@@ -180,6 +181,15 @@ FInventoryItemEntryHandle UInventoryManager::NativeGiveItem(
 
 			MutableContext.Delta = OutExcess;
 			LastHandle = Item.Handle;
+
+			// Broadcast the change message
+			// Not sure if this is the right place and the right time to do so.
+			// But lets see what happens :p
+			const AController* Controller = Cast<AController>(GetOwnerActor());
+			if (Controller && Controller->IsLocalController() && Controller->HasAuthority())
+			{
+				OnItemChangedDelegate.Broadcast(FInventoryChangeMessage(Item.Instance, OldStackCount, Item.StackCount));
+			}
 
 			// Mark dirty for replication
 			MarkItemEntryDirty(Item, true);
@@ -214,7 +224,7 @@ FInventoryItemEntryHandle UInventoryManager::NativeGiveItem(
 		// Add the item to the inventory slot.
 		if (UInventorySlotManager* SlotManager = UInventorySlotManager::FindInventorySlotManager(GetOwnerActor()))
 		{
-			SlotManager->AddItemToSlot(NewItem);
+			SlotManager->AddItemToSlot(NewItem.Handle);
 		}
 
 		ITEMIZATION_LOG(Verbose, TEXT("[%hs] (%s): Creating new Item Stack [%s] %s. Stack Count: %d"),
@@ -812,6 +822,7 @@ void UInventoryManager::OnRemoveItem(FInventoryItemEntry& ItemEntry)
 	if (UInventoryItemInstance* Instance = ItemEntry.Instance)
 	{
 		Instance->OnRemovedFromInventory(ItemEntry, Instance->CurrentInventoryData);
+		OnItemRemovedDelegate.Broadcast(FInventoryChangeMessage(Instance, ItemEntry.StackCount, 0));
 
 		// Make sure we remove this before marking it as garbage.
 		if (GetOwnerRole() == ROLE_Authority)
@@ -848,6 +859,7 @@ void UInventoryManager::OnGiveItem(FInventoryItemEntry& ItemEntry)
 	if (ensure(Instance))
 	{
 		Instance->OnAddedToInventory(ItemEntry, InventoryData.Get());
+		OnItemAddedDelegate.Broadcast(FInventoryChangeMessage(Instance, 0, ItemEntry.StackCount));
 	}
 }
 
@@ -938,6 +950,12 @@ bool UInventoryManager::RemoveItemByPredicate(const TFunctionRef<bool(const FInv
 				// Scope lock to ensure the item is removed properly.
 				INVENTORY_LIST_SCOPE_LOCK();
 				OnRemoveItem(ItemEntry);
+
+				// Remove the item to the inventory slot.
+				if (UInventorySlotManager* SlotManager = UInventorySlotManager::FindInventorySlotManager(GetOwnerActor()))
+				{
+					SlotManager->RemoveItemFromSlot(ItemEntry.Handle);
+				}
 
 				It.RemoveCurrent();
 				InventoryList.MarkArrayDirty();

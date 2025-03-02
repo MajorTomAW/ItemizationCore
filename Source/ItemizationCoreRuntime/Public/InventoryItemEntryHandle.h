@@ -39,27 +39,33 @@ public:
 	}
 
 	/** Operator to expose FInventoryItemEntryHandle serialization to custom serialization functions like NetSerialize overrides. */
-	friend FArchive& operator<<(FArchive& Ar, FInventoryItemEntryHandle& ItemSpecHandle)
+	FORCEINLINE friend FArchive& operator<<(FArchive& Ar, FInventoryItemEntryHandle& ItemSpecHandle)
 	{
 		static_assert(sizeof(FInventoryItemEntryHandle) == 4, "If properties of FInventoryItemEntryHandle change, consider updating this operator implementation.");
 		Ar << ItemSpecHandle.Handle;
 		return Ar;
 	}
 
-	friend uint32 GetTypeHash(const FInventoryItemEntryHandle& SpecHandle)
+	FORCEINLINE friend uint32 GetTypeHash(const FInventoryItemEntryHandle& SpecHandle)
 	{
 		return ::GetTypeHash(SpecHandle.Handle);
 	}
 
-	FString ToString() const
+	FORCEINLINE FString ToString() const
 	{
 		return IsValid() ? FString::FromInt(Handle) : TEXT("Invalid");	
 	}
 
 	/** Returns the handle as an integer. */
-	int32 Get() const
+	FORCEINLINE int32 Get() const
 	{
 		return Handle;
+	}
+
+	/** Clears the handle. */
+	FORCEINLINE void Clear()
+	{
+		Handle = INDEX_NONE;
 	}
 
 	/** An invalid handle. */

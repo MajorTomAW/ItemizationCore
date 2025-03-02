@@ -4,20 +4,20 @@
 
 #include "CoreMinimal.h"
 #include "ItemDefinition.h"
-#include "Components/ItemComponentData.h"
-#include "Components/ItemComponentData_Ability.h"
-#include "Components/ItemComponentData_Equipment.h"
-#include "Components/ItemComponentData_Icon.h"
-#include "Components/ItemComponentData_InventoryItemLimitByTag.h"
-#include "Components/ItemComponentData_MaxStackSize.h"
-#include "Components/ItemComponentData_OwnedGameplayTags.h"
-#include "Components/ItemComponentData_SlotSize.h"
-#include "Components/ItemComponentData_Traits.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 
 #include "ItemizationCoreStatics.generated.h"
 
 
+struct FItemComponentData_Traits;
+struct FItemComponentData_SlotSize;
+struct FItemComponentData_OwnedGameplayTags;
+struct FItemComponentData_MaxStackSize;
+struct FItemComponentData_InventoryItemLimitByTag;
+struct FItemComponentData_Icon;
+struct FItemComponentData_Equipment;
+struct FItemComponentData_Ability;
+struct FItemComponentData_DisallowInventorySlot;
 struct FItemActionContextData;
 struct FInventoryItemEntryHandle;
 class UInventoryManager;
@@ -99,4 +99,8 @@ public:
 	/** Returns the traits component data for the specified item definition. */
 	UFUNCTION(BlueprintPure, Category = "Itemization Core|Item Definition|Components", meta = (DisplayName = "Get Traits Component Data"))
 	static void GetTraitsComponentData(const UItemDefinition* ItemDefinition, bool& bOutSuccess, FItemComponentData_Traits& OutData);
+
+	/** Returns the disallow inventory slot component data for the specified item definition. */
+	UFUNCTION(BlueprintPure, Category = "Itemization Core|Item Definition|Components", meta = (DisplayName = "Get Disallow Inventory Slot Component Data"))
+	static void GetDisallowInventorySlotComponentData(const UItemDefinition* ItemDefinition, bool& bOutSuccess, FItemComponentData_DisallowInventorySlot& OutData);
 };

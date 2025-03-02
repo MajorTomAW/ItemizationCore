@@ -7,7 +7,16 @@
 #include "ItemizationCoreLog.h"
 #include "ItemizationCoreTypes.h"
 #include "ActorComponents/InventoryManager.h"
+
+#include "Components/ItemComponentData_Ability.h"
+#include "Components/ItemComponentData_Equipment.h"
 #include "Components/ItemComponentData_Icon.h"
+#include "Components/ItemComponentData_InventoryItemLimitByTag.h"
+#include "Components/ItemComponentData_MaxStackSize.h"
+#include "Components/ItemComponentData_OwnedGameplayTags.h"
+#include "Components/ItemComponentData_SlotSize.h"
+#include "Components/ItemComponentData_Traits.h"
+#include "Components/ItemComponentData_DisallowInventorySlot.h"
 
 FString UItemizationCoreStatics::Conv_ItemHandleToString(const FInventoryItemEntryHandle& Handle)
 {
@@ -218,5 +227,25 @@ void UItemizationCoreStatics::GetTraitsComponentData(
 	}
 
 	OutData = *TraitsComp;
+	bOutSuccess = true;
+}
+
+void UItemizationCoreStatics::GetDisallowInventorySlotComponentData(
+	const UItemDefinition* ItemDefinition, bool& bOutSuccess, FItemComponentData_DisallowInventorySlot& OutData)
+{
+	if (ItemDefinition == nullptr)
+	{
+		bOutSuccess = false;
+		return;
+	}
+
+	const FItemComponentData_DisallowInventorySlot* DisallowSlotComp = ItemDefinition->GetItemComponent<FItemComponentData_DisallowInventorySlot>();
+	if (DisallowSlotComp == nullptr)
+	{
+		bOutSuccess = false;
+		return;
+	}
+
+	OutData = *DisallowSlotComp;
 	bOutSuccess = true;
 }

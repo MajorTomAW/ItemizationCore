@@ -88,6 +88,7 @@ void FInventoryItemContainer::PreReplicatedRemove(const TArrayView<int32> Remove
 	for (const int32 Index : RemovedIndices)
 	{
 		FInventoryItemEntry& ItemEntry = Items[Index];
+		Owner->GetOnItemRemoved().Broadcast(FInventoryChangeMessage(ItemEntry.Instance, ItemEntry.StackCount, 0));
 #if WITH_GAMEPLAY_MESSAGE_ROUTER
 		BroadcastInventoryChangeMessage(ItemEntry.Instance, ItemEntry.StackCount, 0);
 #endif
@@ -100,6 +101,7 @@ void FInventoryItemContainer::PostReplicatedAdd(const TArrayView<int32> AddedInd
 	for (const int32 Index : AddedIndices)
 	{
 		FInventoryItemEntry& ItemEntry = Items[Index];
+		Owner->GetOnItemAdded().Broadcast(FInventoryChangeMessage(ItemEntry.Instance, 0, ItemEntry.StackCount));
 #if WITH_GAMEPLAY_MESSAGE_ROUTER
 		BroadcastInventoryChangeMessage(ItemEntry.Instance, 0, ItemEntry.StackCount);
 #endif
@@ -113,6 +115,7 @@ void FInventoryItemContainer::PostReplicatedChange(const TArrayView<int32> Chang
 	{
 		FInventoryItemEntry& ItemEntry = Items[Index];
 		check(ItemEntry.LastObservedStackCount != INDEX_NONE);
+		Owner->GetOnItemChanged().Broadcast(FInventoryChangeMessage(ItemEntry.Instance, ItemEntry.LastObservedStackCount, ItemEntry.StackCount));
 #if WITH_GAMEPLAY_MESSAGE_ROUTER
 		BroadcastInventoryChangeMessage(ItemEntry.Instance, ItemEntry.LastObservedStackCount, ItemEntry.StackCount);
 #endif

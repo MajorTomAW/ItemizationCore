@@ -235,7 +235,31 @@ protected:
 	virtual void BroadcastInventoryChangeMessage(UInventoryItemInstance* ItemThatChanged, int32 OldStackCount, int32 NewStackCount) const;
 #endif
 
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnItemEntrySignature, FInventoryChangeMessage, Payload);
+
+	/** Called when an item is added to the inventory. */
+	UPROPERTY(BlueprintAssignable, Category=Inventory)
+	FOnItemEntrySignature OnItemAddedDelegate;
+
+	/** Called when an item is removed from the inventory. */
+	UPROPERTY(BlueprintAssignable, Category=Inventory)
+	FOnItemEntrySignature OnItemRemovedDelegate;
+
+	/** Called when an item is changed in the inventory. */
+	UPROPERTY(BlueprintAssignable, Category=Inventory)
+	FOnItemEntrySignature OnItemChangedDelegate;
+
 	FTimerHandle OnRep_InventoryListTimerHandle;
+
+public:
+	/** Returns the item added delegate. */
+	FOnItemEntrySignature& GetOnItemAdded() { return OnItemAddedDelegate; }
+
+	/** Returns the item removed delegate. */
+	FOnItemEntrySignature& GetOnItemRemoved() { return OnItemRemovedDelegate; }
+
+	/** Returns the item changed delegate. */
+	FOnItemEntrySignature& GetOnItemChanged() { return OnItemChangedDelegate; }
 
 protected:
 	/** Cached value of rather this is a simulated actor. */
