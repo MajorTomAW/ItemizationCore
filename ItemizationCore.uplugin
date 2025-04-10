@@ -1,0 +1,77 @@
+﻿{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "0.5",
+	"FriendlyName": "Itemization Core",
+	"Description": "Plugin for an inventory and item gameplay system.",
+	"Category": "Gameplay",
+	"CreatedBy": "MajorT",
+	"CreatedByURL": "https://github.com/MajorTomAW",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"FabURL": "",
+	"CanContainContent": false,
+	"IsBetaVersion": false,
+	"IsExperimentalVersion": true,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "ItemizationCoreRuntime",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"CoreUObject",
+				"Engine",
+				"GameplayAbilities"
+			],
+			"PlatformAllowList": [
+				"Win64",
+				"Linux"
+			]
+		},
+		{
+			"Name": "ItemizationCoreEditor",
+			"Type": "Editor",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"UnrealEd"
+			],
+			"PlatformAllowList": [
+				"Win64",
+				"Linux"
+			]
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "GameplayAbilities",
+			"Enabled": true
+		},
+		{
+			"Name": "ModularGameplay",
+			"Enabled": true
+		},
+		{
+			"Name": "Iris",
+			"Enabled": true
+		},
+		{
+			"Name": "EnhancedInput",
+			"Enabled": true
+		},
+		{
+			"Name": "CommonUI",
+			"Enabled": true
+		},
+		{
+			"Name": "GameplayTagStacks",
+			"Enabled": true,
+			"Optional": true
+		},
+		{
+			"Name": "GameplayMessageRouter",
+			"Enabled": true,
+			"Optional": true
+		}
+	]
+}
