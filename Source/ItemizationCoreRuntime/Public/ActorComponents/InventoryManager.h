@@ -11,28 +11,40 @@ enum class EItemizationInventoryCreationType : uint8;
 class AInventoryBase;
 
 /** Actor component used to manage inventories. */
-UCLASS(BlueprintType, Blueprintable, meta=(BlueprintSpawnableComponent), MinimalAPI, ClassGroup=Inventory)
-class UInventoryManager : public UActorComponent
+UCLASS(BlueprintType, Blueprintable, meta=(BlueprintSpawnableComponent), ClassGroup=Inventory)
+class ITEMIZATIONCORERUNTIME_API UInventoryManager : public UActorComponent
 {
 	GENERATED_BODY()
 
 public:
-	ITEMIZATIONCORERUNTIME_API UInventoryManager(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
+	UInventoryManager(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
+
+	/** Returns the root inventory that this component is managing. */
+	UFUNCTION(BlueprintCallable, Category=Inventory)
+	AInventoryBase* GetRootInventory() const;
+
+public:
+	//~ Begin UObject Interface
+	virtual void PostInitProperties() override;
+	virtual void InitializeComponent() override;
+	virtual void PostNetReceive() override;
+	virtual void OnRegister() override;
+	//~ End UObject Interface
 
 protected:
 	/** The inventory that this component is managing. */
-	UPROPERTY(BlueprintReadOnly, Category = Inventory)
+	UPROPERTY()
 	TWeakObjectPtr<AInventoryBase> RootInventory;
 
 	/** The creation policy for the inventory. */
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = Inventory)
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category=Inventory)
 	EItemizationInventoryCreationType CreationPolicy;
 
-	/** The globally unique id of the created inventory. */
-	UPROPERTY(BlueprintReadOnly, VisibleDefaultsOnly, Category = Inventory)
-	FGuid InventoryId;
-
 	/** The setup data to use for the creation of the inventory. */
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = Inventory)
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category=Inventory, meta=(EditCondition="CreationPolicy == EItemizationInventoryCreationType::SetupData"))
 	TSoftObjectPtr<UInventorySetupDataBase> InventorySetupData;
+
+	/** The default root inventory class to spawn if no setup data is provided. */
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category=Inventory, meta=(EditCondition="CreationPolicy == EItemizationInventoryCreationType::Runtime"))
+	TSoftClassPtr<AInventoryBase> RootInventoryClass;
 };

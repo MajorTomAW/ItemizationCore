@@ -3,11 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "InventoryBase.h"
 #include "StructUtils/InstancedStruct.h"
 #include "UObject/Object.h"
 
 #include "InventorySetupDataBase.generated.h"
 
+enum class EItemizationInventoryCreationType : uint8;
+class AInventoryBase;
 class UObject;
 class UInputAction;
 class FString;
@@ -23,6 +26,15 @@ class UInventorySetupDataBase : public UObject
 
 public:
 	UInventorySetupDataBase(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
+
+	/** 
+	 * This function is called when the inventory is created.
+	 * It can be used to spawn the inventory and set up any initial data.
+	 * @param InOwner The owner of the inventory.
+	 * @param CreationType The type of creation that is being used.
+	 * @param OutRootInventory The first inventory that was created.
+	 */
+	virtual void SpawnInventory(AActor* InOwner, EItemizationInventoryCreationType CreationType, AInventoryBase*& OutRootInventory) {}
 };
 
 /** 
@@ -37,6 +49,7 @@ struct FInventoryPropertiesBase
 public:
 	FInventoryPropertiesBase();
 
+public:
 	/** The name or identifier of the inventory. */
 	UPROPERTY(EditDefaultsOnly, Category = Inventory)
 	FString InventoryName;
@@ -65,7 +78,7 @@ struct FInventoryProperties : public FInventoryPropertiesBase
 public:
 	/** The class of the inventory to spawn. */
 	UPROPERTY(EditDefaultsOnly, Category = Inventory)
-	TSoftClassPtr<AActor> InventoryClass;
+	TSoftClassPtr<AInventoryBase> InventoryClass;
 };
 
 /**
@@ -102,7 +115,7 @@ struct FEquippableInventoryProperties : public FInventoryPropertiesBase
 public:
 	/** The class of the inventory to spawn. */
 	UPROPERTY(EditDefaultsOnly, Category = Inventory)
-	TSoftClassPtr<AActor> InventoryClass;
+	TSoftClassPtr<AInventoryBase> InventoryClass;
 
 	/** The slot bindings to create for this inventory. */
 	UPROPERTY(EditDefaultsOnly, Category = Inventory, NoClear)
@@ -148,6 +161,10 @@ class UInventorySetupDataBase_Default : public UInventorySetupDataBase
 
 public:
 	UInventorySetupDataBase_Default(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
+
+	//~ Begin UInventorySetupDataBase Interface
+	virtual void SpawnInventory(AActor* InOwner, EItemizationInventoryCreationType CreationType, AInventoryBase*& OutRootInventory) override;
+	//~ End UInventorySetupDataBase Interface
 
 public:
 	/** The default properties for the inventory. */

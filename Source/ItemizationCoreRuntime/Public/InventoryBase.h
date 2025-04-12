@@ -7,10 +7,14 @@
 #include "Items/InventoryItemEntry.h"
 #include "InventoryBase.generated.h"
 
+struct FInventoryStartingItem;
+class UInventorySetupDataBase;
 enum class EItemizationInventoryType : uint8;
 class UInventoryManager;
 class UObject;
 class AInfo;
+class UActorChannel;
+class FOutBunch;
 struct FFrame;
 
 /**
@@ -29,7 +33,12 @@ public:
 
 	//~ Begin UObject Interface
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void PostInitializeComponents() override;
+	virtual bool ReplicateSubobjects(UActorChannel* Channel, FOutBunch* Bunch, FReplicationFlags* RepFlags) override;
 	//~ End UObject Interface
+
+	/** Initializes the inventory with the given setup data. */
+	virtual void GrantStartingItems(TArray<const FInventoryStartingItem*> StartingItems);
 
 public:
 	/** Describes the type of inventory this is. */

@@ -12,7 +12,7 @@ public:
      *
      * @returns Singleton-instance, loading the module on demand if needed
     */
-    static IItemizationCoreModule& Get()
+    ITEMIZATIONCORERUNTIME_API static IItemizationCoreModule& Get()
     {
         static IItemizationCoreModule& Singleton = FModuleManager::LoadModuleChecked<IItemizationCoreModule>("ItemizationCoreRuntime");
         return Singleton;
@@ -23,7 +23,7 @@ public:
      *
      * @returns True if the module is loaded and ready to use
      */
-    static bool IsAvailable()
+    ITEMIZATIONCORERUNTIME_API static bool IsAvailable()
     {
         return FModuleManager::Get().IsModuleLoaded("ItemizationCoreRuntime");
     }

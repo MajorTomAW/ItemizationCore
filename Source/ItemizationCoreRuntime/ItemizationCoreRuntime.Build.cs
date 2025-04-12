@@ -20,7 +20,8 @@ public class ItemizationCoreRuntime : ModuleRules
             "GameplayTagStacks",
             "GameplayAbilities",
             "ModularGameplay",
-            "EnhancedInput"
+            "EnhancedInput",
+            "DeveloperSettings",
         });
         
         PrivateDependencyModuleNames.AddRange(new []
