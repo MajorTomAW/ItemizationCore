@@ -20,6 +20,8 @@ public class ItemizationCoreEditor : ModuleRules
             "ItemizationCoreRuntime",
             "AssetDefinition",
             "UnrealEd",
+            "PropertyEditor",
+            "InputCore",
         });
     }
 }
