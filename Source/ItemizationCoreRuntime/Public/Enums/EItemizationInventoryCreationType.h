@@ -15,8 +15,7 @@ enum class EItemizationInventoryCreationType : uint8
 	Runtime = 0,
 
 	/**
-	 * The inventory system will be created at design time, typically when the owning object is placed in the level.
-	 * This is useful for static inventories that don't need to be initialized dynamically.
+	 * The inventory system will be created and initialized with the given setup data.
 	 */
 	SetupData = 1,
 	
