@@ -14,9 +14,8 @@ ITEMIZATIONCORERUNTIME_API DECLARE_LOG_CATEGORY_EXTERN(LogItemization, Log, All)
 
 namespace UE::ItemizationCore
 {
-	static FString GetNetContextString(const UObject* Obj);
+	FString GetNetContextString(const UObject* Obj);
 }
-using namespace UE::ItemizationCore;
 
 #define ITEMIZATION_LOG(Format, ...)				UE_LOG(LogItemization, Log, TEXT(Format), ##__VA_ARGS__)
 #define ITEMIZATION_WARN(Format, ...)				UE_LOG(LogItemization, Warning, TEXT(Format), ##__VA_ARGS__)
@@ -41,7 +40,7 @@ using namespace UE::ItemizationCore;
 #define ITEMIZATION_S_VVERBOSE(Format, ...)			_ITEMIZATION_S_LOG_IMPL(VeryVerbose, Format, ##__VA_ARGS__)
 
 #define N_EXEC_INFO_FORMAT "(%s)-[%s]: "
-#define N_EXEC_INFO *GetNameSafe(this), *GetNetContextString(this)
+#define N_EXEC_INFO *GetNameSafe(this), *UE::ItemizationCore::GetNetContextString(this)
 
 #define _ITEMIZATION_N_LOG_IMPL(Verbosity, Format, ...) \
 	UE_LOG(LogItemization, Verbosity, TEXT(N_EXEC_INFO_FORMAT Format), N_EXEC_INFO, ##__VA_ARGS__)
