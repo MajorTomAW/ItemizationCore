@@ -1,3 +1,9 @@
+# UHT generated plugin files
 Binaries/*
 Config/*
 Intermediate/*
+
+# Visual Studio files
+.sln
+*.xcodeproj
+*.xcworkspace
