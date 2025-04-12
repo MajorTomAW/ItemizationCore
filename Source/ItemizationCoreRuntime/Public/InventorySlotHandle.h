@@ -39,7 +39,7 @@ public:
 	}
 
 	/** Returns the handle as a hash. */
-	FORCEINLINE uint16 GetHash() const
+	FORCEINLINE uint16 GetUID() const
 	{
 		return (uint16)(Value >> 0x10) & HANDLE_MASK;
 	}
@@ -88,6 +88,6 @@ public:
 private:
 	// The actual handle that points to the item entry.
 	// First 2 bytes are used for the item slot id
-	// Last 2 bytes are used for hash
+	// Last 2 bytes are used for the unique id of the item entry
 	uint32 Value;
 };
