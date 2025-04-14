@@ -5,17 +5,16 @@
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(ItemizationCoreSettings)
 
-UItemizationCoreSettings::UItemizationCoreSettings()
+UItemizationCoreSettings::UItemizationCoreSettings(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
 {
+	CategoryName = TEXT("Game");
+	SectionName = TEXT("Itemization Core");
+	
 	ItemTypes = {"Item", "Test"};
 }
 
 UItemizationCoreSettings* UItemizationCoreSettings::Get()
 {
 	return GetMutableDefault<UItemizationCoreSettings>();
-}
-
-FName UItemizationCoreSettings::GetSectionName() const
-{
-	return TEXT("Game");
 }

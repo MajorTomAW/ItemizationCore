@@ -6,18 +6,15 @@
 #include "Engine/DeveloperSettings.h"
 #include "ItemizationCoreSettings.generated.h"
 
-UCLASS(Config = Engine, DefaultConfig)
-class ITEMIZATIONCORERUNTIME_API UItemizationCoreSettings : public UDeveloperSettings
+/** Configure the settings for the itemization core system. */
+UCLASS(Config = Engine, DefaultConfig, DisplayName="Itemization Core", MinimalAPI)
+class UItemizationCoreSettings : public UDeveloperSettings
 {
 	GENERATED_BODY()
 
 public:
-	UItemizationCoreSettings();
-	static UItemizationCoreSettings* Get();
-
-	//~ Begin UDeveloperSettings Interface
-	virtual FName GetSectionName() const override;
-	//~ End UDeveloperSettings Interface
+	UItemizationCoreSettings(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
+	ITEMIZATIONCORERUNTIME_API static UItemizationCoreSettings* Get();
 
 public:
 	/** List of item types that are also being registered as primary assets. */

@@ -16,6 +16,7 @@ public class ItemizationCoreRuntime : ModuleRules
             "CoreUObject",
             "NetCore",
             "Engine",
+            "UMG",
             "GameplayTags",
             "GameplayTagStacks",
             "GameplayAbilities",
