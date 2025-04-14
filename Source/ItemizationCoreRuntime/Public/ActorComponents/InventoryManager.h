@@ -36,6 +36,10 @@ protected:
 	UPROPERTY()
 	TWeakObjectPtr<AInventoryBase> RootInventory;
 
+	/** The unique identifier of this inventory manager. */
+	UPROPERTY()
+	FGuid InventoryId;
+
 	/** The creation policy for the inventory. */
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category=Inventory)
 	EItemizationInventoryCreationType CreationPolicy;

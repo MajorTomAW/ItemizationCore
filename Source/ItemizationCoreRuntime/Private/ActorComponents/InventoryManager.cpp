@@ -3,7 +3,7 @@
 
 #include "ActorComponents/InventoryManager.h"
 
-#include "InventoryBase.h"
+#include "Inventory/InventoryBase.h"
 #include "InventorySetupDataBase.h"
 #include "ItemizationLogChannels.h"
 #include "Enums/EItemizationInventoryCreationType.h"

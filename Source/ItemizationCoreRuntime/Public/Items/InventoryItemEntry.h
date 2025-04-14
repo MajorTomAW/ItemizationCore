@@ -6,7 +6,7 @@
 #include "GameplayTagContainer.h"
 #include "Net/Serialization/FastArraySerializer.h"
 
-#include "InventorySlotHandle.h"
+#include "InventoryItemHandle.h"
 #include "Items/InventoryItemInstance.h"
 #include "Items/ItemComponentDataList.h"
 
@@ -38,7 +38,7 @@ PRAGMA_ENABLE_DEPRECATION_WARNINGS
 	
 	/** The unique handle to this item for outside references. */
 	UPROPERTY()
-	FInventorySlotHandle SlotHandle;
+	FInventoryItemHandle SlotHandle;
 
 	/** The item instance that this entry is representing. */
 	UPROPERTY()
@@ -98,7 +98,7 @@ public:
 		return Instance == OtherInstance;
 	}
 
-	FORCEINLINE bool operator==(const FInventorySlotHandle& OtherHandle) const
+	FORCEINLINE bool operator==(const FInventoryItemHandle& OtherHandle) const
 	{
 		return SlotHandle == OtherHandle;
 	}

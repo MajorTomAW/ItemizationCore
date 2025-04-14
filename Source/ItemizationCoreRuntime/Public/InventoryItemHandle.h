@@ -24,7 +24,7 @@ public:
 	{
 		HANDLE_MASK = 0x0000FFFF,		// Masks the lower 16 bits of the handle
 		UID_SHIFT = 0x10,				// Shift the unique id by 16 bits
-		INVALID_HANDLE = INDEX_NONE		// Invalid handle value
+		INVALID_HANDLE = 0x0		// Invalid handle value
 	};
 	
 	/** Clears the handle. */
@@ -33,10 +33,26 @@ public:
 		Value = INVALID_HANDLE;
 	}
 	
-	/** Checks if the handle is valid. */
+	/**
+	 * Checks if the handle is valid.
+	 * @Note This will always return true if either SlotId or ItemUID is valid.
+	 * @Note It is safer to check IsSlotValid() or IsUIDValid() if you want to check for a specific value.
+	 */
 	FORCEINLINE bool IsValid() const
 	{
 		return Value != INVALID_HANDLE;
+	}
+
+	/** Checks if the slot id is a valid id. */
+	FORCEINLINE bool IsSlotValid() const
+	{
+		return (Value & HANDLE_MASK) != INVALID_HANDLE;
+	}
+
+	/** Checks ot see if the UID was set. */
+	FORCEINLINE bool IsUIDValid() const
+	{
+		return (Value >> UID_SHIFT) != INVALID_HANDLE;
 	}
 
 	/** Returns the handle as a slot id. */
@@ -49,6 +65,12 @@ public:
 	FORCEINLINE uint16 GetUID() const
 	{
 		return (uint16)(Value >> UID_SHIFT) & HANDLE_MASK;
+	}
+
+	/** Returns this handles raw value. */
+	FORCEINLINE uint32 Get() const
+	{
+		return Value;
 	}
 
 	/** Converts the handle to a string. */
@@ -67,11 +89,11 @@ public:
 	/** Compares this handle with another handle. */
 	FORCEINLINE bool operator==(const FInventoryItemHandle& Other) const
 	{
-		return Value == Other.Value;
+		return Get() == Other.Get();
 	}
 	FORCEINLINE bool operator!=(const FInventoryItemHandle& Other) const
 	{
-		return Value != Other.Value;
+		return Get() != Other.Get();
 	}
 
 	/** Archive operator for serialization. */
@@ -99,7 +121,7 @@ public:
 
 private:
 	// The actual handle that points to the item entry.
-	// First 2 bytes are used for the item slot id
-	// Last 2 bytes are used for the unique id of the item entry
+	// First 2 bytes are used for the item slot id (Range: 0 to 65,535).
+	// Last 2 bytes are used for the unique id of the item entry (Range: 0 to 65,535).
 	uint32 Value;
 };
