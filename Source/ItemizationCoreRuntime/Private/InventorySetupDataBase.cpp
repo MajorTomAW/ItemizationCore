@@ -3,8 +3,12 @@
 
 #include "InventorySetupDataBase.h"
 
-#include "InventoryBase.h"
 #include "Enums/EItemizationInventoryCreationType.h"
+
+#include "Inventory/InventoryBase.h"
+#include "Inventory/Inventory.h"
+#include "Inventory/EquippableInventory.h"
+#include "Inventory/SlottableInventory.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(InventorySetupDataBase)
 
@@ -13,13 +17,9 @@ UInventorySetupDataBase::UInventorySetupDataBase(const FObjectInitializer& Objec
 {
 }
 
-FInventoryPropertiesBase::FInventoryPropertiesBase()
-	: TotalSlotsOverride(INDEX_NONE)
-{
-}
-
 UInventorySetupDataBase_Default::UInventorySetupDataBase_Default(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
+	, SlottableInventory(TInstancedStruct<FSlottableInventoryProperties>::Make())
 {
 }
 
@@ -45,26 +45,14 @@ void UInventorySetupDataBase_Default::SpawnInventory(
 	SpawnInfo.ObjectFlags |= RF_Transient; // Runtime inventories should never be saved into a map
 
 	// Spawn the inventories
-	for (const auto& Data : InventoryList)
-	{
-		const FInventoryProperties* Props = Data.GetPtr<FInventoryProperties>();
-		if (!ensure(Props))
-		{
-			continue;
-		}
-		
-		TSoftClassPtr<AInventoryBase> InventoryClass = Props->InventoryClass;
-		if (!ensure(!InventoryClass.IsNull()))
-		{
-			continue;
-		}
-
-		UClass* const Class = InventoryClass.LoadSynchronous();
-		AInventoryBase* Inventory = World->SpawnActor<AInventoryBase>(Class, SpawnInfo);
-		SpawnedInventories.Add(Inventory);
-	}
+	SpawnInventories(InventoryList, SpawnInfo, SpawnedInventories);
 
 	// Spawn the equippable inventories
+	SpawnInventories(EquippableInventoryList, SpawnInfo, SpawnedInventories);
+
+	// Spawn the slottable inventories
+	const TArray SlottableInventoryList = {SlottableInventory };
+	SpawnInventories(SlottableInventoryList, SpawnInfo, SpawnedInventories);
 
 	// Initialize all spawned inventories with the starting items
 	TArray<const FInventoryStartingItem*> StartingItems;
@@ -78,17 +66,32 @@ void UInventorySetupDataBase_Default::SpawnInventory(
 		}
 	}
 
+	AInventoryBase* RootInventory = nullptr;
+	if (SpawnedInventories.IsValidIndex(0))
+	{
+		RootInventory = SpawnedInventories[0];
+	}
+
+	// Fill in the correct parent-child relationships
+	if (ensure(RootInventory))
+	{
+		SpawnedInventories.RemoveSingle(RootInventory);
+		RootInventory->Init(this, nullptr, SpawnedInventories);
+
+		for (AInventoryBase* Inventory : SpawnedInventories)
+		{
+			Inventory->Init(this, RootInventory);
+		}
+
+		OutRootInventory = RootInventory;
+	}
+
 	// If the creation type is setup data, we need to initialize the inventories with the starting items
-	if (CreationType == EItemizationInventoryCreationType::SetupData)
+	/*if (CreationType == EItemizationInventoryCreationType::SetupData)
 	{
 		for (AInventoryBase* Inventory : SpawnedInventories)
 		{
 			Inventory->GrantStartingItems(StartingItems);
 		}
-	}
-
-	if (SpawnedInventories.IsValidIndex(0))
-	{
-		OutRootInventory = SpawnedInventories[0];
-	}
+	}*/
 }

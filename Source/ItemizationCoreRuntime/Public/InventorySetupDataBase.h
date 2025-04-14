@@ -3,12 +3,19 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "InventoryBase.h"
 #include "StructUtils/InstancedStruct.h"
 #include "UObject/Object.h"
 
+#include "Inventory/InventoryBase.h"
+#include "Inventory/InventoryProperties.h"
+
 #include "InventorySetupDataBase.generated.h"
 
+struct FFInventorySlotProcessor;
+class ASlottableInventory;
+class AEquippableInventory;
+class AInventory;
+class UItemDefinition;
 enum class EItemizationInventoryCreationType : uint8;
 class AInventoryBase;
 class UObject;
@@ -37,91 +44,6 @@ public:
 	virtual void SpawnInventory(AActor* InOwner, EItemizationInventoryCreationType CreationType, AInventoryBase*& OutRootInventory) {}
 };
 
-/** 
- * Base struct for inventory properties.
- * This is used to define custom properties for the inventory system.
- */
-USTRUCT(BlueprintType)
-struct FInventoryPropertiesBase
-{
-	GENERATED_BODY()
-
-public:
-	FInventoryPropertiesBase();
-
-public:
-	/** The name or identifier of the inventory. */
-	UPROPERTY(EditDefaultsOnly, Category = Inventory)
-	FString InventoryName;
-
-	/** The friendly name of the inventory to show in the HUD. */
-	UPROPERTY(EditDefaultsOnly, Category = Inventory)
-	FText InventoryDisplayName;
-
-	/** The description of the inventory to show in the HUD. */
-	UPROPERTY(EditDefaultsOnly, Category = Inventory, meta = (MultiLine = true))
-	FText InventoryDescription;
-
-	/** The total number of slots in the inventory. */
-	UPROPERTY(EditDefaultsOnly, Category = Inventory)
-	int64 TotalSlotsOverride;
-};
-
-/**
- * The default inventory setup properties struct.
- */
-USTRUCT(BlueprintType)
-struct FInventoryProperties : public FInventoryPropertiesBase
-{
-	GENERATED_BODY()
-	
-public:
-	/** The class of the inventory to spawn. */
-	UPROPERTY(EditDefaultsOnly, Category = Inventory)
-	TSoftClassPtr<AInventoryBase> InventoryClass;
-};
-
-/**
- * Struct holding data about the binding between an inventory slot and an input action.
- */
-USTRUCT(BlueprintType, DisplayName="Equippable Slot Binding")
-struct FEquippableInventorySlotBindingDefinition
-{
-	GENERATED_BODY()
-
-	FEquippableInventorySlotBindingDefinition()
-		: Slot(0)
-	{
-	}
-	
-public:
-	/** The slot id of this binding. */
-	UPROPERTY(EditDefaultsOnly, Category = Inventory)
-	uint32 Slot;
-
-	/** The input action to bind to this slot. */
-	UPROPERTY(EditDefaultsOnly, Category = Inventory)
-	TSoftObjectPtr<UInputAction> InputAction;
-};
-
-/**
- * Struct holding data about an equippable inventory.
- */
-USTRUCT(BlueprintType)
-struct FEquippableInventoryProperties : public FInventoryPropertiesBase
-{
-	GENERATED_BODY()
-	
-public:
-	/** The class of the inventory to spawn. */
-	UPROPERTY(EditDefaultsOnly, Category = Inventory)
-	TSoftClassPtr<AInventoryBase> InventoryClass;
-
-	/** The slot bindings to create for this inventory. */
-	UPROPERTY(EditDefaultsOnly, Category = Inventory, NoClear)
-	TArray<TInstancedStruct<FEquippableInventorySlotBindingDefinition>> SlotBindings;
-};
-
 /**
  * Struct holding data about an item that should be given on startup or when the inventory gets created the first time.
  */
@@ -140,7 +62,7 @@ struct FInventoryStartingItem
 public:
 	/** The item definition to add to the inventory. */
 	UPROPERTY(EditDefaultsOnly, Category = Inventory)
-	TSoftObjectPtr<UObject> ItemDefinition;
+	TSoftObjectPtr<UItemDefinition> ItemDefinition;
 
 	/** The entity class filter that will be used to determine if this item can be added to the inventory. */
 	UPROPERTY(EditDefaultsOnly, Category = Inventory)
@@ -175,7 +97,55 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = Inventory, NoClear)
 	TArray<TInstancedStruct<FEquippableInventoryProperties>> EquippableInventoryList;
 
-	/** The list of starting items to add to the inventory. */
+	/** The default slottable inventory properties. */
 	UPROPERTY(EditDefaultsOnly, Category = Inventory, NoClear)
+	const TInstancedStruct<FSlottableInventoryProperties> SlottableInventory;
+
+	/** The list of starting items to add to the inventory. */
+	UPROPERTY(EditDefaultsOnly, Category = Items, NoClear)
 	TArray<TInstancedStruct<FInventoryStartingItem>> StartingItemList;
+
+protected:
+	template <typename PropertyType>
+	void SpawnInventories(
+		TArray<TInstancedStruct<PropertyType>> DataList,
+		const FActorSpawnParameters& SpawnParams,
+		TArray<AInventoryBase*>& InOutInventories);
 };
+
+template <typename PropertyType>
+void UInventorySetupDataBase_Default::SpawnInventories(
+	TArray<TInstancedStruct<PropertyType>> DataList,
+	const FActorSpawnParameters& SpawnParams,
+	TArray<AInventoryBase*>& InOutInventories)
+{
+	static_assert(TIsDerivedFrom<PropertyType, FInventoryPropertiesBase>::IsDerived,
+		"PropertyType must be derived from FInventoryPropertiesBase");
+
+	UWorld* const World = SpawnParams.Owner->GetWorld();
+	check(World);
+
+	for (const TInstancedStruct<PropertyType>& Data : DataList)
+	{
+		if (!ensure(Data.IsValid()))
+		{
+			continue;
+		}
+
+		const PropertyType* Prop = Data.template GetPtr<PropertyType>();
+		if (!ensure(Prop))
+		{
+			continue;
+		}
+
+		TSoftClassPtr SoftClass = Prop->InventoryClass;
+		if (!ensure(!SoftClass.IsNull()))
+		{
+			continue;
+		}
+
+		UClass* const Class = SoftClass.LoadSynchronous();
+		AInventoryBase* Spawned = World->SpawnActor<AInventoryBase>(Class, SpawnParams);
+		InOutInventories.Add(Spawned);
+	}
+}
