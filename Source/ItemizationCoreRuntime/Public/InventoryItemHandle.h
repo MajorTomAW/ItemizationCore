@@ -9,7 +9,9 @@
  *
  * With the usage of this handle, we can refer to a specific item entry in the inventory in a very efficient way,
  * without having to store the item entry itself.
- * This is useful in networking scenarios where we want to refer to an item entry in the inventory without having to replicate the entire item entry itself.
+ * An item entry gets referenced by a unique id/hash and a slot id, while the slot id might not always be needed/valid.
+ * In cases where we're looking up the item entry via this handle, but the slot id is not valid, we will iterate through the inventory.
+ * However, it is always preferred to use the slot id if we know it, as this will be much faster.
  */
 USTRUCT(BlueprintType)
 struct FInventoryItemHandle

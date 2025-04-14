@@ -1,7 +1,7 @@
 // Copyright © 2025 MajorT. All Rights Reserved.
 
 
-#include "InventorySlotHandle.h"
+#include "InventoryItemHandle.h"
 
 FInventoryItemHandle::FInventoryItemHandle()
 	: Value(INVALID_HANDLE)
