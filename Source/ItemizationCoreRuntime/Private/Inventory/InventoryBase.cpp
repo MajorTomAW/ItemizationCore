@@ -1,12 +1,13 @@
 // Copyright © 2025 MajorT. All Rights Reserved.
 
 
-#include "InventoryBase.h"
+#include "Inventory/InventoryBase.h"
 
 #include "ItemizationLogChannels.h"
 #include "Engine/ActorChannel.h"
 #include "Enums/EItemizationInventoryType.h"
 #include "Net/UnrealNetwork.h"
+#include "Net/Core/PushModel/PushModel.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(InventoryBase)
 
@@ -18,27 +19,45 @@ AInventoryBase::AInventoryBase(const FObjectInitializer& ObjectInitializer)
 	SetRemoteRoleForBackwardsCompat(ROLE_SimulatedProxy);
 	bReplicates = true;
 	bAlwaysRelevant = true;
+	
 	SetReplicatingMovement(false);
-	SetNetUpdateFrequency(1);
+	SetNetUpdateFrequency(1.0f);
+	SetCanBeDamaged(false);
+	SetHidden(true);
 
+	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bStartWithTickEnabled = false;
 	bNetLoadOnClient = false;
+
+#if WITH_EDITORONLY_DATA
+	bHiddenEd = true;
+#endif
+}
+
+void AInventoryBase::Init(
+	const UInventorySetupDataBase* InSetupData,
+	AInventoryBase* InParent,
+	const TArray<AInventoryBase*> InChildren)
+{
+	// Setup parent-children relationship
+	MARK_PROPERTY_DIRTY_FROM_NAME(ThisClass, ParentInventory, this);
+	MARK_PROPERTY_DIRTY_FROM_NAME(ThisClass, ChildInventoryList, this);
+	ParentInventory = InParent;
+	ChildInventoryList = InChildren;
+
+	// @TODO: Initialize the inventory with the setup data ??
 }
 
 void AInventoryBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
+	FDoRepLifetimeParams SharedParams;
+	SharedParams.bIsPushBased = true;
+	SharedParams.Condition = COND_None;
+
+	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, ParentInventory, SharedParams);
+	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, ChildInventoryList, SharedParams);
+	
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	FDoRepLifetimeParams Params;
-	Params.bIsPushBased = true;
-	Params.Condition = COND_None;
-
-	// If this is a player-controlled inventory, we should only replicate to the owner.
-	if (InventoryType == EItemizationInventoryType::Player)
-	{
-		Params.Condition = COND_ReplayOrOwner;
-	}
-
-	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, InventoryList, Params);
 }
 
 void AInventoryBase::PostInitializeComponents()
@@ -58,27 +77,5 @@ void AInventoryBase::PostInitializeComponents()
 
 bool AInventoryBase::ReplicateSubobjects(UActorChannel* Channel, FOutBunch* Bunch, FReplicationFlags* RepFlags)
 {
-	check(Channel);
-	check(Bunch);
-	check(RepFlags);
-	bool WroteSomething = Super::ReplicateSubobjects(Channel, Bunch, RepFlags);
-
-	// Register the item instances
-	/*for (UInventoryItemInstance* Instance : {})
-	{
-		if (IsValid(Instance))
-		{
-			WroteSomething |= Channel->ReplicateSubobject(Instance, *Bunch, *RepFlags);
-		}
-	}*/
-
-	return WroteSomething;
-}
-
-void AInventoryBase::GrantStartingItems(TArray<const FInventoryStartingItem*> StartingItems)
-{
-}
-
-void AInventoryBase::OnRep_InventoryList()
-{
+	return Super::ReplicateSubobjects(Channel, Bunch, RepFlags);
 }
