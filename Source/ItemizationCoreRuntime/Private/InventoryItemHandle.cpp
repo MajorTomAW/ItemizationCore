@@ -3,7 +3,7 @@
 
 #include "InventorySlotHandle.h"
 
-FInventorySlotHandle::FInventorySlotHandle()
-	: Value(HANDLE_MASK)
+FInventoryItemHandle::FInventoryItemHandle()
+	: Value(INVALID_HANDLE)
 {
 }

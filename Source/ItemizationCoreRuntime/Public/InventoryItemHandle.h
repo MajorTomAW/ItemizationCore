@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "InventorySlotHandle.generated.h"
+#include "InventoryItemHandle.generated.h"
 
 /**
  * Globally unique handle that points to a specific item entry in the inventory.
@@ -12,24 +12,29 @@
  * This is useful in networking scenarios where we want to refer to an item entry in the inventory without having to replicate the entire item entry itself.
  */
 USTRUCT(BlueprintType)
-struct FInventorySlotHandle
+struct FInventoryItemHandle
 {
 	GENERATED_BODY()
-	FInventorySlotHandle();
+	FInventoryItemHandle();
 
 public:
-	enum { HANDLE_MASK = 0x0000FFFF };
+	enum
+	{
+		HANDLE_MASK = 0x0000FFFF,		// Masks the lower 16 bits of the handle
+		UID_SHIFT = 0x10,				// Shift the unique id by 16 bits
+		INVALID_HANDLE = INDEX_NONE		// Invalid handle value
+	};
 	
 	/** Clears the handle. */
 	FORCEINLINE void ClearHandle()
 	{
-		Value = HANDLE_MASK;
+		Value = INVALID_HANDLE;
 	}
 	
 	/** Checks if the handle is valid. */
 	FORCEINLINE bool IsValid() const
 	{
-		return Value != HANDLE_MASK;
+		return Value != INVALID_HANDLE;
 	}
 
 	/** Returns the handle as a slot id. */
@@ -41,7 +46,7 @@ public:
 	/** Returns the handle as a hash. */
 	FORCEINLINE uint16 GetUID() const
 	{
-		return (uint16)(Value >> 0x10) & HANDLE_MASK;
+		return (uint16)(Value >> UID_SHIFT) & HANDLE_MASK;
 	}
 
 	/** Converts the handle to a string. */
@@ -58,31 +63,36 @@ public:
 
 public:
 	/** Compares this handle with another handle. */
-	FORCEINLINE bool operator==(const FInventorySlotHandle& Other) const
+	FORCEINLINE bool operator==(const FInventoryItemHandle& Other) const
 	{
 		return Value == Other.Value;
 	}
-	FORCEINLINE bool operator!=(const FInventorySlotHandle& Other) const
+	FORCEINLINE bool operator!=(const FInventoryItemHandle& Other) const
 	{
 		return Value != Other.Value;
 	}
 
 	/** Archive operator for serialization. */
-	FORCEINLINE friend FArchive& operator<<(FArchive& Ar, FInventorySlotHandle& SlotHandle)
+	FORCEINLINE friend FArchive& operator<<(FArchive& Ar, FInventoryItemHandle& SlotHandle)
 	{
-		static_assert(sizeof(FInventorySlotHandle) == 4, "If properties of FInventorySlotHandle change, consider updating this operator implementation.");
+		static_assert(sizeof(FInventoryItemHandle) == 4, "If properties of FInventorySlotHandle change, consider updating this operator implementation.");
 		Ar << SlotHandle.Value;
 		return Ar;
 	}
 
 	/** Returns a hash value for this handle. */
-	FORCEINLINE friend uint32 GetTypeHash(const FInventorySlotHandle& SlotHandle)
+	FORCEINLINE friend uint32 GetTypeHash(const FInventoryItemHandle& SlotHandle)
 	{
 		return ::GetTypeHash(SlotHandle.Value);
 	}
 	FORCEINLINE uint32 GetHash() const
 	{
 		return GetTypeHash(*this);
+	}
+
+	FORCEINLINE explicit operator bool() const
+	{
+		return IsValid();
 	}
 
 private:
