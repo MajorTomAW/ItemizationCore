@@ -14,21 +14,26 @@
  * However, it is always preferred to use the slot id if we know it, as this will be much faster.
  */
 USTRUCT(BlueprintType)
-struct FInventoryItemHandle
+struct alignas(8) FInventoryItemHandle
 {
 	GENERATED_BODY()
-	FInventoryItemHandle();
+	
+	FInventoryItemHandle() = default;
+	FInventoryItemHandle(const uint32 InSlotId, const uint32 InItemUID)
+		: Value((static_cast<uint64>(InItemUID) << UID_SHIFT) | (InSlotId & HANDLE_MASK))
+	{
+	}
 
 public:
 	enum
 	{
-		HANDLE_MASK = 0x0000FFFF,		// Masks the lower 16 bits of the handle
-		UID_SHIFT = 0x10,				// Shift the unique id by 16 bits
-		INVALID_HANDLE = 0x0		// Invalid handle value
+		HANDLE_MASK = 0x00000000FFFFFFFF,			// Masks the lower 32 bits of the handle
+		UID_SHIFT = 0x20,							// Shift the unique id by 32 bits
+		INVALID_HANDLE = 0x0						// Invalid handle value
 	};
 	
 	/** Clears the handle. */
-	FORCEINLINE void ClearHandle()
+	void Reset()
 	{
 		Value = INVALID_HANDLE;
 	}
@@ -56,72 +61,74 @@ public:
 	}
 
 	/** Returns the handle as a slot id. */
-	FORCEINLINE uint16 GetSlotId() const
+	FORCEINLINE uint32 GetSlotId() const
 	{
 		return Value & HANDLE_MASK;
 	}
 
 	/** Returns the handle as a hash. */
-	FORCEINLINE uint16 GetUID() const
+	FORCEINLINE uint32 GetUID() const
 	{
-		return (uint16)(Value >> UID_SHIFT) & HANDLE_MASK;
+		return (Value >> UID_SHIFT) & HANDLE_MASK;
 	}
 
 	/** Returns this handles raw value. */
-	FORCEINLINE uint32 Get() const
+	uint64 Get() const
 	{
 		return Value;
 	}
 
 	/** Converts the handle to a string. */
-	FORCEINLINE FString ToString() const
+	FString ToString() const
 	{
 		return IsValid() ? FString::FromInt(Value) : FString("NULL");
 	}
 
 	/** Sets the slot id to the given value. */
-	FORCEINLINE void SetSlotId(uint16 SlotId)
+	void SetSlotId(uint32 SlotId)
 	{
 		Value = (Value & ~HANDLE_MASK) | (SlotId & HANDLE_MASK);
 	}
 
 public:
 	/** Compares this handle with another handle. */
-	FORCEINLINE bool operator==(const FInventoryItemHandle& Other) const
+	bool operator==(const FInventoryItemHandle& Other) const
 	{
 		return Get() == Other.Get();
 	}
-	FORCEINLINE bool operator!=(const FInventoryItemHandle& Other) const
+	bool operator!=(const FInventoryItemHandle& Other) const
 	{
 		return Get() != Other.Get();
 	}
 
 	/** Archive operator for serialization. */
-	FORCEINLINE friend FArchive& operator<<(FArchive& Ar, FInventoryItemHandle& SlotHandle)
+	friend FArchive& operator<<(FArchive& Ar, FInventoryItemHandle& SlotHandle)
 	{
-		static_assert(sizeof(FInventoryItemHandle) == 4, "If properties of FInventorySlotHandle change, consider updating this operator implementation.");
 		Ar << SlotHandle.Value;
 		return Ar;
 	}
 
 	/** Returns a hash value for this handle. */
-	FORCEINLINE friend uint32 GetTypeHash(const FInventoryItemHandle& SlotHandle)
+	friend uint32 GetTypeHash(const FInventoryItemHandle& SlotHandle)
 	{
 		return ::GetTypeHash(SlotHandle.Value);
 	}
-	FORCEINLINE uint32 GetHash() const
+	uint32 GetHash() const
 	{
 		return GetTypeHash(*this);
 	}
 
-	FORCEINLINE explicit operator bool() const
+	explicit operator bool() const
 	{
 		return IsValid();
 	}
 
 private:
 	// The actual handle that points to the item entry.
-	// First 2 bytes are used for the item slot id (Range: 0 to 65,535).
-	// Last 2 bytes are used for the unique id of the item entry (Range: 0 to 65,535).
-	uint32 Value;
+	// – First 2 bytes: Item slot id (Range: 0 to 4,294,967,295).
+	// – Last 2 bytes: UID of the item entry (Range: 0 to 4,294,967,295).
+	uint64 Value = INVALID_HANDLE;
 };
+
+static_assert(sizeof(FInventoryItemHandle) == sizeof(uint64), "Expected FInventoryItemHandle to be 8 bytes.");
+static_assert(alignof(FInventoryItemHandle) == sizeof(uint64), "Expected FInventoryItemHandle to be 8 bytes.");
