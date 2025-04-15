@@ -50,7 +50,10 @@ void ASlottableInventory::PostInitInventory()
 	int32 DesiredNumSlots = 0;
 	if (ensure(ParentInventory))
 	{
-		DesiredNumSlots = FMath::Max(0, ParentInventory->GetInventoryProperties<FInventoryPropertiesBase>()->TotalSlotsOverride);
+		DesiredNumSlots = ParentInventory->GetInventoryProperties<FInventoryPropertiesBase>()->TotalSlotsOverride;
+		DesiredNumSlots = FMath::Min(0, DesiredNumSlots);
+		
+		const int32 InitialNumSlots = DesiredNumSlots;
 
 		// Iterate over all children and add their slots to the total
 		for (const AInventoryBase* Child : ParentInventory->ChildInventoryList)
@@ -65,6 +68,10 @@ void ASlottableInventory::PostInitInventory()
 				DesiredNumSlots += FMath::Max(0, ChildProps->TotalSlotsOverride);
 			}
 		}
+
+		ensureMsgf((InitialNumSlots >= 0) && (DesiredNumSlots >= DesiredNumSlots),
+			TEXT("Lol, we have a skill-issue error here. InitialNumSlots: %d, DesiredNumSlots: %d"),
+			InitialNumSlots, DesiredNumSlots);
 	}
 	// Subtract our own slots from the total
 	DesiredNumSlots -= FMath::Max(0, Props->TotalSlotsOverride);

@@ -62,7 +62,18 @@ public:
 	FInventoryItemHandle GiveItem(const FInventoryItemEntry& ItemEntry, int32& OutExcess) const;
 
 	/** Overloads of the GiveItem(*) function. */
-	FInventoryItemHandle GiveItem(const FInventoryItemEntry& ItemEntry);
+	FInventoryItemHandle GiveItem(const FInventoryItemEntry& ItemEntry) const;
+
+	/**
+	 * Adds an item to the inventory.
+	 * This will be ignored if the actor is not authoritative, as items can only be added on the server.
+	 * @param	ItemDefinition	The item definition that should be added to the inventory.
+	 * @param	StackCount		The number of items to add to the inventory.
+	 * @param	OutExcess [OUT]	Any excess items that couldn't be added to the inventory.
+	 * @returns	The unique item handle of the item that was added to the inventory, or an invalid one if the item couldn't be added.
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category=Inventory, meta=(DisplayName="Give Item", Scriptname=GiveItem))
+	UPARAM(DisplayName=Handle) FInventoryItemHandle K2_GiveItem(UItemDefinition* ItemDefinition, int32 StackCount, int32& OutExcess);
 	  
 
 public:
@@ -71,11 +82,18 @@ public:
 	virtual void InitializeComponent() override;
 	virtual void PostNetReceive() override;
 	virtual void OnRegister() override;
+	virtual void BeginPlay() override;
 	//~ End UObject Interface
+
+	/** Will look for an inventory manager somewhere in the owner chain and grab its inventory. */
+	void LookForInventoryManager();
+
+	/** Spawns a new inventory system based on the setup data. */
+	virtual void SpawnInventory(UWorld* World, AActor* Owner, APlayerController* PlayerController = nullptr);
 
 protected:
 	/** The inventory that this component is managing. */
-	UPROPERTY()
+	UPROPERTY(Transient)
 	TWeakObjectPtr<AInventory> RootInventory;
 
 	/** The unique identifier of this inventory manager. */
@@ -89,8 +107,4 @@ protected:
 	/** The setup data to use for the creation of the inventory. */
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category=Inventory, meta=(EditCondition="CreationPolicy == EItemizationInventoryCreationType::SetupData"))
 	TSoftObjectPtr<UInventorySetupDataBase> InventorySetupData;
-
-	/** The default root inventory class to spawn if no setup data is provided. */
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category=Inventory, meta=(EditCondition="CreationPolicy == EItemizationInventoryCreationType::Runtime"))
-	TSoftClassPtr<AInventory> RootInventoryClass;
 };

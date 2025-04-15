@@ -46,11 +46,16 @@ void AInventoryBase::Init(
 
 	// @TODO: Initialize the inventory with the setup data ??
 
-	// Recursively initialize all child inventories ????
-	/*for (AInventoryBase* Child : ChildInventoryList)
+	// Recursively initialize all child inventories
+	for (AInventoryBase* Child : ChildInventoryList)
 	{
+		if (!ensure(Child))
+		{
+			continue;
+		}
+		
 		Child->Init(this);
-	}*/
+	}
 
 	PostInitInventory();
 }
@@ -73,11 +78,16 @@ void AInventoryBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 
 void AInventoryBase::PostInitializeComponents()
 {
+	if (GetInstigatorController() && GetInstigatorController()->IsA<APlayerController>())
+	{
+		InventoryType = EItemizationInventoryType::Player;
+	}
+	
 	Super::PostInitializeComponents();
+	ITEMIZATION_N_LOG("Inventory Created!");
 
 	const UWorld* World = GetWorld();
-
-	ITEMIZATION_N_LOG("Inventory Created!");
+	
 
 	// Only continue if we're authoritative.
 	if (GetLocalRole() < ROLE_Authority)
@@ -89,4 +99,9 @@ void AInventoryBase::PostInitializeComponents()
 bool AInventoryBase::ReplicateSubobjects(UActorChannel* Channel, FOutBunch* Bunch, FReplicationFlags* RepFlags)
 {
 	return Super::ReplicateSubobjects(Channel, Bunch, RepFlags);
+}
+
+void AInventoryBase::PreNetReceive()
+{
+	Super::PreNetReceive();
 }

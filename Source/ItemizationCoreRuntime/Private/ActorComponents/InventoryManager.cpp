@@ -7,6 +7,8 @@
 #include "InventorySetupDataBase.h"
 #include "ItemizationLogChannels.h"
 #include "Enums/EItemizationInventoryCreationType.h"
+#include "Enums/EItemizationInventoryType.h"
+#include "GameFramework/PlayerState.h"
 #include "Inventory/Inventory.h"
 #include "Inventory/Transactions/InventoryItemTransactionBase.h"
 #include "Items/ItemDefinition.h"
@@ -16,8 +18,7 @@
 UInventoryManager::UInventoryManager(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 	, RootInventory(nullptr)
-	, CreationPolicy(EItemizationInventoryCreationType::Runtime)
-	, RootInventoryClass(AInventory::StaticClass())
+	, CreationPolicy(EItemizationInventoryCreationType::SetupData)
 {
 	bWantsInitializeComponent = true;
 	bAutoActivate = true;
@@ -34,10 +35,27 @@ AInventory* UInventoryManager::GetRootInventory() const
 }
 
 #pragma region GiveItem()_Overloads
-FInventoryItemHandle UInventoryManager::GiveItem(const FInventoryItemEntry& ItemEntry)
+FInventoryItemHandle UInventoryManager::GiveItem(const FInventoryItemEntry& ItemEntry) const
 {
 	int32 DummyExcess = 0;
 	return GiveItem(ItemEntry, DummyExcess);
+}
+
+FInventoryItemHandle UInventoryManager::K2_GiveItem(UItemDefinition* ItemDefinition, int32 StackCount, int32& OutExcess)
+{
+	// Build a new item entry
+	FInventoryItemEntry ItemEntry = {ItemDefinition, StackCount, GetOwner()};
+
+	// Validate the item entry
+	if (!IsValid(ItemEntry.Definition))
+	{
+		ITEMIZATION_ERROR("Attempted to give an item with an invalid item definition.");
+		return FInventoryItemHandle();
+	}
+
+	// Give the item and return the handle
+	// This will perform any necessary validation and replication
+	return GiveItem(ItemEntry, OutExcess);
 }
 #pragma endregion
 FInventoryItemHandle UInventoryManager::GiveItem(const FInventoryItemEntry& ItemEntry, int32& OutExcess) const
@@ -81,60 +99,6 @@ void UInventoryManager::PostInitProperties()
 void UInventoryManager::InitializeComponent()
 {
 	Super::InitializeComponent();
-
-	
-	// Attempt to create the inventory
-	// Initialize the inventory manager with default values.
-	UWorld* const World = GetWorld();
-	if (!World->IsGameWorld())
-	{
-		// No need to spawn inventories in the editor.
-		return;
-	}
-
-	AActor* Owner = GetOwner();
-	if (GetNetMode() == NM_Client)
-	{
-		return;
-	}
-
-	// Create the inventory based on the setup data
-	if (CreationPolicy == EItemizationInventoryCreationType::SetupData)
-	{
-		UInventorySetupDataBase* InventorySetupDataPtr = InventorySetupData.LoadSynchronous();
-
-		// Create a new inventory if we don't have one.
-		AInventoryBase* RootInventoryPtr = GetRootInventory();
-		if (IsValid(InventorySetupDataPtr) && RootInventoryPtr == nullptr)
-		{
-			InventorySetupDataPtr->SpawnInventory(Owner, CreationPolicy, RootInventoryPtr);
-		}
-
-		ensureMsgf(RootInventoryPtr->GetOwner() == GetOwner(),
-			TEXT("Created inventory %s with owner %s, but the inventory manager is owned by %s"), *RootInventoryPtr->GetName(), *RootInventoryPtr->GetOwner()->GetName(), *GetOwner()->GetName());
-
-		RootInventory = (AInventory*)RootInventoryPtr;
-	}
-	// Otherwise use the default inventory class and create an empty one.
-	else if (CreationPolicy == EItemizationInventoryCreationType::Runtime)
-	{
-		if (RootInventoryClass.IsNull())
-		{
-			ITEMIZATION_WARN("InventoryManager: No inventory class specified for runtime creation. Please set a class in the editor.");
-			return;
-		}
-
-		UClass* Class = RootInventoryClass.LoadSynchronous();
-
-		// Setup the spawn params
-		FActorSpawnParameters SpawnInfo;
-		SpawnInfo.Owner = Owner;
-		SpawnInfo.Instigator = Owner->GetInstigator();
-		SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		SpawnInfo.ObjectFlags |= RF_Transient; // Runtime inventories should never be saved into a map
-
-		RootInventory = World->SpawnActor<AInventory>(Class, SpawnInfo);
-	}
 }
 
 void UInventoryManager::PostNetReceive()
@@ -145,4 +109,94 @@ void UInventoryManager::PostNetReceive()
 void UInventoryManager::OnRegister()
 {
 	Super::OnRegister();
+}
+
+void UInventoryManager::BeginPlay()
+{
+	Super::BeginPlay();
+	
+	// If we're a runtime inventory, we don't need to spawn anything as it has already been spawned by someone else.
+	if (CreationPolicy != EItemizationInventoryCreationType::SetupData)
+	{
+		// Look for an inventory manager that has a valid inventory class.
+		LookForInventoryManager();
+		return;
+	}
+	
+	AActor* Owner = GetOwner();
+	if (!ensure(Owner))
+	{
+		return;
+	}
+
+	// We don't want to spawn the inventory classes on clients.
+	const ENetMode NetMode = Owner->GetNetMode();
+	if (IsNetSimulating() || NetMode == NM_Client)
+	{
+		return;
+	}
+
+	UWorld* const World = GetWorld();
+	if (!World->IsGameWorld())
+	{
+		// No need to spawn inventories in the editor.
+		return;
+	}
+
+	// Try to find a player controller
+	APlayerController* PlayerController = Cast<APlayerController>(Owner);
+	if (PlayerController == nullptr)
+	{
+		if (const APawn* Pawn = Cast<APawn>(Owner))
+		{
+			PlayerController = Pawn->GetController<APlayerController>();
+		}
+		else if (const APlayerState* PlayerState = Cast<APlayerState>(Owner))
+		{
+			PlayerController = PlayerState->GetPlayerController();
+		}
+	}
+
+	// Spawn the inventory based on the setup data
+	SpawnInventory(World, Owner, PlayerController);
+}
+
+void UInventoryManager::LookForInventoryManager()
+{
+}
+
+void UInventoryManager::SpawnInventory(UWorld* World, AActor* Owner, APlayerController* PlayerController)
+{
+	check(World && World->IsGameWorld());
+	check(Owner);
+	check(CreationPolicy == EItemizationInventoryCreationType::SetupData);
+
+	// If for some reason we already have a root inventory, we don't need to spawn anything.
+	if (RootInventory.IsValid())
+	{
+		return;
+	}
+
+	// Load the setup data
+	UInventorySetupDataBase* SetupPtr = InventorySetupData.LoadSynchronous();
+	if (!ensure(SetupPtr))
+	{
+		return;
+	}
+
+	// Create the spawn info
+	FActorSpawnParameters SpawnInfo;
+	SpawnInfo.Instigator = PlayerController ? PlayerController->GetPawn() : Owner->GetInstigator();
+	SpawnInfo.Owner = Owner;
+	SpawnInfo.bNoFail = true;
+	SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	SpawnInfo.ObjectFlags |= RF_Transient; // Runtime inventories should never be saved into a map
+
+	AInventory* RootInventoryPtr = nullptr;
+	SetupPtr->SpawnInventory(SpawnInfo, PlayerController, RootInventoryPtr);
+
+	if (ensure(RootInventoryPtr))
+	{
+		RootInventory = RootInventoryPtr;
+	}
 }

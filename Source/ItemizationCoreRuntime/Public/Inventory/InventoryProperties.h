@@ -43,7 +43,7 @@ public:
 
 	/** The total number of slots in the inventory. */
 	UPROPERTY(EditDefaultsOnly, Category = Inventory)
-	int32 TotalSlotsOverride;
+	int32 TotalSlotsOverride = INDEX_NONE;
 };
 
 template <typename InPropertyType>

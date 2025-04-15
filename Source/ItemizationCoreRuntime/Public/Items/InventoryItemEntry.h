@@ -28,7 +28,7 @@ struct FInventoryItemEntry : public FFastArraySerializerItem
 	friend class AInventoryBase;
 
 	FInventoryItemEntry();
-	FInventoryItemEntry(UObject* InSourceObject, int32 InStackCount);
+	FInventoryItemEntry(UItemDefinition* InItemDefinition, int32 InStackCount, UObject* InSourceObject = nullptr);
 
 public:
 PRAGMA_DISABLE_DEPRECATION_WARNINGS
@@ -71,7 +71,7 @@ PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 	/** Current stack count of this item. */
 	UPROPERTY()
-	uint32 StackCount;
+	int32 StackCount;
 
 	/** The last stack count that was locally observed. */
 	UPROPERTY(NotReplicated)
@@ -85,6 +85,9 @@ public:
 	/** Returns this item entry as a debug string. */
 	FString GetDebugString() const;
 
+	/** Resets this item entry to an invalid state. */
+	void Reset();
+
 	//~ Begin FFastArraySerializerItem Interface
 	void PreReplicatedRemove(const FInventoryItemContainer& InArraySerializer);
 	void PostReplicatedAdd(const FInventoryItemContainer& InArraySerializer);
@@ -97,8 +100,7 @@ public:
 	
 	bool operator==(const FInventoryItemEntry& Other) const
 	{
-		//return Handle.GetUID() == Other.Handle.GetUID();
-		return false;
+		return ItemHandle.Get() == Other.ItemHandle.Get();
 	}
 
 	bool operator==(const UInventoryItemInstance* OtherInstance) const
@@ -106,10 +108,9 @@ public:
 		return Instance == OtherInstance;
 	}
 
-	bool operator==(const FInventorySlotHandle& OtherHandle) const
+	bool operator==(const FInventoryItemHandle& OtherHandle) const
 	{
-		//return Handle.GetUID() == OtherHandle.GetUID();
-		return false;
+		return ItemHandle.Get() == OtherHandle.Get();
 	}
 
 	bool operator>(const FInventoryItemEntry& Other) const
@@ -134,10 +135,11 @@ struct FInventoryItemContainer : public FFastArraySerializer
 {
 	GENERATED_BODY()
 	friend struct FInventoryItemEntry;
-	friend class AInventoryBase;
+	friend class AInventory;
 	friend class UInventoryItemInstance;
 
 	FInventoryItemContainer();
+	FInventoryItemContainer(AInventory* InOwningInventory);
 
 public:
 	//~ Begin FFastArraySerializer Interface
@@ -166,6 +168,10 @@ protected:
 	/** List of item entries in this inventory. */
 	UPROPERTY()
 	TArray<FInventoryItemEntry> Items;
+
+	/** Inventory class that owns this list. */
+	UPROPERTY(NotReplicated)
+	TObjectPtr<AInventory> OwningInventory;
 
 public:
 	/** TArray accessors for the items. */

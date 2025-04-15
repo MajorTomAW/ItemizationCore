@@ -25,37 +25,36 @@ UInventorySetupDataBase_Default::UInventorySetupDataBase_Default(const FObjectIn
 }
 
 void UInventorySetupDataBase_Default::SpawnInventory(
-	AActor* InOwner,
-	EItemizationInventoryCreationType CreationType,
-	AInventoryBase*& OutRootInventory)
+	const FActorSpawnParameters& SpawnInfo,
+	APlayerController* PlayerController,
+	AInventory*& OutRootInventory)
 {
-	check(InOwner);
-	check(InOwner->HasAuthority());
+	check(SpawnInfo.Owner);
+	check(SpawnInfo.Owner->HasAuthority());
 
-	UWorld* const World = InOwner->GetWorld();
-	check(World);
+	UWorld* const World = SpawnInfo.Owner->GetWorld();
+	check(World && World->IsGameWorld());
 
 	// Cache all spawned inventories for later initialization
 	TArray<AInventoryBase*> SpawnedInventories;
 
-	// Setup the spawn params
-	FActorSpawnParameters SpawnInfo;
-	SpawnInfo.Owner = InOwner;
-	SpawnInfo.Instigator = InOwner->GetInstigator();
-	SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	SpawnInfo.ObjectFlags |= RF_Transient; // Runtime inventories should never be saved into a map
+	// Actually spawn the inventories
+	SpawnInventories(InventoryList, SpawnInfo, PlayerController, SpawnedInventories);
+	SpawnInventories(EquippableInventoryList, SpawnInfo, PlayerController, SpawnedInventories);
+	SpawnInventories(SlottableInventoryList, SpawnInfo, PlayerController, SpawnedInventories);
 
-	// Spawn the inventories
-	SpawnInventories(InventoryList, SpawnInfo, SpawnedInventories);
-	AInventoryBase* RootInventory = SpawnedInventories[0];
+	// Should always be a valid pointer
+	AInventory* RootInventory = (AInventory*)SpawnedInventories[0];
+	
+	TArray<AInventoryBase*> ChildInventories = SpawnedInventories;
+	ChildInventories.RemoveSingle(RootInventory);
 
-	// Spawn the equippable inventories
-	SpawnInventories(EquippableInventoryList, SpawnInfo, SpawnedInventories);
+	// Init our root inventory which will then recursively init all child inventories
+	RootInventory->Init(nullptr, ChildInventories);
+	OutRootInventory = RootInventory;
 
-	// Spawn the slottable inventories
-	SpawnInventories(SlottableInventoryList, SpawnInfo, SpawnedInventories);
-
-	// Initialize all spawned inventories with the starting items
+	// Grant all initial items to the root inventory the next tick
+	// All child inventory should now have bound to the root inventory's delegates.
 	TArray<const FInventoryStartingItem*> StartingItems;
 	StartingItems.Reserve(SpawnedInventories.Num());
 	for (const auto& Data : StartingItemList)
@@ -67,17 +66,12 @@ void UInventorySetupDataBase_Default::SpawnInventory(
 		}
 	}
 
-	// Fill in the correct parent-child relationships
-	if (ensure(RootInventory))
+	// Queue up a timer for the next world tick
+	if (StartingItems.Num() > 0)
 	{
-		SpawnedInventories.RemoveSingle(RootInventory);
-		RootInventory->Init(nullptr, SpawnedInventories);
-
-		for (AInventoryBase* Child : SpawnedInventories)
-		{
-			Child->Init(RootInventory);
-		}
-
-		OutRootInventory = RootInventory;
+		World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateLambda([&]()
+	{
+		RootInventory->GrantStartingItems(StartingItems);
+	}));	
 	}
 }

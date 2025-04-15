@@ -37,11 +37,11 @@ public:
 	/** 
 	 * This function is called when the inventory is created.
 	 * It can be used to spawn the inventory and set up any initial data.
-	 * @param InOwner The owner of the inventory.
-	 * @param CreationType The type of creation that is being used.
+	 * @param SpawnInfo	The spawn parameters to use for spawning the inventory.
+	 * @param PlayerController	Optional player controller reference to assign to this inventory.
 	 * @param OutRootInventory The first inventory that was created.
 	 */
-	virtual void SpawnInventory(AActor* InOwner, EItemizationInventoryCreationType CreationType, AInventoryBase*& OutRootInventory) {}
+	virtual void SpawnInventory(const FActorSpawnParameters& SpawnInfo,APlayerController* PlayerController, AInventory*& OutRootInventory) {}
 };
 
 /**
@@ -70,7 +70,7 @@ public:
 
 	/** The amount of items to add to the inventory. */
 	UPROPERTY(EditDefaultsOnly, Category = Inventory)
-	uint32 Amount;
+	int32 Amount;
 };
 
 /**
@@ -85,7 +85,7 @@ public:
 	UInventorySetupDataBase_Default(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 	//~ Begin UInventorySetupDataBase Interface
-	virtual void SpawnInventory(AActor* InOwner, EItemizationInventoryCreationType CreationType, AInventoryBase*& OutRootInventory) override;
+	virtual void SpawnInventory(const FActorSpawnParameters& SpawnInfo, APlayerController* PlayerController, AInventory*& OutRootInventory) override;
 	//~ End UInventorySetupDataBase Interface
 
 public:
@@ -110,6 +110,7 @@ protected:
 	void SpawnInventories(
 		TArray<TInstancedStruct<PropertyType>> DataList,
 		const FActorSpawnParameters& SpawnParams,
+		APlayerController* PlayerController,
 		TArray<AInventoryBase*>& InOutInventories);
 };
 
@@ -117,6 +118,7 @@ template <typename PropertyType>
 void UInventorySetupDataBase_Default::SpawnInventories(
 	TArray<TInstancedStruct<PropertyType>> DataList,
 	const FActorSpawnParameters& SpawnParams,
+	APlayerController* PlayerController,
 	TArray<AInventoryBase*>& InOutInventories)
 {
 	static_assert(TIsDerivedFrom<PropertyType, FInventoryPropertiesBase>::IsDerived,
@@ -146,7 +148,7 @@ void UInventorySetupDataBase_Default::SpawnInventories(
 
 		UClass* const Class = SoftClass.LoadSynchronous();
 		AInventoryBase* Spawned = World->SpawnActor<AInventoryBase>(Class, SpawnParams);
-		Spawned->SetProperties(Prop);
+		Spawned->SetProperties(Prop, IsValid(PlayerController));
 		
 		InOutInventories.Add(Spawned);
 	}

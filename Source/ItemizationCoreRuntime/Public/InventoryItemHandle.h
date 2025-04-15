@@ -7,7 +7,7 @@
 /**
  * Globally unique handle that points to an exact FItemEntry in the inventory.
  */
-USTRUCT()
+USTRUCT(BlueprintType)
 struct alignas(4) FInventoryItemHandle
 {
 	GENERATED_BODY()
@@ -23,6 +23,9 @@ public:
 	{
 		INVALID_HANDLE = 0x0,		// Invalid handle value
 	};
+
+	/** Generates a new uid and sets it to this handle. */
+	void GenerateNewUID();
 
 	/** Returns this handles raw value. */
 	uint32 Get() const
@@ -91,6 +94,7 @@ public:
 
 private:
 	// The actual handle that points to the item entry.
+	UPROPERTY()
 	uint32 UID = INVALID_HANDLE;
 };
 

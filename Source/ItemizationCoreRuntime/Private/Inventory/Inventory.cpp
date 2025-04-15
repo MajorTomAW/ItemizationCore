@@ -13,11 +13,13 @@
 #include "InventoryItemHandle.h"
 #include "InventorySlotHandle.h"
 #include "ItemizationLogChannels.h"
+#include "Inventory/Messaging/InventoryChangeMessage.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(Inventory)
 
 AInventory::AInventory(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer.DoNotCreateDefaultSubobject(TEXT("Sprite")))
+	, InventoryList(this)
 {
 	// By default, this inventory should be considered private and not replicated to other clients.
 	bOnlyRelevantToOwner = true;
@@ -47,8 +49,7 @@ FInventoryItemHandle AInventory::GiveItem(
 	EvaluateItemEntry(ItemEntry, MutableTransaction);
 
 	ITEMIZATION_DISPLAY("Giving item [%s] %s. Stack Count: %d (Max: %d), Source: %s",
-		//*ItemEntry.Handle.ToString(),
-		TEXT("ASD"),
+		*ItemEntry.ItemHandle.ToString(),
 		*GetNameSafe(ItemEntry.Definition),
 		Transaction.Delta,
 		Transaction.Delta,
@@ -60,17 +61,91 @@ FInventoryItemHandle AInventory::GiveItem(
 FInventoryItemHandle AInventory::NativeGiveItem(
 	const FInventoryItemEntry& ItemEntry,
 	const FInventoryTransaction_GiveItem& Transaction,
-	int32& OutExcess)
+	int32& Excess)
 {
 	FInventoryItemHandle LastHandle;
 	FInventoryTransaction_GiveItem& MutableTransaction = const_cast<FInventoryTransaction_GiveItem&>(Transaction);
 
 	// Start by setting the excess to the delta
-	OutExcess = Transaction.Delta;
+	Excess = Transaction.Delta;
 
+	// If we have excess items, try to add them to the inventory
+	while (Excess > 0)
+	{
+		const int32 Delta = FMath::Min(Excess, 100); //@TODO: Max stack size
+		Excess -= Delta;
+		
+		FInventoryItemEntry EntryCopy = ItemEntry;
+		EntryCopy.StackCount = Delta;
 
+		FInventoryItemEntry& NewItem = InventoryList.Items.Add_GetRef(EntryCopy);
+		NewItem.ItemHandle.GenerateNewUID();
 
+		LastHandle = NewItem.ItemHandle;
+
+		
+		OnGiveItem(NewItem);
+		MarkItemEntryDirty(NewItem, true);	// Mark dirty for replication
+	}
+
+	Excess = FMath::Max(0, Excess);
 	return LastHandle;
+}
+
+void AInventory::OnRemoveItem(FInventoryItemEntry& ItemEntry)
+{
+	UInventoryItemInstance* Instance = ItemEntry.Instance;
+	if (Instance != nullptr)
+	{
+		// Unregister the item instance
+	}
+
+	// Broadcast the change event
+	FInventoryChangeMessage Payload;
+	{
+		Payload.Controller = GetInstigatorController();
+		Payload.Owner = GetOwner();
+		Payload.Inventory = this;
+		Payload.ItemInstance = Instance;
+		Payload.NewStackCount = 0;
+		Payload.Delta = -ItemEntry.StackCount;
+	}
+	
+	OnItemRemovedDelegate.Broadcast(Payload);
+}
+
+void AInventory::OnGiveItem(FInventoryItemEntry& ItemEntry)
+{
+	if (!IsValid(ItemEntry.Definition))
+	{
+		return;
+	}
+
+	UInventoryItemInstance* Instance = ItemEntry.Instance;
+	if (Instance == nullptr)
+	{
+		// Create a new instance for this item entry if we should
+	}
+
+	// Broadcast the change event
+	FInventoryChangeMessage Payload;
+	{
+		Payload.Controller = GetInstigatorController();
+		Payload.Owner = GetOwner();
+		Payload.Inventory = this;
+		Payload.ItemInstance = Instance;
+		Payload.NewStackCount = ItemEntry.StackCount;
+		Payload.Delta = ItemEntry.StackCount;
+	}
+
+	OnItemAddedDelegate.Broadcast(Payload);
+
+	ITEMIZATION_N_DISPLAY("Gave item [%s] %s. Stack Count: %d (Max: %d), Source: %s",
+			*ItemEntry.ItemHandle.ToString(),
+			*GetNameSafe(ItemEntry.Definition),
+			ItemEntry.StackCount,
+			ItemEntry.StackCount,
+			*GetNameSafe(ItemEntry.SourceObject.Get()));
 }
 
 void AInventory::EvaluateItemEntry(

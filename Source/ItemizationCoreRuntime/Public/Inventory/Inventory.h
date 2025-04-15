@@ -9,6 +9,7 @@
 #include "Inventory.generated.h"
 
 
+struct FInventoryChangeMessage;
 struct FInventoryTransaction_GiveItem;
 
 /**
@@ -19,6 +20,8 @@ UCLASS(BlueprintType, Blueprintable, NotPlaceable)
 class ITEMIZATIONCORERUNTIME_API AInventory : public AInventoryBase
 {
 	GENERATED_BODY()
+	friend struct FInventoryItemEntry;
+	friend struct FInventoryItemContainer;
 
 public:
 	AInventory(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
@@ -71,6 +74,25 @@ protected:
 	virtual void EvaluateItemEntry(const FInventoryItemEntry& ItemEntry, FInventoryTransaction_GiveItem& InOutTransaction);
 
 	virtual FInventoryItemHandle NativeGiveItem(const FInventoryItemEntry& ItemEntry, const FInventoryTransaction_GiveItem& Transaction, int32& OutExcess);
+
+	/** Will be called from RemoveItem or from OnRep. */
+	virtual void OnRemoveItem(FInventoryItemEntry& ItemEntry);
+
+	/** Will be called from GiveItem or from OnRep. Initializes the given item instance. */
+	virtual void OnGiveItem(FInventoryItemEntry& ItemEntry);
+
+public:
+	/** Inventory Event delegate. */
+	DECLARE_EVENT_OneParam(AInventory, FInventoryItemEvent, const FInventoryChangeMessage& /*Payload*/)
+
+	/** Delegate that gets called whenever a new item was added to the inventory. */
+	FInventoryItemEvent OnItemAddedDelegate;
+
+	/** Delegate that gets called right before an item is removed from the inventory. */
+	FInventoryItemEvent OnItemRemovedDelegate;
+
+	/** Delegate that gets called whenever an item was changed. */
+	FInventoryItemEvent OnItemChangedDelegate;
 	
 protected:
 	//~ Begin UObject Interface

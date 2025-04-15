@@ -3,6 +3,8 @@
 
 #include "Items/InventoryItemEntry.h"
 
+#include "ItemizationLogChannels.h"
+#include "Inventory/Inventory.h"
 #include "Items/InventoryItemInstance.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(InventoryItemEntry)
@@ -11,8 +13,8 @@
 /// FInventoryItemEntry
 
 FInventoryItemEntry::FInventoryItemEntry()
-	//: Handle(FInventorySlotHandle())
 	: Instance(nullptr)
+	, Definition(nullptr)
 	, SourceObject(nullptr)
 	, StackCount(0)
 	, LastObservedStackCount(INDEX_NONE)
@@ -20,9 +22,12 @@ FInventoryItemEntry::FInventoryItemEntry()
 {
 }
 
-FInventoryItemEntry::FInventoryItemEntry(UObject* InSourceObject, int32 InStackCount)
-	//: Handle(FInventorySlotHandle())
+FInventoryItemEntry::FInventoryItemEntry(
+	UItemDefinition* InItemDefinition,
+	int32 InStackCount,
+	UObject* InSourceObject)
 	: Instance(nullptr)
+	, Definition(InItemDefinition)
 	, SourceObject(InSourceObject)
 	, StackCount(InStackCount)
 	, LastObservedStackCount(INDEX_NONE)
@@ -33,21 +38,48 @@ FInventoryItemEntry::FInventoryItemEntry(UObject* InSourceObject, int32 InStackC
 
 FString FInventoryItemEntry::GetDebugString() const
 {
-	return FString::Printf(TEXT("%s (%d)"), *GetNameSafe(Instance), 0);
+	return FString::Printf(TEXT("%s [%s]"), *GetNameSafe(Instance), *ItemHandle.ToString());
+}
+
+void FInventoryItemEntry::Reset()
+{
+	Instance = nullptr;
+	Definition = nullptr;
+	SourceObject = nullptr;
+	StackCount = 0;
+	LastObservedStackCount = INDEX_NONE;
+	ItemHandle.Reset();
+	PendingRemove = false;
 }
 
 void FInventoryItemEntry::PreReplicatedRemove(const FInventoryItemContainer& InArraySerializer)
 {
+	if (InArraySerializer.OwningInventory)
+	{
+		InArraySerializer.OwningInventory->OnRemoveItem(*this);
+	}
 }
 
 void FInventoryItemEntry::PostReplicatedAdd(const FInventoryItemContainer& InArraySerializer)
 {
+	ITEMIZATION_DISPLAY("PostReplicatedAdd: %s by %s", *GetDebugString(), *GetNameSafe(InArraySerializer.OwningInventory));
+
+	if (InArraySerializer.OwningInventory)
+	{
+		InArraySerializer.OwningInventory->OnGiveItem(*this);
+	}
 }
 
 ////////////////////////////////////////////////////////////////////
 /// FInventoryItemContainer
 
 FInventoryItemContainer::FInventoryItemContainer()
+	: OwningInventory(nullptr)
+{
+}
+
+FInventoryItemContainer::FInventoryItemContainer(AInventory* InOwningInventory)
+	: OwningInventory(InOwningInventory)
 {
 }
 

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Enums/EItemizationInventoryType.h"
 #include "GameFramework/Info.h"
 
 #include "InventoryBase.generated.h"
@@ -34,8 +35,9 @@ public:
 	virtual void Init(AInventoryBase* InParent, const TArray<AInventoryBase*> InChildren = {});
 	virtual void PostInitInventory();
 
-	virtual void SetProperties(const FInventoryPropertiesBase* InProperties)
+	virtual void SetProperties(const FInventoryPropertiesBase* InProperties, bool bIsPlayerInventory)
 	{
+		InventoryType = bIsPlayerInventory ? EItemizationInventoryType::Player : EItemizationInventoryType::World;
 		InventoryProperties = InProperties;
 	}
 
@@ -43,6 +45,7 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void PostInitializeComponents() override;
 	virtual bool ReplicateSubobjects(UActorChannel* Channel, FOutBunch* Bunch, FReplicationFlags* RepFlags) override;
+	virtual void PreNetReceive() override;
 	//~ End UObject Interface
 
 	template <typename PropertyType>
