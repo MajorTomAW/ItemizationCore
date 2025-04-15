@@ -11,4 +11,5 @@ With huge thanks to [namrog84](https://github.com/namrog84) who has helped me a 
 > [!CAUTION]
 > This is very early in development and not meant to be used at all.
 
-## 🌐 〢 Index
+## 🌐 〢 Wiki
+The wiki can be found [here](https://github.com/MajorTomAW/ItemizationCore/wiki)
