@@ -8,7 +8,9 @@
 
 #include "Inventory.generated.h"
 
+
 struct FInventoryTransaction_GiveItem;
+
 /**
  * The inventory class that holds a list of items.
  * Each item that lives in this class is purely a data object and doesn't have any physical representation.

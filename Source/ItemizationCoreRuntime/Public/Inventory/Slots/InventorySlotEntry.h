@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
-#include "InventoryItemHandle.h"
+#include "InventorySlotHandle.h"
 #include "ItemizationCoreHelpers.h"
 #include "Net/Serialization/FastArraySerializer.h"
 
@@ -29,22 +29,22 @@ struct FInventorySlotEntry : public FFastArraySerializerItem
 public:
 	FInventorySlotEntry();
 	explicit FInventorySlotEntry(uint16 InSlotId);
-	explicit FInventorySlotEntry(const FInventoryItemHandle& InItemHandle);
+	explicit FInventorySlotEntry(const FInventorySlotHandle& InItemHandle);
 
 	/** Returns the item handle associated with this slot. */
-	FORCEINLINE FInventoryItemHandle GetHandle() const
+	FORCEINLINE FInventorySlotHandle GetHandle() const
 	{
-		return Handle;
+		return SlotHandle;
 	}
-	FInventoryItemHandle& GetHandle_Ref()
+	FInventorySlotHandle& GetHandle_Ref()
 	{
-		return Handle;
+		return SlotHandle;
 	}
 
 	/** Returns the item handle as an uint16 slot id. */
 	FORCEINLINE uint16 GetSlotId() const
 	{
-		return Handle.GetSlotId();
+		return SlotHandle.GetSlotId();
 	}
 
 	/** Returns whether this slot is enabled. */
@@ -76,7 +76,7 @@ public:
 	{
 		return GetHandle() == Other.GetHandle();
 	}
-	FORCEINLINE bool operator==(const FInventoryItemHandle& OtherHandle) const
+	FORCEINLINE bool operator==(const FInventorySlotHandle& OtherHandle) const
 	{
 		return GetHandle() == OtherHandle;
 	}
@@ -96,7 +96,7 @@ public:
 protected:
 	/** The item handle that both defines this slot id and the associated item entry. */
 	UPROPERTY()
-	FInventoryItemHandle Handle;
+	FInventorySlotHandle SlotHandle;
 
 	/** Whether this slot is enabled, meaning it can be used to modify the item which is in it. */
 	UPROPERTY(BlueprintReadOnly, Category=Slot)

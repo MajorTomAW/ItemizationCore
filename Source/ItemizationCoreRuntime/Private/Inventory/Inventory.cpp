@@ -3,13 +3,16 @@
 
 #include "Inventory/Inventory.h"
 
-#include "ItemizationLogChannels.h"
 #include "Engine/ActorChannel.h"
+#include "Net/UnrealNetwork.h"
+
 #include "Enums/EItemizationInventoryType.h"
 #include "Inventory/Transactions/InventoryItemTransactionBase.h"
 #include "Items/ItemComponentData.h"
 #include "Items/ItemDefinition.h"
-#include "Net/UnrealNetwork.h"
+#include "InventoryItemHandle.h"
+#include "InventorySlotHandle.h"
+#include "ItemizationLogChannels.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(Inventory)
 
@@ -44,7 +47,8 @@ FInventoryItemHandle AInventory::GiveItem(
 	EvaluateItemEntry(ItemEntry, MutableTransaction);
 
 	ITEMIZATION_DISPLAY("Giving item [%s] %s. Stack Count: %d (Max: %d), Source: %s",
-		*ItemEntry.Handle.ToString(),
+		//*ItemEntry.Handle.ToString(),
+		TEXT("ASD"),
 		*GetNameSafe(ItemEntry.Definition),
 		Transaction.Delta,
 		Transaction.Delta,
@@ -165,7 +169,7 @@ void AInventory::AddReplicatedItemInstance(UInventoryItemInstance* ItemInstance)
 
 void AInventory::RemoveReplicatedItemInstance(UInventoryItemInstance* ItemInstance)
 {
-	const bool bWasRemoved = GetAllItemInstances_Mutable().RemoveSingle(ItemInstance);
+	const bool bWasRemoved = GetAllItemInstances_Mutable().RemoveSingle(ItemInstance) > 0;
 
 	// Remove it from the replicated sub object list if we're replicating
 	if (bWasRemoved && IsUsingRegisteredSubObjectList())

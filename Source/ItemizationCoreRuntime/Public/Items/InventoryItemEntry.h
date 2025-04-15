@@ -4,9 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
+#include "InventoryItemHandle.h"
 #include "Net/Serialization/FastArraySerializer.h"
 
-#include "InventoryItemHandle.h"
+#include "InventorySlotHandle.h"
 #include "ItemizationCoreHelpers.h"
 #include "Items/InventoryItemInstance.h"
 #include "Items/ItemComponentDataList.h"
@@ -40,7 +41,7 @@ PRAGMA_ENABLE_DEPRECATION_WARNINGS
 	
 	/** The unique handle to this item for outside references. */
 	UPROPERTY()
-	FInventoryItemHandle Handle;
+	FInventoryItemHandle ItemHandle;
 
 	/** The item instance that this entry is representing. */
 	UPROPERTY()
@@ -96,7 +97,8 @@ public:
 	
 	bool operator==(const FInventoryItemEntry& Other) const
 	{
-		return Handle.GetUID() == Other.Handle.GetUID();
+		//return Handle.GetUID() == Other.Handle.GetUID();
+		return false;
 	}
 
 	bool operator==(const UInventoryItemInstance* OtherInstance) const
@@ -104,9 +106,10 @@ public:
 		return Instance == OtherInstance;
 	}
 
-	bool operator==(const FInventoryItemHandle& OtherHandle) const
+	bool operator==(const FInventorySlotHandle& OtherHandle) const
 	{
-		return Handle.GetUID() == OtherHandle.GetUID();
+		//return Handle.GetUID() == OtherHandle.GetUID();
+		return false;
 	}
 
 	bool operator>(const FInventoryItemEntry& Other) const

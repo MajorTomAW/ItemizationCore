@@ -7,7 +7,7 @@
 /// FInventorySlotEntry
 
 FInventorySlotEntry::FInventorySlotEntry()
-	: Handle(FInventoryItemHandle())
+	: SlotHandle(FInventorySlotHandle())
 	, bEnabled(true)
 {
 }
@@ -15,11 +15,11 @@ FInventorySlotEntry::FInventorySlotEntry()
 FInventorySlotEntry::FInventorySlotEntry(uint16 InSlotId)
 	: bEnabled(true)
 {
-	Handle.SetSlotId(InSlotId);
+	SlotHandle.SetSlotId(InSlotId);
 }
 
-FInventorySlotEntry::FInventorySlotEntry(const FInventoryItemHandle& InItemHandle)
-	: Handle(InItemHandle)
+FInventorySlotEntry::FInventorySlotEntry(const FInventorySlotHandle& InItemHandle)
+	: SlotHandle(InItemHandle)
 	, bEnabled(true)
 {
 }
@@ -27,14 +27,14 @@ FInventorySlotEntry::FInventorySlotEntry(const FInventoryItemHandle& InItemHandl
 
 void FInventorySlotEntry::Reset()
 {
-	Handle.Reset();
+	SlotHandle.Reset();
 	bEnabled = true;
 	SlotTag = FGameplayTag();
 }
 
 bool FInventorySlotEntry::IsValid() const
 {
-	return Handle.IsSlotValid();
+	return SlotHandle.IsSlotValid();
 }
 
 void FInventorySlotEntry::PreReplicatedRemove(const FInventorySlotContainer& InArraySerializer)

@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "InventoryItemHandle.h"
+#include "InventorySlotHandle.h"
 #include "Components/ActorComponent.h"
 #include "Items/InventoryItemEntry.h"
 #include "InventoryManager.generated.h"

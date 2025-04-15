@@ -11,8 +11,8 @@
 /// FInventoryItemEntry
 
 FInventoryItemEntry::FInventoryItemEntry()
-	: Handle(FInventoryItemHandle())
-	, Instance(nullptr)
+	//: Handle(FInventorySlotHandle())
+	: Instance(nullptr)
 	, SourceObject(nullptr)
 	, StackCount(0)
 	, LastObservedStackCount(INDEX_NONE)
@@ -21,8 +21,8 @@ FInventoryItemEntry::FInventoryItemEntry()
 }
 
 FInventoryItemEntry::FInventoryItemEntry(UObject* InSourceObject, int32 InStackCount)
-	: Handle(FInventoryItemHandle())
-	, Instance(nullptr)
+	//: Handle(FInventorySlotHandle())
+	: Instance(nullptr)
 	, SourceObject(InSourceObject)
 	, StackCount(InStackCount)
 	, LastObservedStackCount(INDEX_NONE)
@@ -33,7 +33,7 @@ FInventoryItemEntry::FInventoryItemEntry(UObject* InSourceObject, int32 InStackC
 
 FString FInventoryItemEntry::GetDebugString() const
 {
-	return FString::Printf(TEXT("%s (%d)"), *GetNameSafe(Instance), Handle);
+	return FString::Printf(TEXT("%s (%d)"), *GetNameSafe(Instance), 0);
 }
 
 void FInventoryItemEntry::PreReplicatedRemove(const FInventoryItemContainer& InArraySerializer)

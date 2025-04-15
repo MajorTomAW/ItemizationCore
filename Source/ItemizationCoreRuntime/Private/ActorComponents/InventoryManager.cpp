@@ -113,7 +113,7 @@ void UInventoryManager::InitializeComponent()
 		ensureMsgf(RootInventoryPtr->GetOwner() == GetOwner(),
 			TEXT("Created inventory %s with owner %s, but the inventory manager is owned by %s"), *RootInventoryPtr->GetName(), *RootInventoryPtr->GetOwner()->GetName(), *GetOwner()->GetName());
 
-		RootInventory = RootInventoryPtr;
+		RootInventory = (AInventory*)RootInventoryPtr;
 	}
 	// Otherwise use the default inventory class and create an empty one.
 	else if (CreationPolicy == EItemizationInventoryCreationType::Runtime)
@@ -133,7 +133,7 @@ void UInventoryManager::InitializeComponent()
 		SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		SpawnInfo.ObjectFlags |= RF_Transient; // Runtime inventories should never be saved into a map
 
-		RootInventory = World->SpawnActor<AInventoryBase>(Class, SpawnInfo);
+		RootInventory = World->SpawnActor<AInventory>(Class, SpawnInfo);
 	}
 }
 
