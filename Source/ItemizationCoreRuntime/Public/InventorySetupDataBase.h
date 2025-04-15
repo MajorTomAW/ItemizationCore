@@ -90,7 +90,7 @@ public:
 
 public:
 	/** The default properties for the inventory. */
-	UPROPERTY(EditDefaultsOnly, Category = Inventory, NoClear)
+	UPROPERTY(EditDefaultsOnly, Category = Inventory, NoClear, EditFixedSize)
 	TArray<TInstancedStruct<FInventoryProperties>> InventoryList;
 
 	/** The default properties for an equippable inventory. */
@@ -98,8 +98,8 @@ public:
 	TArray<TInstancedStruct<FEquippableInventoryProperties>> EquippableInventoryList;
 
 	/** The default slottable inventory properties. */
-	UPROPERTY(EditDefaultsOnly, Category = Inventory, NoClear)
-	const TInstancedStruct<FSlottableInventoryProperties> SlottableInventory;
+	UPROPERTY(EditDefaultsOnly, Category = Inventory, NoClear, EditFixedSize)
+	TArray<TInstancedStruct<FSlottableInventoryProperties>> SlottableInventoryList;
 
 	/** The list of starting items to add to the inventory. */
 	UPROPERTY(EditDefaultsOnly, Category = Items, NoClear)
@@ -146,6 +146,8 @@ void UInventorySetupDataBase_Default::SpawnInventories(
 
 		UClass* const Class = SoftClass.LoadSynchronous();
 		AInventoryBase* Spawned = World->SpawnActor<AInventoryBase>(Class, SpawnParams);
+		Spawned->SetProperties(Prop);
+		
 		InOutInventories.Add(Spawned);
 	}
 }

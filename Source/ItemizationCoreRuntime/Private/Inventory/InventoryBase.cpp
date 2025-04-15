@@ -35,7 +35,6 @@ AInventoryBase::AInventoryBase(const FObjectInitializer& ObjectInitializer)
 }
 
 void AInventoryBase::Init(
-	const UInventorySetupDataBase* InSetupData,
 	AInventoryBase* InParent,
 	const TArray<AInventoryBase*> InChildren)
 {
@@ -46,6 +45,18 @@ void AInventoryBase::Init(
 	ChildInventoryList = InChildren;
 
 	// @TODO: Initialize the inventory with the setup data ??
+
+	// Recursively initialize all child inventories ????
+	/*for (AInventoryBase* Child : ChildInventoryList)
+	{
+		Child->Init(this);
+	}*/
+
+	PostInitInventory();
+}
+
+void AInventoryBase::PostInitInventory()
+{
 }
 
 void AInventoryBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

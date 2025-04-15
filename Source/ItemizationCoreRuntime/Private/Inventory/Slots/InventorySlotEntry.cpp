@@ -18,6 +18,24 @@ FInventorySlotEntry::FInventorySlotEntry(uint16 InSlotId)
 	Handle.SetSlotId(InSlotId);
 }
 
+FInventorySlotEntry::FInventorySlotEntry(const FInventoryItemHandle& InItemHandle)
+	: Handle(InItemHandle)
+	, bEnabled(true)
+{
+}
+
+
+void FInventorySlotEntry::Reset()
+{
+	Handle.Reset();
+	bEnabled = true;
+	SlotTag = FGameplayTag();
+}
+
+bool FInventorySlotEntry::IsValid() const
+{
+	return Handle.IsSlotValid();
+}
 
 void FInventorySlotEntry::PreReplicatedRemove(const FInventorySlotContainer& InArraySerializer)
 {

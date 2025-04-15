@@ -7,11 +7,13 @@
 #include "Net/Serialization/FastArraySerializer.h"
 
 #include "InventoryItemHandle.h"
+#include "ItemizationCoreHelpers.h"
 #include "Items/InventoryItemInstance.h"
 #include "Items/ItemComponentDataList.h"
 
 #include "InventoryItemEntry.generated.h"
 
+class UItemDefinition;
 class UInventoryManager;
 class UInventoryItemInstance;
 class AInventoryBase;
@@ -38,11 +40,15 @@ PRAGMA_ENABLE_DEPRECATION_WARNINGS
 	
 	/** The unique handle to this item for outside references. */
 	UPROPERTY()
-	FInventoryItemHandle SlotHandle;
+	FInventoryItemHandle Handle;
 
 	/** The item instance that this entry is representing. */
 	UPROPERTY()
 	TObjectPtr<UInventoryItemInstance> Instance;
+
+	/** The item definition asset that this entry is representing. */
+	UPROPERTY()
+	TObjectPtr<UItemDefinition> Definition;
 	
 	/**
 	 * Object that this item was given from.
@@ -64,7 +70,7 @@ PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 	/** Current stack count of this item. */
 	UPROPERTY()
-	int32 StackCount;
+	uint32 StackCount;
 
 	/** The last stack count that was locally observed. */
 	UPROPERTY(NotReplicated)
@@ -88,29 +94,24 @@ public:
 	// Operators
 	// ----------------------------------------------------------------------------------------------------------------
 	
-	FORCEINLINE bool operator==(const FInventoryItemEntry& Other) const
+	bool operator==(const FInventoryItemEntry& Other) const
 	{
-		return SlotHandle == Other.SlotHandle;
+		return Handle.GetUID() == Other.Handle.GetUID();
 	}
 
-	FORCEINLINE bool operator==(const UInventoryItemInstance* OtherInstance) const
+	bool operator==(const UInventoryItemInstance* OtherInstance) const
 	{
 		return Instance == OtherInstance;
 	}
 
-	FORCEINLINE bool operator==(const FInventoryItemHandle& OtherHandle) const
+	bool operator==(const FInventoryItemHandle& OtherHandle) const
 	{
-		return SlotHandle == OtherHandle;
+		return Handle.GetUID() == OtherHandle.GetUID();
 	}
 
-	FORCEINLINE bool operator>(const FInventoryItemEntry& Other) const
+	bool operator>(const FInventoryItemEntry& Other) const
 	{
 		return StackCount > Other.StackCount;
-	}
-
-	FORCEINLINE bool operator<(const FInventoryItemEntry& Other) const
-	{
-		return StackCount < Other.StackCount;
 	}
 };
 
@@ -164,51 +165,8 @@ protected:
 	TArray<FInventoryItemEntry> Items;
 
 public:
-	// ----------------------------------------------------------------------------------------------------------------
-	// Operators
-	// ----------------------------------------------------------------------------------------------------------------
-
-	/** Returns the number of items in this container. */
-	FORCEINLINE int32 Num() const { return Items.Num(); }
-
-	/** Creates a const iterator for the items in this container. */
-	FORCEINLINE TArray<FInventoryItemEntry>::TConstIterator CreateConstIterator() const
-	{
-		return Items.CreateConstIterator();
-	}
-
-	/** Creates an iterator for the items in this container. */
-	FORCEINLINE TArray<FInventoryItemEntry>::TIterator CreateIterator()
-	{
-		return Items.CreateIterator();
-	}
-
-	/** Finds an item entry by the given key. */
-	template <typename KeyType>
-	FORCEINLINE FInventoryItemEntry* FindByKey(const KeyType& Key)
-	{
-		return Items.FindByKey(Key);
-	}
-
-private:
-	FORCEINLINE friend TArray<FInventoryItemEntry>::TConstIterator begin(const FInventoryItemContainer& Array)
-	{
-		return Array.CreateConstIterator();
-	}
-	FORCEINLINE friend TArray<FInventoryItemEntry>::TConstIterator end(const FInventoryItemContainer& Array)
-	{
-		return TArray<FInventoryItemEntry>::TConstIterator(Array.Items, Array.Items.Num());
-	}
-
-	FORCEINLINE friend TArray<FInventoryItemEntry>::TIterator begin(FInventoryItemContainer& Array)
-	{
-		return Array.CreateIterator();
-	}
-
-	FORCEINLINE friend TArray<FInventoryItemEntry>::TIterator end(FInventoryItemContainer& Array)
-	{
-		return TArray<FInventoryItemEntry>::TIterator(Array.Items, Array.Items.Num());
-	}
+	/** TArray accessors for the items. */
+	ITEMIZATION_FastArraySerializer_TArray_ACCESSORS(Items);
 };
 
 template<>

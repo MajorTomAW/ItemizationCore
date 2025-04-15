@@ -6,6 +6,8 @@
 
 #include "ItemComponentData.generated.h"
 
+struct FInventoryItemTransactionBase;
+struct FInventoryItemEntry;
 enum class EItemComponentInstancingPolicy : uint8;
 class UObject;
 
@@ -31,6 +33,12 @@ public:
 
 	/** For instanced structs only, need to be serialized with the item. */
 	virtual bool NetSerialize(FArchive& Ar, UPackageMap* Map, bool& bOutSuccess);
+
+	/**
+	 * Called before an Item Entry is added or removed from an inventory.
+	 * This is essential to fill in any important data in the un-initialized Item Entry.
+	 */
+	virtual void EvaluateItemEntry(FInventoryItemEntry& ItemEntry, const FInventoryItemTransactionBase& Transaction) const;
 
 protected:
 	/** The instancing policy of this item component data. */

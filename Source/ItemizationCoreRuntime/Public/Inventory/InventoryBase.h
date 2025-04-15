@@ -7,6 +7,7 @@
 
 #include "InventoryBase.generated.h"
 
+struct FInventoryPropertiesBase;
 struct FInventoryStartingItem;
 class UInventorySetupDataBase;
 enum class EItemizationInventoryType : uint8;
@@ -30,18 +31,36 @@ class AInventoryBase : public AInfo
 
 public:
 	AInventoryBase(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
-	virtual void Init(const UInventorySetupDataBase* InSetupData, AInventoryBase* InParent, const TArray<AInventoryBase*> InChildren = {});
+	virtual void Init(AInventoryBase* InParent, const TArray<AInventoryBase*> InChildren = {});
+	virtual void PostInitInventory();
+
+	virtual void SetProperties(const FInventoryPropertiesBase* InProperties)
+	{
+		InventoryProperties = InProperties;
+	}
 
 	//~ Begin UObject Interface
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void PostInitializeComponents() override;
 	virtual bool ReplicateSubobjects(UActorChannel* Channel, FOutBunch* Bunch, FReplicationFlags* RepFlags) override;
 	//~ End UObject Interface
+
+	template <typename PropertyType>
+	const PropertyType* GetInventoryProperties() const
+	{
+		static_assert(TIsDerivedFrom<PropertyType, FInventoryPropertiesBase>::IsDerived,
+			"PropertyType must be derived from FInventoryPropertiesBase");
+		return InventoryProperties ? (PropertyType*)InventoryProperties : nullptr;
+	}
 	
 protected:
 	/** Describes the type of inventory this is. */
 	UPROPERTY(BlueprintReadOnly, VisibleDefaultsOnly, Category = Inventory)
 	EItemizationInventoryType InventoryType;
+
+
+	/** Cached off pointer to the inventory properties. */
+	mutable const FInventoryPropertiesBase* InventoryProperties;
 
 public:
 	/** Potential pointer to a parent inventory that owns this inventory. */

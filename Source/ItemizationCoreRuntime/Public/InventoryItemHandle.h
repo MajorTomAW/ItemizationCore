@@ -32,33 +32,6 @@ public:
 		INVALID_HANDLE = 0x0						// Invalid handle value
 	};
 	
-	/** Clears the handle. */
-	void Reset()
-	{
-		Value = INVALID_HANDLE;
-	}
-	
-	/**
-	 * Checks if the handle is valid.
-	 * @Note This will always return true if either SlotId or ItemUID is valid.
-	 * @Note It is safer to check IsSlotValid() or IsUIDValid() if you want to check for a specific value.
-	 */
-	FORCEINLINE bool IsValid() const
-	{
-		return Value != INVALID_HANDLE;
-	}
-
-	/** Checks if the slot id is a valid id. */
-	FORCEINLINE bool IsSlotValid() const
-	{
-		return (Value & HANDLE_MASK) != INVALID_HANDLE;
-	}
-
-	/** Checks ot see if the UID was set. */
-	FORCEINLINE bool IsUIDValid() const
-	{
-		return (Value >> UID_SHIFT) != INVALID_HANDLE;
-	}
 
 	/** Returns the handle as a slot id. */
 	FORCEINLINE uint32 GetSlotId() const
@@ -89,6 +62,34 @@ public:
 	{
 		Value = (Value & ~HANDLE_MASK) | (SlotId & HANDLE_MASK);
 	}
+	
+	/** Clears the handle. */
+	void Reset()
+	{
+		Value = INVALID_HANDLE;
+	}
+	
+	/**
+	 * Checks if the handle is valid.
+	 * @Note This will always return true if either SlotId or ItemUID is valid.
+	 * @Note It is safer to check IsSlotValid() or IsUIDValid() if you want to check for a specific value.
+	 */
+	FORCEINLINE bool IsValid() const
+	{
+		return Value != INVALID_HANDLE;
+	}
+
+	/** Checks if the slot id is a valid id. */
+	FORCEINLINE bool IsSlotValid() const
+	{
+		return (Value & HANDLE_MASK) != INVALID_HANDLE;
+	}
+
+	/** Checks ot see if the UID was set. */
+	FORCEINLINE bool IsUIDValid() const
+	{
+		return (Value >> UID_SHIFT) != INVALID_HANDLE;
+	}
 
 public:
 	/** Compares this handle with another handle. */
@@ -98,8 +99,11 @@ public:
 	}
 	bool operator!=(const FInventoryItemHandle& Other) const
 	{
-		return Get() != Other.Get();
+		return !operator==(Other);
 	}
+
+	/** For sorting purposes. */
+	bool operator<(const FInventoryItemHandle& Other) const { return GetSlotId() < Other.GetSlotId(); }
 
 	/** Archive operator for serialization. */
 	friend FArchive& operator<<(FArchive& Ar, FInventoryItemHandle& SlotHandle)

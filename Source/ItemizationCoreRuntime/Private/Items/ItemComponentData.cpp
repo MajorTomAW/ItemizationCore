@@ -16,3 +16,10 @@ bool FItemComponentData::NetSerialize(FArchive& Ar, UPackageMap* Map, bool& bOut
 	bOutSuccess = true;
 	return true;
 }
+
+void FItemComponentData::EvaluateItemEntry(
+	FInventoryItemEntry& ItemEntry,
+	const FInventoryItemTransactionBase& Transaction) const
+{
+	// Nothing to do here, can be overridden in derived classes
+}

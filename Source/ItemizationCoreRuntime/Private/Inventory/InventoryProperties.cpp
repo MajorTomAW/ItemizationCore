@@ -15,6 +15,7 @@ FInventoryPropertiesBase::FInventoryPropertiesBase()
 FInventoryProperties::FInventoryProperties()
 	: InventoryClass(AInventory::StaticClass())
 {
+	TotalSlotsOverride = 100;
 }
 
 FSlottableInventoryProperties::FSlottableInventoryProperties()
@@ -25,4 +26,5 @@ FSlottableInventoryProperties::FSlottableInventoryProperties()
 FEquippableInventoryProperties::FEquippableInventoryProperties()
 	: InventoryClass(AEquippableInventory::StaticClass())
 {
+	TotalSlotsOverride = 10;
 }

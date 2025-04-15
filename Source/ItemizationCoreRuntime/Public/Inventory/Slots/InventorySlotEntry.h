@@ -3,7 +3,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 #include "InventoryItemHandle.h"
+#include "ItemizationCoreHelpers.h"
 #include "Net/Serialization/FastArraySerializer.h"
 
 #include "InventorySlotEntry.generated.h"
@@ -27,13 +29,14 @@ struct FInventorySlotEntry : public FFastArraySerializerItem
 public:
 	FInventorySlotEntry();
 	explicit FInventorySlotEntry(uint16 InSlotId);
+	explicit FInventorySlotEntry(const FInventoryItemHandle& InItemHandle);
 
 	/** Returns the item handle associated with this slot. */
 	FORCEINLINE FInventoryItemHandle GetHandle() const
 	{
 		return Handle;
 	}
-	FORCEINLINE FInventoryItemHandle& GetHandle_Ref()
+	FInventoryItemHandle& GetHandle_Ref()
 	{
 		return Handle;
 	}
@@ -49,11 +52,21 @@ public:
 	{
 		return bEnabled;
 	}
+	
 	/** Sets whether this slot is enabled. */
-	FORCEINLINE void SetEnabled(bool bInEnabled)
+	void SetEnabled(bool bInEnabled)
 	{
 		bEnabled = bInEnabled;
 	}
+
+	/** Resets this slot to an empty state. */
+	void Reset();
+
+	/**
+	 * Checks if this slot entry is valid.
+	 * Will return true if the slot id is valid, but won't check if the item handle is valid.
+	 */
+	bool IsValid() const;
 
 	// ----------------------------------------------------------------------------------------------------------------
 	// Operators
@@ -68,6 +81,7 @@ public:
 		return GetHandle() == OtherHandle;
 	}
 
+	/** Returns this slot as a debug string. */
 	FString ToString() const
 	{
 		return FString::Printf(TEXT("Slot[%d][%s]"), GetSlotId(), *GetHandle().ToString());
@@ -85,8 +99,12 @@ protected:
 	FInventoryItemHandle Handle;
 
 	/** Whether this slot is enabled, meaning it can be used to modify the item which is in it. */
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly, Category=Slot)
 	uint8 bEnabled : 1;
+
+	/** Optional gameplay tag associated with this slot. Can be used for trait checks or filtering. */
+	UPROPERTY(BlueprintReadOnly, Category=Slot)
+	FGameplayTag SlotTag;
 };
 
 template<>
@@ -125,48 +143,8 @@ public:
 	TArray<FInventorySlotEntry> Slots;
 
 public:
-	// ----------------------------------------------------------------------------------------------------------------
-	// Operators
-	// ----------------------------------------------------------------------------------------------------------------
-
-	/** Returns the number of slots in this container. */
-	FORCEINLINE int32 Num() const
-	{
-		return Slots.Num();
-	}
-
-	/** Creates a const iterator for this container. */
-	FORCEINLINE TArray<FInventorySlotEntry>::TConstIterator CreateConstIterator() const
-	{
-		return Slots.CreateConstIterator();
-	}
-
-	/** Creates an iterator for this container. */
-	FORCEINLINE TArray<FInventorySlotEntry>::TIterator CreateIterator()
-	{
-		return Slots.CreateIterator();
-	}
-
-private:
-	FORCEINLINE friend TArray<FInventorySlotEntry>::TConstIterator begin(const FInventorySlotContainer& Array)
-	{
-		return Array.CreateConstIterator();
-	}
-
-	FORCEINLINE friend TArray<FInventorySlotEntry>::TConstIterator end(const FInventorySlotContainer& Array)
-	{
-		return TArray<FInventorySlotEntry>::TConstIterator(Array.Slots, Array.Num());
-	}
-
-	FORCEINLINE friend TArray<FInventorySlotEntry>::TIterator begin(FInventorySlotContainer& Array)
-	{
-		return Array.CreateIterator();
-	}
-
-	FORCEINLINE friend TArray<FInventorySlotEntry>::TIterator end(FInventorySlotContainer& Array)
-	{
-		return TArray<FInventorySlotEntry>::TIterator(Array.Slots, Array.Num());
-	}
+	/** TArray accessors for the slots. */
+	ITEMIZATION_FastArraySerializer_TArray_ACCESSORS(Slots);
 };
 
 template<>

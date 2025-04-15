@@ -43,7 +43,17 @@ public:
 
 	/** The total number of slots in the inventory. */
 	UPROPERTY(EditDefaultsOnly, Category = Inventory)
-	int64 TotalSlotsOverride;
+	int32 TotalSlotsOverride;
+};
+
+template <typename InPropertyType>
+class TInventoryProperty
+{
+public:
+	using PropertyType = InPropertyType;
+
+protected:
+	TObjectPtr<const UScriptStruct> ScriptStruct = nullptr;
 };
 
 /**
@@ -98,3 +108,4 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = Inventory, NoClear)
 	TArray<TInstancedStruct<FEquippableInventorySlotBindingDefinition>> SlotBindings;
 };
+

@@ -54,6 +54,9 @@ public:
 		return GetItemComponent(T::StaticStruct());
 	}
 
+	/** Returns all item components of this item. */
+	TArray<const FItemComponentData*> GetAllItemComponents() const;
+
 public:
 	/** An FName describing the type of this item. Should only be changed in very parent classes. */
 	UPROPERTY(VisibleDefaultsOnly, Category=AssetManager)

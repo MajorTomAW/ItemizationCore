@@ -7,6 +7,9 @@
 #include "InventorySetupDataBase.h"
 #include "ItemizationLogChannels.h"
 #include "Enums/EItemizationInventoryCreationType.h"
+#include "Inventory/Inventory.h"
+#include "Inventory/Transactions/InventoryItemTransactionBase.h"
+#include "Items/ItemDefinition.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(InventoryManager)
 
@@ -14,13 +17,13 @@ UInventoryManager::UInventoryManager(const FObjectInitializer& ObjectInitializer
 	: Super(ObjectInitializer)
 	, RootInventory(nullptr)
 	, CreationPolicy(EItemizationInventoryCreationType::Runtime)
-	, RootInventoryClass(AInventoryBase::StaticClass())
+	, RootInventoryClass(AInventory::StaticClass())
 {
 	bWantsInitializeComponent = true;
 	bAutoActivate = true;
 }
 
-AInventoryBase* UInventoryManager::GetRootInventory() const
+AInventory* UInventoryManager::GetRootInventory() const
 {
 	if (RootInventory.IsValid())
 	{
@@ -28,6 +31,46 @@ AInventoryBase* UInventoryManager::GetRootInventory() const
 	}
 
 	return nullptr;
+}
+
+#pragma region GiveItem()_Overloads
+FInventoryItemHandle UInventoryManager::GiveItem(const FInventoryItemEntry& ItemEntry)
+{
+	int32 DummyExcess = 0;
+	return GiveItem(ItemEntry, DummyExcess);
+}
+#pragma endregion
+FInventoryItemHandle UInventoryManager::GiveItem(const FInventoryItemEntry& ItemEntry, int32& OutExcess) const
+{
+	AActor* const Owner = GetOwner();
+	if (!ensure(Owner))
+	{
+		return FInventoryItemHandle();
+	}
+	
+	// Only the server can give items
+	if (!Owner->HasAuthority())
+	{
+		ITEMIZATION_N_ERROR("Attempted to give an item on a non-authoritative actor. This is not allowed.");
+		return FInventoryItemHandle();
+	}
+
+	// Make sure we only give valid item definitions
+	if (!IsValid(ItemEntry.Definition))
+	{
+		ITEMIZATION_ERROR("Attempted to give an item with an invalid item definition. This is not allowed.");
+		return FInventoryItemHandle();
+	}
+
+	// Start the GiveItem() transaction
+	FInventoryTransaction_GiveItem Transaction;
+	{
+		Transaction.TargetInventory = GetRootInventory();
+		Transaction.Instigator = Owner;
+		Transaction.Delta = ItemEntry.StackCount;
+		Transaction.ContextTags = nullptr;
+	}
+	return Transaction.TargetInventory->GiveItem(ItemEntry, Transaction, OutExcess);
 }
 
 void UInventoryManager::PostInitProperties()

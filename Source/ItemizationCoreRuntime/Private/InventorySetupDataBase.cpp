@@ -19,7 +19,8 @@ UInventorySetupDataBase::UInventorySetupDataBase(const FObjectInitializer& Objec
 
 UInventorySetupDataBase_Default::UInventorySetupDataBase_Default(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
-	, SlottableInventory(TInstancedStruct<FSlottableInventoryProperties>::Make())
+	, InventoryList({ TInstancedStruct<FInventoryProperties>::Make() })
+	, SlottableInventoryList({ TInstancedStruct<FSlottableInventoryProperties>::Make() })
 {
 }
 
@@ -46,12 +47,12 @@ void UInventorySetupDataBase_Default::SpawnInventory(
 
 	// Spawn the inventories
 	SpawnInventories(InventoryList, SpawnInfo, SpawnedInventories);
+	AInventoryBase* RootInventory = SpawnedInventories[0];
 
 	// Spawn the equippable inventories
 	SpawnInventories(EquippableInventoryList, SpawnInfo, SpawnedInventories);
 
 	// Spawn the slottable inventories
-	const TArray SlottableInventoryList = {SlottableInventory };
 	SpawnInventories(SlottableInventoryList, SpawnInfo, SpawnedInventories);
 
 	// Initialize all spawned inventories with the starting items
@@ -66,32 +67,17 @@ void UInventorySetupDataBase_Default::SpawnInventory(
 		}
 	}
 
-	AInventoryBase* RootInventory = nullptr;
-	if (SpawnedInventories.IsValidIndex(0))
-	{
-		RootInventory = SpawnedInventories[0];
-	}
-
 	// Fill in the correct parent-child relationships
 	if (ensure(RootInventory))
 	{
 		SpawnedInventories.RemoveSingle(RootInventory);
-		RootInventory->Init(this, nullptr, SpawnedInventories);
+		RootInventory->Init(nullptr, SpawnedInventories);
 
-		for (AInventoryBase* Inventory : SpawnedInventories)
+		for (AInventoryBase* Child : SpawnedInventories)
 		{
-			Inventory->Init(this, RootInventory);
+			Child->Init(RootInventory);
 		}
 
 		OutRootInventory = RootInventory;
 	}
-
-	// If the creation type is setup data, we need to initialize the inventories with the starting items
-	/*if (CreationType == EItemizationInventoryCreationType::SetupData)
-	{
-		for (AInventoryBase* Inventory : SpawnedInventories)
-		{
-			Inventory->GrantStartingItems(StartingItems);
-		}
-	}*/
 }

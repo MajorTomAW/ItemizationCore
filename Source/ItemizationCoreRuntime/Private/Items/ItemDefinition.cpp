@@ -90,6 +90,22 @@ const FItemComponentData* UItemDefinition::GetItemComponent(const UScriptStruct*
 	return nullptr;
 }
 
+TArray<const FItemComponentData*> UItemDefinition::GetAllItemComponents() const
+{
+	TArray<const FItemComponentData*> OutComponents;
+	OutComponents.Reserve(ItemComponents.Num());
+
+	for (const auto& Instance : ItemComponents)
+	{
+		if (const FItemComponentData* Component = Instance.GetPtr<FItemComponentData>())
+		{
+			OutComponents.Add(Component);
+		}
+	}
+
+	return OutComponents;
+}
+
 void UItemDefinition::GetAssetRegistryTags(FAssetRegistryTagsContext Context) const
 {
 	Super::GetAssetRegistryTags(Context);
