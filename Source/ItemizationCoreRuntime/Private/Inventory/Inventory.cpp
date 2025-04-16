@@ -106,7 +106,7 @@ void AInventory::OnRemoveItem(FInventoryItemEntry& ItemEntry)
 		Payload.Controller = GetInstigatorController();
 		Payload.Owner = GetOwner();
 		Payload.Inventory = this;
-		Payload.ItemInstance = Instance;
+		Payload.ItemEntry = &ItemEntry;
 		Payload.NewStackCount = 0;
 		Payload.Delta = -ItemEntry.StackCount;
 	}
@@ -133,7 +133,7 @@ void AInventory::OnGiveItem(FInventoryItemEntry& ItemEntry)
 		Payload.Controller = GetInstigatorController();
 		Payload.Owner = GetOwner();
 		Payload.Inventory = this;
-		Payload.ItemInstance = Instance;
+		Payload.ItemEntry = &ItemEntry;
 		Payload.NewStackCount = ItemEntry.StackCount;
 		Payload.Delta = ItemEntry.StackCount;
 	}

@@ -175,7 +175,7 @@ protected:
 
 public:
 	/** TArray accessors for the items. */
-	ITEMIZATION_FastArraySerializer_TArray_ACCESSORS(Items);
+	ITEMIZATION_FastArraySerializer_TArray_ACCESSORS(FInventoryItemContainer, FInventoryItemEntry, Items);
 };
 
 template<>

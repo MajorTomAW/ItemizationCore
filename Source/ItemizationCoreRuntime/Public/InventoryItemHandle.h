@@ -36,7 +36,7 @@ public:
 	/** Converts this handle to a string. */
 	FString ToString() const
 	{
-		return IsValid() ? FString::Printf(TEXT("0x%08X"), UID) : TEXT("NullHandle");
+		return IsValid() ? FString::Printf(TEXT("0x%08X|(%lu)"), UID, UID) : TEXT("NullHandle");
 	}
 
 	/** Resets this handle to an invalid state. */

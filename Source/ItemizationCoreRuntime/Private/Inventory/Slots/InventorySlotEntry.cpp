@@ -3,6 +3,8 @@
 
 #include "Inventory/Slots/InventorySlotEntry.h"
 
+#include "ItemizationLogChannels.h"
+
 /////////////////////////////////////////////////////////////////////
 /// FInventorySlotEntry
 
@@ -43,6 +45,7 @@ void FInventorySlotEntry::PreReplicatedRemove(const FInventorySlotContainer& InA
 
 void FInventorySlotEntry::PostReplicatedAdd(const FInventorySlotContainer& InArraySerializer)
 {
+	ITEMIZATION_DISPLAY("Added slot %s", *GetHandle().ToString());
 }
 
 void FInventorySlotEntry::PostReplicatedChange(const FInventorySlotContainer& InArraySerializer)

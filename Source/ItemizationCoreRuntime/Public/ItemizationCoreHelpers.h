@@ -10,7 +10,7 @@
  *
  * @param	PropertyName	The name of the TArray property to wrap.
  */
-#define ITEMIZATION_FastArraySerializer_TArray_ACCESSORS(PropertyName) \
+#define ITEMIZATION_FastArraySerializer_TArray_ACCESSORS(ClassName, PropertyType, PropertyName) \
 	/* Const Iterators */ \
 	auto begin() const { return PropertyName.begin(); } \
 	auto end() const { return PropertyName.end(); } \
@@ -41,4 +41,10 @@
 	void Reserve(int32 NewCapacity) { PropertyName.Reserve(NewCapacity); } \
 	void AddUninitialized(int32 Count) { PropertyName.AddUninitialized(Count); } \
 	int32 AddDefaulted(int32 Count) { return PropertyName.AddDefaulted(Count); } \
-	int32 AddDefaulted() { return PropertyName.AddDefaulted(); }
+	int32 AddDefaulted() { return PropertyName.AddDefaulted(); } \
+	TArray<PropertyType>::TConstIterator CreateConstIterator() const { return PropertyName.CreateConstIterator(); } \
+	TArray<PropertyType>::TIterator CreateIterator() { return PropertyName.CreateIterator(); } \
+	friend TArray<PropertyType>::TConstIterator begin(const ClassName& Array) { return Array.CreateConstIterator(); } \
+	friend TArray<PropertyType>::TConstIterator end(const ClassName& Array) { return TArray<PropertyType>::TConstIterator(Array.PropertyName, Array.PropertyName.Num()); } \
+	friend TArray<PropertyType>::TIterator begin(ClassName& Array) { return Array.CreateIterator(); } \
+	friend TArray<PropertyType>::TIterator end(ClassName& Array) { return TArray<PropertyType>::TIterator(Array.PropertyName, Array.PropertyName.Num()); }

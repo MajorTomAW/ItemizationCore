@@ -8,6 +8,7 @@
 
 #include "SlottableInventory.generated.h"
 
+struct FInventoryChangeMessage;
 /**
  * Class to manage the slots of an inventory.
  * On a low level, a single FInventorySlotEntry doesn't store the item itself, rather a handle to it.
@@ -33,6 +34,26 @@ public:
 	//~ Begin AInventoryBase Interface
 	virtual void PostInitInventory() override;
 	//~ End AInventoryBase Interface
+
+	/** Creates the initial slots for this inventory. */
+	virtual void AddInitialSlots();
+	virtual void BindToInventoryDelegates(AInventory* MutableParent);
+
+protected:
+	/** Bound to the inventory's OnItemAdded delegate. */
+	UFUNCTION()
+	virtual void Event_OnItemAdded(const FInventoryChangeMessage& Payload);
+
+	/** Bound to the inventory's OnItemRemoved delegate. */
+	UFUNCTION()
+	virtual void Event_OnItemRemoved(const FInventoryChangeMessage& Payload);
+
+
+public:
+	/** Returns the next free item slot id from the given slot id. */
+	UFUNCTION(BlueprintCallable, Category=Inventory)
+	FInventorySlotHandle GetNextFreeItemSlot(FInventorySlotHandle Start = FInventorySlotHandle()) const;
+	
 
 protected:
 	/** Whether the inventory slots should be replicated to other clients. */

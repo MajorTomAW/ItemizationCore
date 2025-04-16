@@ -19,29 +19,29 @@ struct alignas(8) FInventorySlotHandle
 	
 	FInventorySlotHandle() = default;
 	FInventorySlotHandle(const uint32 InSlotId, const uint32 InItemUID)
-		: Value((static_cast<uint64>(InItemUID) << UID_SHIFT) | (InSlotId & HANDLE_MASK))
+		: Value((static_cast<uint64>(InItemUID) << UID_SHIFT) | (InSlotId & UID_MASK))
 	{
 	}
 
 public:
 	enum
 	{
-		HANDLE_MASK = 0x00000000FFFFFFFF,			// Masks the lower 32 bits of the handle
+		UID_MASK = 0x00000000FFFFFFFF,			// Masks the lower 32 bits of the handle
 		UID_SHIFT = 0x20,							// Shift the unique id by 32 bits
-		INVALID_HANDLE = 0x0						// Invalid handle value
+		INVALID_HANDLE = INDEX_NONE						// Invalid handle value
 	};
 	
 
 	/** Returns the handle as a slot id. */
 	FORCEINLINE uint32 GetSlotId() const
 	{
-		return Value & HANDLE_MASK;
+		return static_cast<uint32>(Value & UID_MASK);
 	}
 
 	/** Returns the handle as a hash. */
 	FORCEINLINE uint32 GetUID() const
 	{
-		return (Value >> UID_SHIFT) & HANDLE_MASK;
+		return static_cast<uint32>((Value >> UID_SHIFT) & UID_MASK);
 	}
 
 	/** Returns this handles raw value. */
@@ -53,13 +53,19 @@ public:
 	/** Converts the handle to a string. */
 	FString ToString() const
 	{
-		return IsValid() ? FString::Printf(TEXT("0x%016llX"), Value) : TEXT("NullHandle");
+		return IsValid() ? FString::Printf(TEXT("0x%016llX|(%llu)"), Value, Value) : TEXT("NullHandle");
 	}
 
 	/** Sets the slot id to the given value. */
 	void SetSlotId(uint32 SlotId)
 	{
-		Value = (Value & ~HANDLE_MASK) | (SlotId & HANDLE_MASK);
+		Value = (Value & ~UID_MASK) | (SlotId & UID_MASK);
+	}
+
+	/** Sets the item uid to the given value. */
+	void SetUID(uint32 ItemUID)
+	{
+		Value = (Value & UID_MASK) | (static_cast<uint64>(ItemUID) << UID_SHIFT);
 	}
 	
 	/** Clears the handle. */
@@ -75,19 +81,19 @@ public:
 	 */
 	FORCEINLINE bool IsValid() const
 	{
-		return Value != INVALID_HANDLE;
+		return IsSlotValid() && IsUIDValid();
 	}
 
 	/** Checks if the slot id is a valid id. */
 	FORCEINLINE bool IsSlotValid() const
 	{
-		return (Value & HANDLE_MASK) != INVALID_HANDLE;
+		return GetSlotId() != INVALID_HANDLE;
 	}
 
 	/** Checks ot see if the UID was set. */
 	FORCEINLINE bool IsUIDValid() const
 	{
-		return (Value >> UID_SHIFT) != INVALID_HANDLE;
+		return GetUID() != 0x0;
 	}
 
 public:
@@ -119,11 +125,6 @@ public:
 	uint32 GetHash() const
 	{
 		return GetTypeHash(*this);
-	}
-
-	explicit operator bool() const
-	{
-		return IsValid();
 	}
 
 private:

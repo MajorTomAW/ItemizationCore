@@ -52,6 +52,12 @@ public:
 	{
 		return bEnabled;
 	}
+
+	/** Returns true if this slot is occupied. */
+	FORCEINLINE bool IsOccupied() const
+	{
+		return SlotHandle.IsUIDValid();
+	}
 	
 	/** Sets whether this slot is enabled. */
 	void SetEnabled(bool bInEnabled)
@@ -144,7 +150,7 @@ public:
 
 public:
 	/** TArray accessors for the slots. */
-	ITEMIZATION_FastArraySerializer_TArray_ACCESSORS(Slots);
+	ITEMIZATION_FastArraySerializer_TArray_ACCESSORS(FInventorySlotContainer, FInventorySlotEntry, Slots);
 };
 
 template<>

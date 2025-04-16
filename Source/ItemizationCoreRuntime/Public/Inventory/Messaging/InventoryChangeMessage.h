@@ -12,6 +12,7 @@ class AController;
 class UInventoryItemInstance;
 class UInventoryManager;
 class AInventory;
+struct FInventoryItemEntry;
 
 /**
  * A generic message payload struct that can be used to send inventory change events.
@@ -22,8 +23,8 @@ struct FInventoryChangeMessage
 	GENERATED_BODY()
 
 	FInventoryChangeMessage() = default;
-	FInventoryChangeMessage(TWeakObjectPtr<UInventoryItemInstance> ItemThatChanged, const int32 NewCount, const int32 OldCount)
-		: ItemInstance(ItemThatChanged)
+	FInventoryChangeMessage(FInventoryItemEntry* ItemThatChanged, const int32 NewCount, const int32 OldCount)
+		: ItemEntry(ItemThatChanged)
 		, NewStackCount(NewCount)
 		, Delta(NewCount - OldCount)
 	{
@@ -42,9 +43,8 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category=Message)
 	TWeakObjectPtr<AInventory> Inventory = nullptr;
 
-	/** The item instance that was changed (can be null in some edge cases). */
-	UPROPERTY(BlueprintReadWrite, Category=Message)
-	TWeakObjectPtr<UInventoryItemInstance> ItemInstance = nullptr;
+	/** The item entry that was changed (can be null in some edge cases). */
+	FInventoryItemEntry* ItemEntry = nullptr;
 
 	/** The new stack count of the item. */
 	UPROPERTY(BlueprintReadWrite, Category=Message)
