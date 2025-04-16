@@ -81,7 +81,7 @@ public:
 	 */
 	FORCEINLINE bool IsValid() const
 	{
-		return IsSlotValid() && IsUIDValid();
+		return Get() != INVALID_HANDLE;
 	}
 
 	/** Checks if the slot id is a valid id. */

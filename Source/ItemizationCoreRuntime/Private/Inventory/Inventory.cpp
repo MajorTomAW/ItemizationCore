@@ -8,12 +8,14 @@
 
 #include "Enums/EItemizationInventoryType.h"
 #include "Inventory/Transactions/InventoryItemTransactionBase.h"
-#include "Items/ItemComponentData.h"
 #include "Items/ItemDefinition.h"
 #include "InventoryItemHandle.h"
 #include "InventorySlotHandle.h"
 #include "ItemizationLogChannels.h"
 #include "Inventory/Messaging/InventoryChangeMessage.h"
+
+
+#include "Items/ComponentData/ItemComponentData_MaxStackSize.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(Inventory)
 
@@ -34,6 +36,9 @@ FInventoryItemHandle AInventory::GiveItem(
 	const FInventoryTransaction_GiveItem& Transaction,
 	int32& OutExcess)
 {
+	check(ItemEntry.Definition);
+	const FItemComponentData_MaxStackSize* MaxStackData = ItemEntry.Definition->GetItemComponent<FItemComponentData_MaxStackSize>();
+	
 	// The instigator should always be valid
 	//@TODO: Should it really?? What happens if a player or object got destroyed?
 	if (!ensure(Transaction.Instigator.IsValid()))
@@ -52,7 +57,7 @@ FInventoryItemHandle AInventory::GiveItem(
 		*ItemEntry.ItemHandle.ToString(),
 		*GetNameSafe(ItemEntry.Definition),
 		Transaction.Delta,
-		Transaction.Delta,
+		MaxStackData ? MaxStackData->GetMaxStackSize() : Transaction.Delta,
 		*GetNameSafe(ItemEntry.SourceObject.Get()));
 
 	return NativeGiveItem(ItemEntry, Transaction, OutExcess);
@@ -66,13 +71,18 @@ FInventoryItemHandle AInventory::NativeGiveItem(
 	FInventoryItemHandle LastHandle;
 	FInventoryTransaction_GiveItem& MutableTransaction = const_cast<FInventoryTransaction_GiveItem&>(Transaction);
 
+	// Evaluate the max stack size. @TODO: Do we really have to manually search for this component data?
+	const FItemComponentData_MaxStackSize* MaxStackData =
+		ItemEntry.Definition->GetItemComponent<FItemComponentData_MaxStackSize>();
+	const int32 MaxStackSize = MaxStackData ? MaxStackData->GetMaxStackSize() : 1;
+
 	// Start by setting the excess to the delta
 	Excess = Transaction.Delta;
 
 	// If we have excess items, try to add them to the inventory
 	while (Excess > 0)
 	{
-		const int32 Delta = FMath::Min(Excess, 100); //@TODO: Max stack size
+		const int32 Delta = FMath::Min(Excess, MaxStackSize);
 		Excess -= Delta;
 		
 		FInventoryItemEntry EntryCopy = ItemEntry;
@@ -83,6 +93,12 @@ FInventoryItemHandle AInventory::NativeGiveItem(
 
 		LastHandle = NewItem.ItemHandle;
 
+		// Create a new instance server-side
+		if (ShouldCreateNewInstanceOfItem(NewItem))
+		{
+			CreateNewInstanceOfItem(NewItem);
+		}
+
 		
 		OnGiveItem(NewItem);
 		MarkItemEntryDirty(NewItem, true);	// Mark dirty for replication
@@ -92,9 +108,45 @@ FInventoryItemHandle AInventory::NativeGiveItem(
 	return LastHandle;
 }
 
+bool AInventory::ShouldCreateNewInstanceOfItem(const FInventoryItemEntry& ItemEntry) const
+{
+	// Always return true, can be overridden in subclasses
+	//@TODO: Maybe some items dont require having an instance??
+	return true;
+}
+
+UInventoryItemInstance* AInventory::CreateNewInstanceOfItem(FInventoryItemEntry& ItemEntry)
+{
+	checkf(ItemEntry.GetInstance() == nullptr, TEXT("Item instance already exists for item '%s'!"),
+		*ItemEntry.GetDebugString());
+
+	const UItemDefinition* Definition = ItemEntry.Definition;
+	check(Definition);
+
+	//@TODO: Add support for custom instances
+	const UClass* InstanceClass = UInventoryItemInstance::StaticClass();
+
+	// Create the new instance
+	UInventoryItemInstance* NewInstance = NewObject<UInventoryItemInstance>(this, InstanceClass);
+	check(NewInstance);
+
+	// Add it to our instances-list so that it doesn't get garbage collected
+	if (NewInstance->GetIsReplicated())
+	{
+		AddReplicatedItemInstance(NewInstance);
+		ItemEntry.ReplInstance = NewInstance;
+	}
+	else
+	{
+		ItemEntry.LocalInstance = NewInstance;
+	}
+
+	return NewInstance;
+}
+
 void AInventory::OnRemoveItem(FInventoryItemEntry& ItemEntry)
 {
-	UInventoryItemInstance* Instance = ItemEntry.Instance;
+	UInventoryItemInstance* Instance = ItemEntry.GetInstance();
 	if (Instance != nullptr)
 	{
 		// Unregister the item instance
@@ -121,12 +173,25 @@ void AInventory::OnGiveItem(FInventoryItemEntry& ItemEntry)
 		return;
 	}
 
-	UInventoryItemInstance* Instance = ItemEntry.Instance;
+	UInventoryItemInstance* Instance = ItemEntry.GetInstance();
 	if (Instance == nullptr)
 	{
 		// Create a new instance for this item entry if we should
+		const UInventoryItemInstance* CDO = GetDefault<UInventoryItemInstance>(); //@TODO: Get CDO from definition
+		if (ShouldCreateNewInstanceOfItem(ItemEntry) && !CDO->GetIsReplicated())
+		{
+			ItemEntry.LocalInstance = CreateNewInstanceOfItem(ItemEntry);
+			Instance = ItemEntry.LocalInstance;
+
+			// The instance should now be valid
+			if (ensure(Instance))
+			{
+				//Instance->OnAddedToInventory()
+			}
+		}
 	}
 
+	// @TODO: Wrap this in a NotifyItemAdded() function
 	// Broadcast the change event
 	FInventoryChangeMessage Payload;
 	{
@@ -140,8 +205,9 @@ void AInventory::OnGiveItem(FInventoryItemEntry& ItemEntry)
 
 	OnItemAddedDelegate.Broadcast(Payload);
 
-	ITEMIZATION_N_DISPLAY("Gave item [%s] %s. Stack Count: %d (Max: %d), Source: %s",
+	ITEMIZATION_N_DISPLAY("Gave item [%s][%s] %s. Stack Count: %d (Max: %d), Source: %s",
 			*ItemEntry.ItemHandle.ToString(),
+			*GetNameSafe(ItemEntry.ReplInstance),
 			*GetNameSafe(ItemEntry.Definition),
 			ItemEntry.StackCount,
 			ItemEntry.StackCount,
@@ -257,7 +323,7 @@ void AInventory::MarkItemEntryDirty(FInventoryItemEntry& ItemEntry, bool bWasAdd
 {
 	if (Owner->HasAuthority())
 	{
-		if (ItemEntry.Instance == nullptr || bWasAddOrChange)
+		if (ItemEntry.ReplInstance == nullptr || bWasAddOrChange)
 		{
 			InventoryList.MarkItemDirty(ItemEntry);
 		}

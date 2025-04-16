@@ -13,7 +13,8 @@
 /// FInventoryItemEntry
 
 FInventoryItemEntry::FInventoryItemEntry()
-	: Instance(nullptr)
+	: ReplInstance(nullptr)
+	, LocalInstance(nullptr)
 	, Definition(nullptr)
 	, SourceObject(nullptr)
 	, StackCount(0)
@@ -26,7 +27,8 @@ FInventoryItemEntry::FInventoryItemEntry(
 	UItemDefinition* InItemDefinition,
 	int32 InStackCount,
 	UObject* InSourceObject)
-	: Instance(nullptr)
+	: ReplInstance(nullptr)
+	, LocalInstance(nullptr)
 	, Definition(InItemDefinition)
 	, SourceObject(InSourceObject)
 	, StackCount(InStackCount)
@@ -38,12 +40,12 @@ FInventoryItemEntry::FInventoryItemEntry(
 
 FString FInventoryItemEntry::GetDebugString() const
 {
-	return FString::Printf(TEXT("%s [%s]"), *GetNameSafe(Instance), *ItemHandle.ToString());
+	return FString::Printf(TEXT("%s [%s]"), *GetNameSafe(GetInstance()), *ItemHandle.ToString());
 }
 
 void FInventoryItemEntry::Reset()
 {
-	Instance = nullptr;
+	ReplInstance = LocalInstance= nullptr;
 	Definition = nullptr;
 	SourceObject = nullptr;
 	StackCount = 0;

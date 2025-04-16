@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "ItemAssetTypeId.h"
-#include "ItemComponentData.h"
+#include "ComponentData/ItemComponentData.h"
 #include "Engine/DataAsset.h"
 #include "Enums/EItemDataQueryResult.h"
 #include "StructUtils/InstancedStruct.h"
@@ -46,12 +46,22 @@ public:
 	void GetItemComponent(EItemDataQueryResult& ExecResult, UScriptStruct* PropertyType, FItemComponentData& FoundComponent) const;
 
 	/** Returns the item component data as the given struct type. */
-	const FItemComponentData* GetItemComponent(const UScriptStruct* PropertyType);
+	const FItemComponentData* GetItemComponent(const UScriptStruct* PropertyType) const;
 	template <typename T>
 	FORCEINLINE const T* GetItemComponent() const
 	{
 		static_assert(TIsDerivedFrom<T, FItemComponentData>::IsDerived, "T must be derived from FItemComponentData");
-		return GetItemComponent(T::StaticStruct());
+
+		// Iterate over all item component instances and find the one that matches the given type
+		for (const auto& Instance : ItemComponents)
+		{
+			if (Instance.Component.GetScriptStruct() == T::StaticStruct())
+			{
+				return Instance.Component.GetPtr<T>();
+			}
+		}
+
+		return nullptr;
 	}
 
 	/** Returns all item components of this item. */
@@ -80,6 +90,7 @@ public:
 #if WITH_EDITOR
 	virtual void PostLoad() override;
 	virtual void PostSaveRoot(FObjectPostSaveRootContext ObjectSaveContext) override;
+	virtual EDataValidationResult IsDataValid(class FDataValidationContext& Context) const override;
 #endif
 	//~ End UObject Interface
 
@@ -98,5 +109,5 @@ protected:
 
 	/** List of item components that are attached to this item. */
 	UPROPERTY(EditDefaultsOnly, Category=Item, NoClear, meta=(ExcludeBaseStruct,ShowOnlyInnerProperties))
-	TArray<TInstancedStruct<FItemComponentData>> ItemComponents;
+	TArray<FItemComponentDataInstance> ItemComponents;
 };

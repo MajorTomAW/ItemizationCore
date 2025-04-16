@@ -30,6 +30,28 @@ struct FInventoryItemEntry : public FFastArraySerializerItem
 	FInventoryItemEntry();
 	FInventoryItemEntry(UItemDefinition* InItemDefinition, int32 InStackCount, UObject* InSourceObject = nullptr);
 
+	/** Returns this item entry as a debug string. */
+	FString GetDebugString() const;
+
+	/** Resets this item entry to an invalid state. */
+	void Reset();
+
+	/** Returns the instance of this entry, will check for both local and replicated. */
+	UInventoryItemInstance* GetInstance() const
+	{
+		if (IsValid(ReplInstance))
+		{
+			return ReplInstance;
+		}
+
+		if (IsValid(LocalInstance))
+		{
+			return LocalInstance;
+		}
+
+		return nullptr;
+	}
+
 public:
 PRAGMA_DISABLE_DEPRECATION_WARNINGS
 	FInventoryItemEntry(const FInventoryItemEntry&) = default;
@@ -43,9 +65,13 @@ PRAGMA_ENABLE_DEPRECATION_WARNINGS
 	UPROPERTY()
 	FInventoryItemHandle ItemHandle;
 
-	/** The item instance that this entry is representing. */
+	/** The replicated item instance that this entry is representing. */
 	UPROPERTY()
-	TObjectPtr<UInventoryItemInstance> Instance;
+	TObjectPtr<UInventoryItemInstance> ReplInstance;
+
+	/** The item instance that this entry is representing. */
+	UPROPERTY(NotReplicated)
+	TObjectPtr<UInventoryItemInstance> LocalInstance;
 
 	/** The item definition asset that this entry is representing. */
 	UPROPERTY()
@@ -82,12 +108,6 @@ PRAGMA_ENABLE_DEPRECATION_WARNINGS
 	uint8 PendingRemove:1;
 
 public:
-	/** Returns this item entry as a debug string. */
-	FString GetDebugString() const;
-
-	/** Resets this item entry to an invalid state. */
-	void Reset();
-
 	//~ Begin FFastArraySerializerItem Interface
 	void PreReplicatedRemove(const FInventoryItemContainer& InArraySerializer);
 	void PostReplicatedAdd(const FInventoryItemContainer& InArraySerializer);
@@ -105,7 +125,7 @@ public:
 
 	bool operator==(const UInventoryItemInstance* OtherInstance) const
 	{
-		return Instance == OtherInstance;
+		return ReplInstance == OtherInstance;
 	}
 
 	bool operator==(const FInventoryItemHandle& OtherHandle) const

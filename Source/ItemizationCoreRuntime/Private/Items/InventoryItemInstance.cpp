@@ -11,6 +11,7 @@
 #include "Misc/DataValidation.h"
 #endif
 
+#include "ItemizationLogChannels.h"
 #include "Net/UnrealNetwork.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(InventoryItemInstance)
@@ -28,6 +29,7 @@ UWorld* UInventoryItemInstance::GetWorld() const
 	if (HasAnyFlags(RF_ClassDefaultObject))
 	{
 		// If we're CDO, we must return nullptr instead of calling Outer->GetWorld() to fool UObject::ImplementsGetWorld().
+		ITEMIZATION_ERROR("GetWorld() called on CDO of %s", *GetName());
 		return nullptr;
 	}
 	

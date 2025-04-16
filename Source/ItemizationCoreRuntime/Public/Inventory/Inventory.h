@@ -73,8 +73,24 @@ protected:
 	 */
 	virtual void EvaluateItemEntry(const FInventoryItemEntry& ItemEntry, FInventoryTransaction_GiveItem& InOutTransaction);
 
+	/**
+	 * Internal version of GiveItem().
+	 * Don't call this directly as it doesn't perform any validation and evaluation.
+	 */
 	virtual FInventoryItemHandle NativeGiveItem(const FInventoryItemEntry& ItemEntry, const FInventoryTransaction_GiveItem& Transaction, int32& OutExcess);
 
+	/**
+	 * Checks if we need to create a new item instance for the given item entry.
+	 * Will always return true by default, but can be overridden by subclasses.
+	 */
+	virtual bool ShouldCreateNewInstanceOfItem(const FInventoryItemEntry& ItemEntry) const;
+
+	/**
+	 * Creates a new item instance for the given item entry.
+	 * Stores it in the item entry and adds it to the replicated sub object list.
+	 */
+	virtual UInventoryItemInstance* CreateNewInstanceOfItem(FInventoryItemEntry& ItemEntry);
+	
 	/** Will be called from RemoveItem or from OnRep. */
 	virtual void OnRemoveItem(FInventoryItemEntry& ItemEntry);
 

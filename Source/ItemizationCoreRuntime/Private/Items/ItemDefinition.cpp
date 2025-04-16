@@ -22,7 +22,7 @@ UItemDefinition::UItemDefinition(const FObjectInitializer& ObjectInitializer)
 
 FPrimaryAssetId UItemDefinition::GetPrimaryAssetId() const
 {
-	return FPrimaryAssetId(GetFName(), PrimaryAssetType.AssetTypeId);
+	return FPrimaryAssetId(PrimaryAssetType.AssetTypeId, GetFName());
 }
 
 FText UItemDefinition::GetDisplayName() const
@@ -77,13 +77,13 @@ void UItemDefinition::GetItemComponent(
 	// @TODO: Custom K2 Node for this function actually
 }
 
-const FItemComponentData* UItemDefinition::GetItemComponent(const UScriptStruct* PropertyType)
+const FItemComponentData* UItemDefinition::GetItemComponent(const UScriptStruct* PropertyType) const
 {
 	for (auto& ComponentInstance : ItemComponents)
 	{
-		if (ComponentInstance.GetScriptStruct() == PropertyType)
+		if (ComponentInstance.Component.GetScriptStruct() == PropertyType)
 		{
-			return ComponentInstance.GetPtr<FItemComponentData>();
+			return ComponentInstance.Component.GetPtr<FItemComponentData>();
 		}
 	}
 
@@ -97,7 +97,7 @@ TArray<const FItemComponentData*> UItemDefinition::GetAllItemComponents() const
 
 	for (const auto& Instance : ItemComponents)
 	{
-		if (const FItemComponentData* Component = Instance.GetPtr<FItemComponentData>())
+		if (const FItemComponentData* Component = Instance.Component.GetPtr<FItemComponentData>())
 		{
 			OutComponents.Add(Component);
 		}
@@ -109,6 +109,14 @@ TArray<const FItemComponentData*> UItemDefinition::GetAllItemComponents() const
 void UItemDefinition::GetAssetRegistryTags(FAssetRegistryTagsContext Context) const
 {
 	Super::GetAssetRegistryTags(Context);
+
+	for (const FItemComponentData* ComponentData : GetAllItemComponents())
+	{
+		if (ensure(ComponentData))
+		{
+			ComponentData->GetAssetRegistryTags(Context);
+		}
+	}
 }
 
 #if WITH_EDITOR
@@ -121,6 +129,21 @@ void UItemDefinition::PostLoad()
 void UItemDefinition::PostSaveRoot(FObjectPostSaveRootContext ObjectSaveContext)
 {
 	AssetType_Reg = AssetType.AssetTypeId;
+}
+
+EDataValidationResult UItemDefinition::IsDataValid(FDataValidationContext& Context) const
+{
+	EDataValidationResult Result = Super::IsDataValid(Context);
+
+	for (const FItemComponentData* ComponentData : GetAllItemComponents())
+	{
+		if (ensure(ComponentData))
+		{
+			Result = CombineDataValidationResults(Result, ComponentData->IsDataValid(Context));
+		}
+	}
+
+	return Result;
 }
 #endif
 #undef LOCTEXT_NAMESPACE
