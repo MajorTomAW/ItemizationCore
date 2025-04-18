@@ -7,7 +7,7 @@
 	"Category": "Gameplay",
 	"CreatedBy": "MajorT",
 	"CreatedByURL": "https://github.com/MajorTomAW",
-	"DocsURL": "",
+	"DocsURL": "https://github.com/MajorTomAW/ItemizationCore/wiki",
 	"MarketplaceURL": "",
 	"FabURL": "",
 	"CanContainContent": false,
@@ -35,6 +35,19 @@
 			"LoadingPhase": "Default",
 			"AdditionalDependencies": [
 				"UnrealEd"
+			],
+			"PlatformAllowList": [
+				"Win64",
+				"Linux"
+			]
+		},
+		{
+			"Name": "ItemizationCoreUI",
+			"Type": "ClientOnly",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"ModelViewViewModel",
+				"CommonUI"
 			],
 			"PlatformAllowList": [
 				"Win64",
@@ -72,6 +85,10 @@
 			"Name": "GameplayMessageRouter",
 			"Enabled": true,
 			"Optional": true
+		},
+		{
+			"Name": "ModelViewViewModel",
+			"Enabled": true
 		}
 	]
 }
