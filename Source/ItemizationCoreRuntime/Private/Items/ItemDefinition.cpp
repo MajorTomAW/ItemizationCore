@@ -81,9 +81,9 @@ const FItemComponentData* UItemDefinition::GetItemComponent(const UScriptStruct*
 {
 	for (auto& ComponentInstance : ItemComponents)
 	{
-		if (ComponentInstance.Component.GetScriptStruct() == PropertyType)
+		if (ComponentInstance.IsOfType(PropertyType))
 		{
-			return ComponentInstance.Component.GetPtr<FItemComponentData>();
+			return ComponentInstance.GetComponent<FItemComponentData>();
 		}
 	}
 
@@ -97,7 +97,7 @@ TArray<const FItemComponentData*> UItemDefinition::GetAllItemComponents() const
 
 	for (const auto& Instance : ItemComponents)
 	{
-		if (const FItemComponentData* Component = Instance.Component.GetPtr<FItemComponentData>())
+		if (const FItemComponentData* Component = Instance.GetComponent<FItemComponentData>())
 		{
 			OutComponents.Add(Component);
 		}

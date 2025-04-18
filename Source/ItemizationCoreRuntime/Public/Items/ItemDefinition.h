@@ -90,7 +90,7 @@ public:
 #if WITH_EDITOR
 	virtual void PostLoad() override;
 	virtual void PostSaveRoot(FObjectPostSaveRootContext ObjectSaveContext) override;
-	virtual EDataValidationResult IsDataValid(class FDataValidationContext& Context) const override;
+	virtual EDataValidationResult IsDataValid(FDataValidationContext& Context) const override;
 #endif
 	//~ End UObject Interface
 

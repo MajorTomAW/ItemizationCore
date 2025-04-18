@@ -14,7 +14,7 @@
 
 FInventoryItemEntry::FInventoryItemEntry()
 	: ReplInstance(nullptr)
-	, LocalInstance(nullptr)
+	, NonReplInstance(nullptr)
 	, Definition(nullptr)
 	, SourceObject(nullptr)
 	, StackCount(0)
@@ -28,7 +28,7 @@ FInventoryItemEntry::FInventoryItemEntry(
 	int32 InStackCount,
 	UObject* InSourceObject)
 	: ReplInstance(nullptr)
-	, LocalInstance(nullptr)
+	, NonReplInstance(nullptr)
 	, Definition(InItemDefinition)
 	, SourceObject(InSourceObject)
 	, StackCount(InStackCount)
@@ -45,7 +45,7 @@ FString FInventoryItemEntry::GetDebugString() const
 
 void FInventoryItemEntry::Reset()
 {
-	ReplInstance = LocalInstance= nullptr;
+	ReplInstance = NonReplInstance= nullptr;
 	Definition = nullptr;
 	SourceObject = nullptr;
 	StackCount = 0;

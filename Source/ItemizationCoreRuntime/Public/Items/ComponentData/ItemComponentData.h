@@ -49,6 +49,12 @@ public:
 	 */
 	virtual void EvaluateItemEntry(FInventoryItemEntry& ItemEntry, const FInventoryItemTransactionBase& Transaction) const;
 
+	/**
+	 * Checks if two item entries can be merged into a single stack.
+	 * In this case, 'ThisEntry' will be merged into 'OtherEntry'.
+	 */
+	virtual bool CanMergeItems(const FInventoryItemEntry& ThisEntry, const FInventoryItemEntry& OtherEntry) const;
+
 protected:
 	/** The instancing policy of this item component data. */
 	EItemComponentInstancingPolicy InstancingPolicy;
@@ -74,7 +80,9 @@ struct ITEMIZATIONCORERUNTIME_API FItemComponentDataInstance
 
 	FItemComponentDataInstance() = default;
 
-	template <typename T, typename std::enable_if_t<std::is_base_of_v<FItemComponentData, std::decay_t<T>>>>
+	/** Initializes a new item component data instance. */
+	template <typename T>
+	requires std::is_base_of_v<FItemComponentData, std::decay_t<T>>
 	static FItemComponentDataInstance Make(const T& Struct)
 	{
 		FItemComponentDataInstance NewInstance;
@@ -84,6 +92,29 @@ struct ITEMIZATIONCORERUNTIME_API FItemComponentDataInstance
 #endif
 		return NewInstance;
 	}
+
+	/** Checks whether this item component data is of a specified type. */
+	template <typename T>
+	requires std::is_base_of_v<FItemComponentData, std::decay_t<T>>
+	bool IsOfType() const
+	{
+		return IsValid() && Component.GetScriptStruct() == TBaseStructure<T>::Get();
+	}
+	bool IsOfType(const UScriptStruct* Struct) const
+	{
+		return IsValid() && Component.GetScriptStruct() == Struct;
+	}
+
+	/** Returns the item component data as a specific type. */
+	template <typename T>
+	requires std::is_base_of_v<FItemComponentData, std::decay_t<T>>
+	const T* GetComponent() const
+	{
+		return Component.GetPtr<T>();
+	}
+
+	/** Returns true if this item component data is valid and has been initialized. */
+	bool IsValid() const { return Component.IsValid(); }
 
 	/** The actual item component data. */
 	UPROPERTY(EditDefaultsOnly, Category=Component, meta=(ExcludeBaseStruct,ShowOnlyInnerProperties), NoClear)

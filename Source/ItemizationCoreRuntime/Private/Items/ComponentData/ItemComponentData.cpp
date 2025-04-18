@@ -36,3 +36,10 @@ void FItemComponentData::EvaluateItemEntry(
 {
 	// Nothing to do here. Can be overridden in derived classes
 }
+
+bool FItemComponentData::CanMergeItems(
+	const FInventoryItemEntry& ThisEntry,
+	const FInventoryItemEntry& OtherEntry) const
+{
+	return true;
+}

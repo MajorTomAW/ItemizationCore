@@ -138,7 +138,7 @@ UInventoryItemInstance* AInventory::CreateNewInstanceOfItem(FInventoryItemEntry&
 	}
 	else
 	{
-		ItemEntry.LocalInstance = NewInstance;
+		ItemEntry.NonReplInstance = NewInstance;
 	}
 
 	return NewInstance;
@@ -180,8 +180,8 @@ void AInventory::OnGiveItem(FInventoryItemEntry& ItemEntry)
 		const UInventoryItemInstance* CDO = GetDefault<UInventoryItemInstance>(); //@TODO: Get CDO from definition
 		if (ShouldCreateNewInstanceOfItem(ItemEntry) && !CDO->GetIsReplicated())
 		{
-			ItemEntry.LocalInstance = CreateNewInstanceOfItem(ItemEntry);
-			Instance = ItemEntry.LocalInstance;
+			ItemEntry.NonReplInstance = CreateNewInstanceOfItem(ItemEntry);
+			Instance = ItemEntry.NonReplInstance;
 
 			// The instance should now be valid
 			if (ensure(Instance))

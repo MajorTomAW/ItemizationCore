@@ -44,9 +44,9 @@ struct FInventoryItemEntry : public FFastArraySerializerItem
 			return ReplInstance;
 		}
 
-		if (IsValid(LocalInstance))
+		if (IsValid(NonReplInstance))
 		{
-			return LocalInstance;
+			return NonReplInstance;
 		}
 
 		return nullptr;
@@ -71,7 +71,7 @@ PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 	/** The item instance that this entry is representing. */
 	UPROPERTY(NotReplicated)
-	TObjectPtr<UInventoryItemInstance> LocalInstance;
+	TObjectPtr<UInventoryItemInstance> NonReplInstance;
 
 	/** The item definition asset that this entry is representing. */
 	UPROPERTY()
