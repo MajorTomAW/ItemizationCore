@@ -12,6 +12,7 @@
 #endif
 
 #include "ItemizationLogChannels.h"
+#include "Inventory/Inventory.h"
 #include "Net/UnrealNetwork.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(InventoryItemInstance)
@@ -22,6 +23,7 @@ UInventoryItemInstance::UInventoryItemInstance(const FObjectInitializer& ObjectI
 	: Super(ObjectInitializer)
 {
 	bReplicates = false;
+	ItemDefinition = nullptr;
 }
 
 UWorld* UInventoryItemInstance::GetWorld() const
@@ -104,15 +106,62 @@ void UInventoryItemInstance::GetLifetimeReplicatedProps(TArray<FLifetimeProperty
 	SharedParams.bIsPushBased = true;
 }
 
+void UInventoryItemInstance::PostInitProperties()
+{
+	UObject::PostInitProperties();
+}
+
+AInventory* UInventoryItemInstance::GetOwningInventory() const
+{
+	if (OwningInventoryPtr.IsValid())
+	{
+		return OwningInventoryPtr.Get();
+	}
+
+	if (AInventory* OuterAsInventory = Cast<AInventory>(GetOuter()))
+	{
+		return OuterAsInventory;
+	}
+
+	return nullptr;
+}
+
+UItemDefinition* UInventoryItemInstance::GetItemDefinition_Typed(TSubclassOf<UItemDefinition> ItemClass) const
+{
+	UItemDefinition* Definition = GetItemDefinition();
+	if (Definition && Definition->IsA(ItemClass))
+	{
+		return Definition;
+	}
+
+	return nullptr;
+}
+
+FInventoryItemEntry* UInventoryItemInstance::GetItemEntry() const
+{
+	AInventory const* MyInventory = GetOwningInventory();
+	check(MyInventory);
+
+	return MyInventory->FindItemEntryFromHandle(ItemHandle);
+}
+
+UObject* UInventoryItemInstance::GetSourceObject() const
+{
+	if (const FInventoryItemEntry* ItemEntry = GetItemEntry())
+	{
+		return ItemEntry->SourceObject.Get();
+	}
+
+	return nullptr;
+}
+
 #if UE_WITH_IRIS
 void UInventoryItemInstance::RegisterReplicationFragments(
 	UE::Net::FFragmentRegistrationContext& Context,
 	UE::Net::EFragmentRegistrationFlags RegistrationFlags)
 {
-	using namespace UE::Net;
-
 	// Build description and allocate PropertyReplicationFragments for this UObject.
-	FReplicationFragmentUtil::CreateAndRegisterFragmentsForObject(this, Context, RegistrationFlags);
+	UE::Net::FReplicationFragmentUtil::CreateAndRegisterFragmentsForObject(this, Context, RegistrationFlags);
 }
 #endif
 #if WITH_EDITOR
@@ -181,5 +230,44 @@ EDataValidationResult UInventoryItemInstance::IsDataValid(FDataValidationContext
 	return Result;
 }
 #endif
+
+void UInventoryItemInstance::GetOwnedGameplayTags(FGameplayTagContainer& TagContainer) const
+{
+	if (const FInventoryItemEntry* ItemEntry = GetItemEntry())
+	{
+		TagContainer.AppendTags(ItemEntry->DynamicTags);
+	}
+}
+
+void UInventoryItemInstance::PostNetInit() const
+{
+}
+
+void UInventoryItemInstance::OnAddedToInventory(FInventoryItemEntry& ItemEntry, AInventory* InOwningInventory)
+{
+	if (!ensureMsgf(!HasAnyFlags(RF_ClassDefaultObject),
+		TEXT("%s must be instantiated because class default objects are not supported."), *GetName()))
+	{
+		return;
+	}
+
+	// Cache the item handle
+	ItemHandle = ItemEntry.ItemHandle;
+
+	// Notify the item component datas about the creating of this instance
+	for (const FItemComponentData* ComponentData : ItemEntry.Definition->GetAllItemComponents())
+	{
+		if (ensure(ComponentData))
+		{
+			//ComponentData->OnItemInstanceCreated(ItemEntry, this); @TODO: Create OnItemInstanceCreated() function
+		}
+	}
+
+	// Make sure our owner actor is valid
+}
+
+void UInventoryItemInstance::OnRemovedFromInventory(FInventoryItemEntry& ItemEntry, AInventory* InOwningInventory)
+{
+}
 
 #undef LOCTEXT_NAMESPACE

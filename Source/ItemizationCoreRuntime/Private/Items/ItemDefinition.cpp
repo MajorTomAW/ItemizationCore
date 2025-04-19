@@ -17,6 +17,7 @@ UItemDefinition::UItemDefinition(const FObjectInitializer& ObjectInitializer)
 {
 #if WITH_EDITORONLY_DATA
 	AssetType_Reg = AssetType.AssetTypeId;
+	PrimaryAssetType_Reg = PrimaryAssetType.AssetTypeId;
 #endif
 }
 
@@ -124,11 +125,13 @@ void UItemDefinition::PostLoad()
 {
 	Super::PostLoad();
 	AssetType_Reg = AssetType.AssetTypeId;
+	PrimaryAssetType_Reg = PrimaryAssetType.AssetTypeId;
 }
 
 void UItemDefinition::PostSaveRoot(FObjectPostSaveRootContext ObjectSaveContext)
 {
 	AssetType_Reg = AssetType.AssetTypeId;
+	PrimaryAssetType_Reg = PrimaryAssetType.AssetTypeId;
 }
 
 EDataValidationResult UItemDefinition::IsDataValid(FDataValidationContext& Context) const

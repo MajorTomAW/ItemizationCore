@@ -4,12 +4,17 @@
 #include "Inventory/InventoryBase.h"
 
 #include "ItemizationLogChannels.h"
-#include "Engine/ActorChannel.h"
 #include "Enums/EItemizationInventoryType.h"
+
+#include "Engine/ActorChannel.h"
 #include "Net/UnrealNetwork.h"
 #include "Net/Core/PushModel/PushModel.h"
+#include "GameFramework/Actor.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(InventoryBase)
+
+//////////////////////////////////////////////////////////////////////////////////
+/// AInventoryBase
 
 AInventoryBase::AInventoryBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer.DoNotCreateDefaultSubobject(TEXT("Sprite")))
@@ -21,13 +26,17 @@ AInventoryBase::AInventoryBase(const FObjectInitializer& ObjectInitializer)
 	bAlwaysRelevant = true;
 	
 	SetReplicatingMovement(false);
-	SetNetUpdateFrequency(1.0f);
+	SetNetUpdateFrequency(2.0f);
+	SetMinNetUpdateFrequency(1.0f);
+	SetNetCullDistanceSquared(112500000.0f);
 	SetCanBeDamaged(false);
 	SetHidden(true);
+	SetActorEnableCollision(false);
 
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = false;
 	bNetLoadOnClient = false;
+	bFindCameraComponentWhenViewTarget = false;
 
 #if WITH_EDITORONLY_DATA
 	bHiddenEd = true;
@@ -68,8 +77,8 @@ void AInventoryBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 {
 	FDoRepLifetimeParams SharedParams;
 	SharedParams.bIsPushBased = true;
-	SharedParams.Condition = COND_None;
-
+	
+	SharedParams.Condition = COND_InitialOnly;
 	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, ParentInventory, SharedParams);
 	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, ChildInventoryList, SharedParams);
 	
@@ -85,15 +94,6 @@ void AInventoryBase::PostInitializeComponents()
 	
 	Super::PostInitializeComponents();
 	ITEMIZATION_N_LOG("Inventory Created!");
-
-	const UWorld* World = GetWorld();
-	
-
-	// Only continue if we're authoritative.
-	if (GetLocalRole() < ROLE_Authority)
-	{
-		return;
-	}
 }
 
 bool AInventoryBase::ReplicateSubobjects(UActorChannel* Channel, FOutBunch* Bunch, FReplicationFlags* RepFlags)

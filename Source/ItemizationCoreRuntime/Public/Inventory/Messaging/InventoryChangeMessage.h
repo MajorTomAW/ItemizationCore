@@ -44,7 +44,7 @@ public:
 	TWeakObjectPtr<AInventory> Inventory = nullptr;
 
 	/** The item entry that was changed (can be null in some edge cases). */
-	FInventoryItemEntry* ItemEntry = nullptr;
+	FInventoryItemEntry const* ItemEntry = nullptr;
 
 	/** The new stack count of the item. */
 	UPROPERTY(BlueprintReadWrite, Category=Message)

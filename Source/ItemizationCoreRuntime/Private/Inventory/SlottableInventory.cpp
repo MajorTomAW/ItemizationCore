@@ -67,7 +67,7 @@ void ASlottableInventory::AddInitialSlots()
 	int32 DesiredNumSlots = 0;
 	if (ensure(ParentInventory))
 	{
-		DesiredNumSlots = ParentInventory->GetInventoryProperties<FInventoryPropertiesBase>()->TotalSlotsOverride;
+		DesiredNumSlots = ParentInventory->GetInventoryProperties()->TotalSlotsOverride;
 		DesiredNumSlots = FMath::Min(0, DesiredNumSlots);
 		
 		const int32 InitialNumSlots = DesiredNumSlots;
@@ -80,7 +80,7 @@ void ASlottableInventory::AddInitialSlots()
 				continue;
 			}
 
-			if (const FInventoryPropertiesBase* ChildProps = Child->GetInventoryProperties<FInventoryPropertiesBase>())
+			if (const FInventoryPropertiesBase* ChildProps = Child->GetInventoryProperties())
 			{
 				DesiredNumSlots += FMath::Max(0, ChildProps->TotalSlotsOverride);
 			}

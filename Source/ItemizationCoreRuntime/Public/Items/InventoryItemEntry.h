@@ -4,10 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
-#include "InventoryItemHandle.h"
 #include "Net/Serialization/FastArraySerializer.h"
 
-#include "InventorySlotHandle.h"
+#include "InventoryItemHandle.h"
 #include "ItemizationCoreHelpers.h"
 #include "Items/InventoryItemInstance.h"
 #include "Items/ItemComponentDataList.h"
@@ -131,6 +130,11 @@ public:
 	bool operator==(const FInventoryItemHandle& OtherHandle) const
 	{
 		return ItemHandle.Get() == OtherHandle.Get();
+	}
+
+	bool operator==(const UItemDefinition* OtherDefinition) const
+	{
+		return Definition == OtherDefinition;
 	}
 
 	bool operator>(const FInventoryItemEntry& Other) const

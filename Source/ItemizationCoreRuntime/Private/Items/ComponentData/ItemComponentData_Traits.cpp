@@ -3,6 +3,7 @@
 
 #include "Items/ComponentData/ItemComponentData_Traits.h"
 
+#include "Items/ItemDefinition.h"
 #include "UObject/AssetRegistryTagsContext.h"
 
 #if WITH_EDITOR
@@ -13,6 +14,21 @@
 
 FItemComponentData_Traits::FItemComponentData_Traits()
 {
+}
+
+bool FItemComponentData_Traits::HasTrait(const UItemDefinition* ItemDefinition, const FGameplayTag& Trait)
+{
+	if (!IsValid(ItemDefinition))
+	{
+		return false;
+	}
+
+	if (const FItemComponentData_Traits* TraitsData = ItemDefinition->GetItemComponent<FItemComponentData_Traits>())
+	{
+		return TraitsData->Traits.HasTag(Trait);
+	}
+
+	return false;
 }
 
 

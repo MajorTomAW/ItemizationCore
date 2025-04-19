@@ -8,6 +8,7 @@
 
 #include "ItemComponentData_Traits.generated.h"
 
+class UItemDefinition;
 /** Item data for adding tagged traits to the item. */
 USTRUCT(DisplayName = "Traits Item Data")
 struct FItemComponentData_Traits : public FItemComponentData
@@ -15,10 +16,11 @@ struct FItemComponentData_Traits : public FItemComponentData
 	GENERATED_BODY()
 
 	FItemComponentData_Traits();
+	static bool HasTrait(const UItemDefinition* ItemDefinition, const FGameplayTag& Trait);
 
 public:
 	/** Traits that this item has. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=Traits, meta=(ExposeFunctionCategories="ItemizationCore.Item.Traits"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=Traits, meta=(ExposeFunctionCategories="Item.Trait"))
 	FGameplayTagContainer Traits;
 
 protected:
@@ -28,6 +30,3 @@ protected:
 #endif
 	//~ End FItemComponentData Interface
 };
-
-/** Wrapper for this traits item data, just cor convenience :P */
-typedef FItemComponentData_Traits FItemTraitsData;

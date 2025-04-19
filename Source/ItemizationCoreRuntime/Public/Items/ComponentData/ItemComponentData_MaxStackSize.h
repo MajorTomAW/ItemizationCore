@@ -7,6 +7,7 @@
 
 #include "ItemComponentData_MaxStackSize.generated.h"
 
+class UItemDefinition;
 /**
  * Item data for modifying the maximum stack size for the item.
  * Without this item data, the max stack size is assumed to be 1.
@@ -25,6 +26,7 @@ public:
 	
 	/** Returns the max stack size for this item data. */
 	int32 GetMaxStackSize() const;
+	static int32 GetMaxStackSize(const UItemDefinition* ItemDefinition);
 
 protected:
 	//~ Begin FItemComponentData Interface

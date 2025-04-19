@@ -8,6 +8,7 @@
 
 #include "InventoryBase.generated.h"
 
+class AInventory;
 struct FInventoryPropertiesBase;
 struct FInventoryStartingItem;
 class UInventorySetupDataBase;
@@ -48,20 +49,30 @@ public:
 	virtual void PreNetReceive() override;
 	//~ End UObject Interface
 
-	template <typename PropertyType>
+	template <typename PropertyType = FInventoryPropertiesBase>
 	const PropertyType* GetInventoryProperties() const
 	{
 		static_assert(TIsDerivedFrom<PropertyType, FInventoryPropertiesBase>::IsDerived,
 			"PropertyType must be derived from FInventoryPropertiesBase");
-		return InventoryProperties ? (PropertyType*)InventoryProperties : nullptr;
+		return InventoryProperties ? static_cast<const PropertyType*>(InventoryProperties) : nullptr;
 	}
+	const FInventoryPropertiesBase* GetInventoryProperties() const { return InventoryProperties; }
 	
 protected:
 	/** Describes the type of inventory this is. */
 	UPROPERTY(BlueprintReadOnly, VisibleDefaultsOnly, Category = Inventory)
 	EItemizationInventoryType InventoryType;
 
-
+	/**
+	 * Number that defines the overall limit of this inventory.
+	 * By default, this is set to -1, which means no limit.
+	 * Items won't count towards this limit if they don't have the "CountTowardsInventoryLimit" Trait set.
+	 *
+	 * Helps in managing and restricting the number of items a player can carry.
+	 */
+	UPROPERTY(EditDefaultsOnly, Category = Inventory, meta=(ClampMin=-1, UIMin=-1))
+	int32 InventoryLimit = -1;
+	
 	/** Cached off pointer to the inventory properties. */
 	mutable const FInventoryPropertiesBase* InventoryProperties;
 
@@ -73,4 +84,11 @@ public:
 	/** List of inventories that are children of this inventory. */
 	UPROPERTY(BlueprintReadOnly, Category = Inventory, Replicated)
 	TArray<TObjectPtr<AInventoryBase>> ChildInventoryList;
+
+	/**
+	 * Transient unique id associated with the owner of this inventory.
+	 * Will be used to detect previous ownership in case the player disconnects.
+	 */
+	UPROPERTY()
+	FUniqueNetIdRepl OwnerUniqueId;
 };

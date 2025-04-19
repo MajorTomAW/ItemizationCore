@@ -82,8 +82,12 @@ public:
 
 #if WITH_EDITORONLY_DATA
 	/** Editor-only registry searchable asset type as an FName. */
-	UPROPERTY(AssetRegistrySearchable, DisplayName="Item Type")
+	UPROPERTY(AssetRegistrySearchable, DisplayName="Item Type", meta=(ScriptName="Item Type"))
 	FName AssetType_Reg = NAME_None;
+
+	/** Editor-only registry searchable primary asset type as an FName. */
+	UPROPERTY(AssetRegistrySearchable, DisplayName="Primary Asset Type", meta=(ScriptName="Item Type"))
+	FName PrimaryAssetType_Reg = NAME_None;
 #endif
 	//~ Begin UObject Interface
 	virtual void GetAssetRegistryTags(FAssetRegistryTagsContext Context) const override;
