@@ -7,6 +7,7 @@
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "ItemizationInventoryLibrary.generated.h"
 
+struct FInventoryTrackableOp;
 class UItemDefinitionBase;
 class IInventoryOwnerInterface;
 /**
@@ -19,5 +20,11 @@ class ITEMIZATIONCORERUNTIME_API UItemizationInventoryLibrary : public UBlueprin
 
 public:
 	UFUNCTION(BlueprintCallable)
-	static FInventoryItemHandle GiveItem(TScriptInterface<IInventoryOwnerInterface> InventoryOwner, UItemDefinitionBase* ItemDefinition, int32 StackCount);
+	static FInventoryItemHandle GiveItem(TScriptInterface<IInventoryOwnerInterface> InventoryOwner, UItemDefinitionBase* ItemDefinition, int32 StackCount, int32& ExcessAmount);
+
+	/** Performs a transaction on the inventory. */
+	UFUNCTION(BlueprintCallable, Category=Itemization)
+	static void PerformTransaction(
+		TScriptInterface<IInventoryOwnerInterface> InventoryOwner,
+		FInventoryTrackableOp& Transaction);
 };

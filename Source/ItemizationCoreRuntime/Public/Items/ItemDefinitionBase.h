@@ -8,6 +8,7 @@
 
 #include "ItemDefinitionBase.generated.h"
 
+class UInventoryItemInstance;
 struct FItemComponentData;
 struct FItemComponentDataInstance;
 struct FInstancedStruct;
@@ -21,7 +22,7 @@ class ITEMIZATIONCORERUNTIME_API UItemDefinitionBase : public UPrimaryDataAsset
 	GENERATED_BODY()
 
 public:
-	UItemDefinitionBase();
+	UItemDefinitionBase(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 	UPROPERTY(EditDefaultsOnly)
 	FText ItemName;
@@ -31,6 +32,12 @@ public:
 
 	UPROPERTY(EditDefaultsOnly)
 	FText ItemShortDescription;
+
+	UPROPERTY(EditDefaultsOnly)
+	uint8 bWantsItemInstance:1;
+
+	UPROPERTY(EditDefaultsOnly, meta=(EditCondition=bWantsItemInstance))
+	TSoftClassPtr<UInventoryItemInstance> ItemInstanceClass;
 
 	/** Returns all item data for this item. */
 	TArray<const FItemComponentData*> GetDataList() const;

@@ -14,7 +14,8 @@
 #include "ItemizationCoreSettings.h"
 #include "ItemizationGameplayTags.h"
 #include "ItemizationLogChannels.h"
-#include "Transactions/InventoryTransaction_GiveItem.h"
+#include "Inventory/InventoryChangeMessage.h"
+#include "Transactions/InventoryTransaction_GiveRemoveItem.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(InventoryBase)
 
@@ -51,7 +52,7 @@ void AInventoryBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	// The flag will just be ignored.
 	FDoRepLifetimeParams Params;
 	Params.bIsPushBased = true;
-	Params.Condition = COND_None;
+	Params.Condition = COND_ReplayOrOwner;
 
 	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, InventoryList, Params);
 	
@@ -90,10 +91,18 @@ void AInventoryBase::PostInitializeComponents()
 	Super::PostInitializeComponents();
 }
 
+TInventoryOpHandle<FInventoryItemMoveOp> AInventoryBase::MoveItem(FInventoryItemMoveOp::Params&& Params)
+{
+	TInventoryOpRef<FInventoryItemMoveOp> Op =
+		OpCache.GetOperation<FInventoryItemMoveOp>(MoveTemp(Params));
+
+	return Op->GetHandle();
+}
+
 FInventoryItemHandle AInventoryBase::GiveItem(
 	const FInventoryItemEntry& ItemEntry,
 	int32& OutExcess,
-	FInventoryTransaction_GiveItem& Transaction)
+	FInventoryTransaction_GiveRemoveItem& Transaction)
 {
 	check(ItemEntry.ItemDefinition);
 
@@ -115,9 +124,37 @@ FInventoryItemHandle AInventoryBase::GiveItem(
 	return NativeGiveItem(ItemEntry, Transaction, OutExcess);
 }
 
+bool AInventoryBase::RemoveItem(
+	const FInventoryItemHandle& ItemHandle,
+	FInventoryTransaction_GiveRemoveItem& Transaction,
+	int32& OutMissing)
+{
+	if (!ItemHandle.IsValid())
+	{
+		ITEMIZATION_WARN("Attempted to remove an item by an invalid handle '%s'",
+			*GetNameSafe(this));
+
+		// Invalid handle, we couldn't remove any
+		OutMissing = FMath::Abs(Transaction.Delta);
+		return false;
+	}
+
+	// Negative values mean "remove all"
+	if (Transaction.Delta <= 0)
+	{
+		Transaction.Delta = MAX_int32;
+	}
+
+	ITEMIZATION_N_LOG("Removing item [%s] \tSize: %d",
+		*ItemHandle.ToString(),
+		Transaction.Delta);
+
+	return NativeRemoveItem(ItemHandle, Transaction, OutMissing);
+}
+
 void AInventoryBase::EvaluateItemEntry(
 	const FInventoryItemEntry& ItemEntry,
-	FInventoryTransaction_GiveItem& InOutTransaction)
+	FInventoryTransaction_GiveRemoveItem& InOutTransaction)
 {
 	if (!ensure(ItemEntry.ItemDefinition))
 	{
@@ -139,13 +176,15 @@ void AInventoryBase::EvaluateItemEntry(
 
 FInventoryItemHandle AInventoryBase::NativeGiveItem(
 	const FInventoryItemEntry& ItemEntry,
-	FInventoryTransaction_GiveItem& Transaction,
+	FInventoryTransaction_GiveRemoveItem& Transaction,
 	int32& OutExcess)
 {
 	OutExcess = Transaction.Delta;
 
 	FInventoryItemHandle LastHandle;
-	const int32 MaxStackSize = ItemEntry.GetStatValue(Itemization::Tags::TAG_ItemStat_MaxStackSize);
+
+	// Clamping to make sure we always have at least 1 max stack size
+	const int32 MaxStackSize = FMath::Max(ItemEntry.GetStatValue(Itemization::Tags::TAG_ItemStat_MaxStackSize), 1);
 
 	// Try to fill up existing stacks first, before creating new ones
 	if (MaxStackSize > 1)
@@ -218,6 +257,79 @@ FInventoryItemHandle AInventoryBase::NativeGiveItem(
 	return LastHandle;
 }
 
+bool AInventoryBase::NativeRemoveItem(
+	const auto& Operator,
+	FInventoryTransaction_GiveRemoveItem& Transaction,
+	int32& OutMissing,
+	bool bRecursive)
+{
+	// Clear out pending items that are waiting to be added
+
+	// Mutable count for tracking
+	int32 DesiredRemoveCount = Transaction.Delta;
+
+	bool bDidRemoveAtLeastOne = false;
+	for (auto It = InventoryList.CreateIterator(); It; ++It)
+	{
+		// We need at least one stack to remove
+		if (DesiredRemoveCount <= 0)
+		{
+			break;
+		}
+
+		FInventoryItemEntry& Entry = *It;
+		check(Entry.ItemDefinition);
+
+		if (Entry != Operator && Entry.ItemHandle != Operator)
+		{
+			ITEMIZATION_LOG("Item Entry [%s] does not match the operator.",
+				*Entry.GetDebugString());
+			continue;
+		}
+
+
+		/////////////////////////////////////////////////////////////////////////
+		// At this point, we know we have the right entry
+
+		// Get the actual stack size we can remove
+		const int32 StackSize = Entry.GetStatValue(Itemization::Tags::TAG_ItemStat_CurrentStackSize);
+		const int32 Delta = FMath::Min(DesiredRemoveCount,StackSize);
+		
+		Entry.SetStatValue(Itemization::Tags::TAG_ItemStat_CurrentStackSize, StackSize - Delta);
+		DesiredRemoveCount -= Delta;
+
+		bDidRemoveAtLeastOne = true;
+
+		// Mark dirty for replication
+		MarkItemEntryDirty(Entry, true);
+
+		// If the entry now has an empty stack, remove it.
+		if ((Entry.GetStatValue(Itemization::Tags::TAG_ItemStat_CurrentStackSize) <= 0) &&
+			!FItemComponentData_Traits::HasTrait(Entry.ItemDefinition, UItemizationCoreSettings::Get()->AllowEmptyStackTag))
+		{
+			// Perform a scope lock
+
+
+			// Notify the item about its removal
+			OnRemoveItem(Entry);
+
+			// Remove the item entry and mark it dirty for replication
+			It.RemoveCurrent();
+			InventoryList.MarkArrayDirty();
+		}
+
+		// If we're in a recursive call, continue
+		if (!bRecursive)
+		{
+			break;
+		}
+	}
+
+	// Update the missing count
+	OutMissing = DesiredRemoveCount;
+	return bDidRemoveAtLeastOne;
+}
+
 bool AInventoryBase::CanMergeItems(
 	const FInventoryItemEntry& ThisEntry,
 	const FInventoryItemEntry& OtherEntry) const
@@ -263,7 +375,7 @@ void AInventoryBase::MergeItems(
 
 bool AInventoryBase::CanCreateNewStack(
 	const FInventoryItemEntry& ItemEntry,
-	const FInventoryTransaction_GiveItem& Transaction)
+	const FInventoryTransaction_GiveRemoveItem& Transaction)
 {
 	if (!IsValid(ItemEntry.ItemDefinition))
 	{
@@ -277,14 +389,12 @@ bool AInventoryBase::CanCreateNewStack(
 		return InventoryList.Items.Contains(ItemEntry.ItemDefinition) == false;
 	}
 	
-	return false;
+	return true;
 }
 
 bool AInventoryBase::ShouldCreateNewInstanceOfItem(const FInventoryItemEntry& ItemEntry) const
 {
-	// Always return true, can be overridden in subclasses
-	//@TODO: Maybe some items dont require having an instance??
-	return true;
+	return ItemEntry.ItemDefinition->bWantsItemInstance;
 }
 
 UInventoryItemInstance* AInventoryBase::CreateNewInstanceOfItem(FInventoryItemEntry& ItemEntry)
@@ -295,8 +405,12 @@ UInventoryItemInstance* AInventoryBase::CreateNewInstanceOfItem(FInventoryItemEn
 	const UItemDefinitionBase* Definition = ItemEntry.ItemDefinition;
 	check(Definition);
 
-	//@TODO: Custom Instance Class
-	const UClass* InstanceClass = UInventoryItemInstance::StaticClass();
+	// Find the item instance, fallback to the default one in case none was specified
+	const UClass* InstanceClass = ItemEntry.ItemDefinition->ItemInstanceClass.LoadSynchronous();
+	if (InstanceClass == nullptr)
+	{
+		InstanceClass = UInventoryItemInstance::StaticClass();
+	}
 
 	// Create the new instance
 	UInventoryItemInstance* NewInstance = NewObject<UInventoryItemInstance>(this, InstanceClass);
@@ -313,15 +427,17 @@ UInventoryItemInstance* AInventoryBase::CreateNewInstanceOfItem(FInventoryItemEn
 		ItemEntry.SetNonReplicatedItemInstance(NewInstance);
 	}
 
+	ITEMIZATION_ERROR("Created a new item instance %s", *GetNameSafe(NewInstance));
+
 	return NewInstance;
 }
 
 void AInventoryBase::OnRemoveItem(FInventoryItemEntry& ItemEntry)
 {
 	UInventoryItemInstance* Instance = ItemEntry.GetItemInstance();
-	if (Instance == nullptr)
+	if (IsValid(Instance))
 	{
-		
+		Instance->OnRemovedFromInventory(ItemEntry, InventoryHandle);
 	}
 
 	// Broadcast the change event
@@ -346,7 +462,7 @@ void AInventoryBase::OnGiveItem(FInventoryItemEntry& ItemEntry)
 
 			if (ensure(Instance))
 			{
-				//Instance->OnAddedToInventory() @TODO
+				Instance->OnAddedToInventory(ItemEntry, InventoryHandle);
 			}
 		}
 	}
@@ -361,6 +477,12 @@ void AInventoryBase::NotifyItemAdded(
 	const int32& LastCount,
 	const int32& NewCount)
 {
+	FInventoryChangeMessage Payload(&ItemEntry, LastCount, NewCount);
+	Payload.Controller = GetInstigatorController();
+	Payload.Owner = GetOwner();
+	Payload.SourceInventory = Payload.TargetInventory = this;
+
+	OnItemAddedDelegate.Broadcast(Payload);
 }
 
 void AInventoryBase::NotifyItemRemoved(
@@ -368,6 +490,12 @@ void AInventoryBase::NotifyItemRemoved(
 	const int32& LastCount,
 	const int32& NewCount)
 {
+	FInventoryChangeMessage Payload(&ItemEntry, LastCount, NewCount);
+	Payload.Controller = GetInstigatorController();
+	Payload.Owner = GetOwner();
+	Payload.SourceInventory = Payload.TargetInventory = this;
+
+	OnItemAddedDelegate.Broadcast(Payload);
 }
 
 void AInventoryBase::NotifyItemChanged(
@@ -375,6 +503,12 @@ void AInventoryBase::NotifyItemChanged(
 	const int32& LastCount,
 	const int32& NewCount)
 {
+	FInventoryChangeMessage Payload(&ItemEntry, LastCount, NewCount);
+	Payload.Controller = GetInstigatorController();
+	Payload.Owner = GetOwner();
+	Payload.SourceInventory = Payload.TargetInventory = this;
+
+	OnItemAddedDelegate.Broadcast(Payload);
 }
 
 

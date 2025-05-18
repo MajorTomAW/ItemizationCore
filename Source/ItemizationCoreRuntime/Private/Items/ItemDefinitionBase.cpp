@@ -3,10 +3,15 @@
 
 #include "Items/ItemDefinitionBase.h"
 
+#include "Items/InventoryItemInstance.h"
 #include "Items/Data/ItemComponentData.h"
 
-UItemDefinitionBase::UItemDefinitionBase()
+
+UItemDefinitionBase::UItemDefinitionBase(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
 {
+	bWantsItemInstance = true;
+	ItemInstanceClass = UInventoryItemInstance::StaticClass();
 }
 
 TArray<const FItemComponentData*> UItemDefinitionBase::GetDataList() const

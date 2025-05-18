@@ -2,21 +2,21 @@
 
 #pragma once
 
-#include "InventoryItemTransactionBase.h"
+#include "InventoryTrackableOp.h"
 
-#include "InventoryTransaction_GiveItem.generated.h"
+#include "InventoryTransaction_GiveRemoveItem.generated.h"
 
 struct FGameplayTagContainer;
 class AInventoryBase;
 
 USTRUCT(BlueprintType)
-struct FInventoryTransaction_GiveItem : public FInventoryItemTransactionBase
+struct FInventoryTransaction_GiveRemoveItem : public FInventoryTrackableOp
 {
 	GENERATED_BODY()
 	
 public:
-	FInventoryTransaction_GiveItem();
-	FInventoryTransaction_GiveItem(AController* InInstigator, AInventoryBase* InTarget, int32 InDelta, FGameplayTagContainer* InContextTags = nullptr);
+	FInventoryTransaction_GiveRemoveItem();
+	FInventoryTransaction_GiveRemoveItem(AController* InInstigator, AInventoryBase* InTarget, int32 InDelta, FGameplayTagContainer* InContextTags = nullptr);
 
 	/** The target inventory that we want to give the item to. */
 	TWeakObjectPtr<AInventoryBase> TargetInventory = nullptr;

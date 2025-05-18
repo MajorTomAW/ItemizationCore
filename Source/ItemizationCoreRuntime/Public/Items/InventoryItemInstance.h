@@ -3,17 +3,24 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "InventoryItemHandle.h"
 #include "UObject/Object.h"
-
 #include "Net/Core/PushModel/PushModelMacros.h"
+
+#include "InventoryHandle.h"
+#include "InventoryItemHandle.h"
 
 #include "InventoryItemInstance.generated.h"
 
 class AInventoryBase;
-/**
- * 
- */
+class UObject;
+class AActor;
+class UWorld;
+class FLifetimeProperty;
+class UFunction;
+struct FFame;
+struct FOutParmRec;
+
+/** Instance of an item in an inventory. Note that not every item entry has to have an instance. */
 UCLASS(BlueprintType, Blueprintable)
 class ITEMIZATIONCORERUNTIME_API UInventoryItemInstance : public UObject
 {
@@ -28,9 +35,9 @@ public:
 	//~ Begin UObject Interface
 	virtual UWorld* GetWorld() const override;
 	virtual int32 GetFunctionCallspace(UFunction* Function, FFrame* Stack) override;
-	virtual bool CallRemoteFunction(UFunction* Function, void* Parms, struct FOutParmRec* OutParms, FFrame* Stack) override;
+	virtual bool CallRemoteFunction(UFunction* Function, void* Parms, FOutParmRec* OutParms, FFrame* Stack) override;
 	virtual bool IsSupportedForNetworking() const override;
-	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void PostInitProperties() override;
 
 #if UE_WITH_IRIS
@@ -38,9 +45,16 @@ public:
 #endif
 
 #if WITH_EDITOR
-	virtual EDataValidationResult IsDataValid(class FDataValidationContext& Context) const override;
+	virtual EDataValidationResult IsDataValid(FDataValidationContext& Context) const override;
 #endif
 	//~ End UObject Interface
+
+public:
+	/** Called when this item instance is added to an inventory. */
+	virtual void OnAddedToInventory(FInventoryItemEntry& ItemEntry, const FInventoryHandle& InventoryHandle);
+
+	/** Called right before this item instance is removed from an inventory. */
+	virtual void OnRemovedFromInventory(FInventoryItemEntry& ItemEntry, const FInventoryHandle& InventoryHandle);
 
 	/** Returns the source object that instigated the item instance creation. */
 	UFUNCTION(BlueprintCallable, Category = Item)
@@ -52,6 +66,12 @@ public:
 	{
 		return Cast<T>(GetSourceObject());
 	}
+
+	/** Returns the local role of the item's owner. */
+	ENetRole GetLocalRole() const;
+
+	/** Returns true if the item's owner has authority. */
+	bool HasAuthority() const;
 
 	/** Gets the current item entry associated with the item handle of this instance. */
 	FInventoryItemEntry* GetItemEntry() const;
@@ -70,7 +90,7 @@ protected:
 
 	/** Cached reference to the inventory that this item instance is part of. This should usually be the same as the outer. */
 	UPROPERTY(Transient)
-	TWeakObjectPtr<AInventoryBase> OwningInventoryPtr;
+	FInventoryHandle OwningInventoryHandle;
 
 	/** Handle to the item entry that this instance is associated with. */
 	mutable FInventoryItemHandle ItemHandle;

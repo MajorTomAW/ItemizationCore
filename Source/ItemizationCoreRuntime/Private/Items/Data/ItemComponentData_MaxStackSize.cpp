@@ -17,7 +17,7 @@ int32 FItemComponentData_MaxStackSize::GetMaxStackSize() const
 
 void FItemComponentData_MaxStackSize::EvaluateItemEntry(
 	FInventoryItemEntry& ItemEntry,
-	const FInventoryItemTransactionBase& Transaction) const
+	const FInventoryTrackableOp& Transaction) const
 {
 	ItemEntry.SetStatValue(Itemization::Tags::TAG_ItemStat_MaxStackSize, GetMaxStackSize());
 }

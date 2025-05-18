@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "InventoryItemTransactionBase.generated.h"
+#include "InventoryTrackableOp.generated.h"
 
 class UObject;
 class AController;
@@ -12,13 +12,13 @@ class AController;
  * This is used to pass data between different functions or server and client of predictive behavior.
  */
 USTRUCT(BlueprintType)
-struct ITEMIZATIONCORERUNTIME_API FInventoryItemTransactionBase
+struct ITEMIZATIONCORERUNTIME_API FInventoryTrackableOp
 {
 	GENERATED_BODY()
 
-	FInventoryItemTransactionBase() = default;
-	FInventoryItemTransactionBase(AController* InInstigator);
-	virtual ~FInventoryItemTransactionBase() = default;
+	FInventoryTrackableOp() = default;
+	FInventoryTrackableOp(AController* InInstigator);
+	virtual ~FInventoryTrackableOp() = default;
 
 	/** Called to undo/revert the transaction. */
 	virtual bool Undo();

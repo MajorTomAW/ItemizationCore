@@ -16,12 +16,14 @@ bool FItemComponentData::NetSerialize(FArchive& Ar, UPackageMap* Map, bool& bOut
 
 void FItemComponentData::GetAssetRegistryTags(FAssetRegistryTagsContext Context) const
 {
+	// Stub
 }
 
 void FItemComponentData::EvaluateItemEntry(
 	FInventoryItemEntry& ItemEntry,
-	const FInventoryItemTransactionBase& Transaction) const
+	const FInventoryTrackableOp& Transaction) const
 {
+	// Stub
 }
 
 bool FItemComponentData::CanMergeItems(
@@ -29,6 +31,20 @@ bool FItemComponentData::CanMergeItems(
 	const FInventoryItemEntry& OtherEntry) const
 {
 	return true;
+}
+
+void FItemComponentData::OnItemInstanceCreated(
+	FInventoryItemEntry& ItemEntry,
+	const FInventoryHandle& InventoryHandle) const
+{
+	// Stub
+}
+
+void FItemComponentData::OnItemInstanceRemoved(
+	FInventoryItemEntry& ItemEntry,
+	const FInventoryHandle& InventoryHandle) const
+{
+	// Stub
 }
 
 #if WITH_EDITOR

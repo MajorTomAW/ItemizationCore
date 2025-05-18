@@ -156,6 +156,8 @@ void UInventoryComponent::OnRep_InventoryHandle()
 
 void UInventoryComponent::OnInventoryCreated(AInventoryBase* Inventory)
 {
+	Inventory->InventoryHandle = InventoryHandle;
+	
 	if (HasAuthority())
 	{
 		InitInventoryGroups();

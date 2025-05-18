@@ -16,6 +16,9 @@
 #include "Misc/DataValidation.h"
 #endif
 
+#include "Items/ItemDefinitionBase.h"
+#include "Items/Data/ItemComponentData.h"
+
 #include UE_INLINE_GENERATED_CPP_BY_NAME(InventoryItemInstance)
 
 #define LOCTEXT_NAMESPACE "ItemDefinitionBase"
@@ -189,6 +192,45 @@ EDataValidationResult UInventoryItemInstance::IsDataValid(class FDataValidationC
 #endif
 
 
+void UInventoryItemInstance::OnAddedToInventory(FInventoryItemEntry& ItemEntry, const FInventoryHandle& InventoryHandle)
+{
+	if (!ensureMsgf(!HasAnyFlags(RF_ClassDefaultObject),
+		TEXT("%s must be instantiated because class default objects are not supported."), *GetName()))
+	{
+		return;
+	}
+
+	// Cache the item handle
+	ItemHandle = ItemEntry.ItemHandle;
+	OwningInventoryHandle = InventoryHandle;
+
+	// Let the item component data know about the creation of this instance
+	for (const FItemComponentData* ItemData : ItemEntry.ItemDefinition->GetDataList())
+	{
+		ItemData->OnItemInstanceCreated(ItemEntry, InventoryHandle);
+	}
+}
+
+void UInventoryItemInstance::OnRemovedFromInventory(FInventoryItemEntry& ItemEntry, const FInventoryHandle& InventoryHandle)
+{
+	if (!ensureMsgf(!HasAnyFlags(RF_ClassDefaultObject),
+		TEXT("%s must be instantiated because class default objects are not supported."), *GetName()))
+	{
+		return;
+	}
+
+	// Let the item component data know about the pending removal of this instance
+	for (const FItemComponentData* ItemData : ItemEntry.ItemDefinition->GetDataList())
+	{
+		ItemData->OnItemInstanceRemoved(ItemEntry, InventoryHandle);
+	}
+
+	// Reset the handle
+	ItemHandle.Reset();
+	OwningInventoryHandle.Reset();
+}
+
+
 UObject* UInventoryItemInstance::GetSourceObject() const
 {
 	if (const FInventoryItemEntry* ItemEntry = GetItemEntry())
@@ -197,6 +239,17 @@ UObject* UInventoryItemInstance::GetSourceObject() const
 	}
 
 	return nullptr;
+}
+
+ENetRole UInventoryItemInstance::GetLocalRole() const
+{
+	check(GetOuter());
+	return GetTypedOuter<AActor>()->GetLocalRole();
+}
+
+bool UInventoryItemInstance::HasAuthority() const
+{
+	return GetLocalRole() == ROLE_Authority;
 }
 
 FInventoryItemEntry* UInventoryItemInstance::GetItemEntry() const
@@ -210,9 +263,9 @@ FInventoryItemEntry* UInventoryItemInstance::GetItemEntry() const
 
 AInventoryBase* UInventoryItemInstance::GetOwningInventory() const
 {
-	if (OwningInventoryPtr.IsValid())
+	if (OwningInventoryHandle.IsValid())
 	{
-		return OwningInventoryPtr.Get();
+		return OwningInventoryHandle.GetInventory();
 	}
 
 	if (AInventoryBase* OuterAsInventory = Cast<AInventoryBase>(GetOuter()))

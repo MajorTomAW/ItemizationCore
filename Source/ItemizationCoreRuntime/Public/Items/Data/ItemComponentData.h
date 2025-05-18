@@ -7,7 +7,8 @@
 
 #include "ItemComponentData.generated.h"
 
-struct FInventoryItemTransactionBase;
+struct FInventoryHandle;
+struct FInventoryTrackableOp;
 struct FInventoryItemEntry;
 class UObject;
 class UWorld;
@@ -42,13 +43,19 @@ public:
 	 * Called before an Item Entry is added or removed from an inventory.
 	 * This is essential to fill in any important data in the un-initialized Item Entry.
 	 */
-	virtual void EvaluateItemEntry(FInventoryItemEntry& ItemEntry, const FInventoryItemTransactionBase& Transaction) const;
+	virtual void EvaluateItemEntry(FInventoryItemEntry& ItemEntry, const FInventoryTrackableOp& Transaction) const;
 
 	/**
 	 * Checks if two item entries can be merged into a single stack.
 	 * In this case, 'ThisEntry' will be merged into 'OtherEntry'.
 	 */
 	virtual bool CanMergeItems(const FInventoryItemEntry& ThisEntry, const FInventoryItemEntry& OtherEntry) const;
+
+	/** Called after an item has been instantiated. */
+	virtual void OnItemInstanceCreated(FInventoryItemEntry& ItemEntry, const FInventoryHandle& InventoryHandle) const;
+
+	/** Called when an item instance is removed from an inventory. */
+	virtual void OnItemInstanceRemoved(FInventoryItemEntry& ItemEntry, const FInventoryHandle& InventoryHandle) const;
 };
 
 

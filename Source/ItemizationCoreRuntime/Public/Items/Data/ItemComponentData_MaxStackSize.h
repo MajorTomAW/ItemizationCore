@@ -29,6 +29,6 @@ public:
 
 protected:
 	//~ Begin FItemComponentData Interface
-	virtual void EvaluateItemEntry(FInventoryItemEntry& ItemEntry, const FInventoryItemTransactionBase& Transaction) const override;
+	virtual void EvaluateItemEntry(FInventoryItemEntry& ItemEntry, const FInventoryTrackableOp& Transaction) const override;
 	//~ End FItemComponentData Interface
 };
