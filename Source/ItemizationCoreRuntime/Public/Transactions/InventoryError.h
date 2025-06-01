@@ -2,10 +2,17 @@
 
 #pragma once
 
+#include "InventoryErrorCode.h"
 #include "Internationalization/Internationalization.h"
 
-class FInventoryError;
+#define MY_API ITEMIZATIONCORERUNTIME_API
+#define LOCTEXT_NAMESPACE "InventoryError"
 
+namespace UE::Itemization
+{
+using ErrorCodeType = uint64;
+class FInventoryError;
+	
 class IInventoryErrorDetails
 {
 public:
@@ -17,9 +24,9 @@ public:
 class FInventoryErrorDetails : public IInventoryErrorDetails
 {
 public:
-	FInventoryErrorDetails() = default;
-	FInventoryErrorDetails(FString&& InLogString, FText&& InText)
-		: LogString(MoveTemp(InLogString))
+	FInventoryErrorDetails(FString&& InFriendlyErrorCode, FString&& InLogString, FText&& InText)
+		: FriendlyErrorCode(InFriendlyErrorCode)
+		, LogString(MoveTemp(InLogString))
 		, Text(MoveTemp(InText))
 	{
 	}
@@ -37,19 +44,23 @@ public:
 	}
 	
 protected:
+	FString FriendlyErrorCode;
 	FString LogString;
 	FText Text;
 };
+
 
 class FInventoryError
 {
 public:
 	explicit FInventoryError(bool) = delete;
 	explicit FInventoryError(
+		ErrorCodeType InErrorCode,
 		const TSharedPtr<const IInventoryErrorDetails, ESPMode::ThreadSafe>& InDetails = nullptr,
 		const TSharedPtr<const FInventoryError, ESPMode::ThreadSafe>& InInner = nullptr)
 		: Details(InDetails)
 		, Inner(InInner)
+		, ErrorCode(InErrorCode)
 	{
 	}
 
@@ -61,7 +72,45 @@ public:
 			return Details->GetText(*this);
 		}
 
-		return FText::GetEmpty();
+		return FText::FromString(GetErrorId());
+	}
+
+	/** Returns the error system of this error. */
+	ErrorCodeType GetSystem() const
+	{
+		return Errors::ErrorCodeSystem(ErrorCode);
+	}
+
+	/** Returns the error namespace of this error. */
+	ErrorCodeType GetCategory() const
+	{
+		return Errors::ErrorCodeCategory(ErrorCode);
+	}
+
+	/** Returns the error code of this error. */
+	ErrorCodeType GetValue() const
+	{
+		return Errors::ErrorCodeValue(ErrorCode);	
+	}
+
+	ErrorCodeType GetErrorCode() const
+	{
+		return ErrorCode;
+	}
+
+	/** Returns the entire error value as a string. */
+	FString GetErrorId() const
+	{
+		FString ErrorId = FString::Printf(TEXT("%s"), *Errors::ErrorCode::ToString(ErrorCode));
+
+		const FInventoryError* ThisInner = GetInner();
+		while (ThisInner != nullptr)
+		{
+			ErrorId += FString::Printf(TEXT("-%s"), *Errors::ErrorCode::ToString(ThisInner->ErrorCode));
+			ThisInner = Inner->GetInner();
+		}
+
+		return ErrorId;
 	}
 
 	/** Returns the log string stored in this error. */
@@ -75,7 +124,7 @@ public:
 			FString LogPrefix = TEXT("");
 			if (bIncludePrefix)
 			{
-				//LogPrefix = FString::Printf(TEXT("[%s] "), *GetErrorId());
+				LogPrefix = FString::Printf(TEXT("[%s] "), *GetErrorId());
 			}
 
 			const FString LogString = Details->GetLogString(*this);
@@ -83,12 +132,12 @@ public:
 		}
 		else
 		{
-			//MyLogString = FString::Printf(TEXT("[%s]"), *GetErrorId());
+			MyLogString = FString::Printf(TEXT("[%s]"), *GetErrorId());
 		}
 
-		if (Get() != nullptr)
+		if (GetInner() != nullptr)
 		{
-			FString InnerLogString = Get()->GetLogString(false);
+			FString InnerLogString = GetInner()->GetLogString(false);
 			if (!InnerLogString.IsEmpty())
 			{
 				return FString::Printf(TEXT("%s (%s)"), *MyLogString, *InnerLogString);
@@ -102,7 +151,7 @@ public:
 	}
 
 	/** Returns the error as a pointer. */
-	const FInventoryError* Get() const
+	const FInventoryError* GetInner() const
 	{
 		return Inner.IsValid() ? Inner.Get() : nullptr;
 	}
@@ -110,13 +159,26 @@ public:
 private:
 	TSharedPtr<const IInventoryErrorDetails, ESPMode::ThreadSafe> Details;
 	TSharedPtr<const FInventoryError, ESPMode::ThreadSafe> Inner;
+	ErrorCodeType ErrorCode;
 };
 
+MY_API bool operator==(const FInventoryError& Lhs, const FInventoryError& Rhs);
+inline bool operator!=(const FInventoryError& Lhs, const FInventoryError& Rhs) { return !(Lhs == Rhs); }
+MY_API bool operator==(const FInventoryError& InventoryError, ErrorCodeType OtherErrorCode);
+inline bool operator==(ErrorCodeType OtherErrorCode, const FInventoryError& InventoryError) { return InventoryError == OtherErrorCode; }
+inline bool operator!=(const FInventoryError& InventoryError, ErrorCodeType OtherErrorCode) { return !(InventoryError == OtherErrorCode); }
+inline bool operator!=(ErrorCodeType OtherErrorCode, const FInventoryError& InventoryError) { return !(InventoryError == OtherErrorCode); }
+	
 inline FString ToLogString(const FInventoryError& Error)
 {
 	return Error.GetLogString();
+}
 }
 
 #if UE_ENABLE_INCLUDE_ORDER_DEPRECATED_IN_5_2
 #include "CoreMinimal.h"
 #endif
+
+
+#undef MY_API
+#undef LOCTEXT_NAMESPACE

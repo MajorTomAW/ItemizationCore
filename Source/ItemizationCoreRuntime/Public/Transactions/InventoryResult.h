@@ -5,145 +5,148 @@
 #include "InventoryError.h"
 #include "Misc/TVariant.h"
 
-template <typename SuccessType, typename ErrorType>
-class TInventoryResult
+namespace UE::Itemization
 {
-public:
-	TInventoryResult() = default;
-	explicit TInventoryResult(const SuccessType& OkValue)
-		: Storage(TInPlaceType<SuccessType>(), OkValue)
+	template <typename SuccessType, typename ErrorType>
+	class TInventoryResult
 	{
-	}
-	explicit TInventoryResult(SuccessType&& OkValue)
-		: Storage(TInPlaceType<SuccessType>(), MoveTemp(OkValue))
-	{
-	}
-	explicit TInventoryResult(const ErrorType& ErrorValue)
-		: Storage(TInPlaceType<ErrorType>(), ErrorValue)
-	{
-	}
-	explicit TInventoryResult(ErrorType&& ErrorValue)
-		: Storage(TInPlaceType<ErrorType>(), MoveTemp(ErrorValue))
-	{
-	}
-
-PRAGMA_DISABLE_DEPRECATION_WARNINGS
-	TInventoryResult(const TInventoryResult& Other) = default;
-	TInventoryResult(TInventoryResult&& Other) = default;
-
-	TInventoryResult& operator=(const TInventoryResult& Other)
-	{
-		if (&Other != this)
+	public:
+		TInventoryResult() = default;
+		explicit TInventoryResult(const SuccessType& OkValue)
+			: Storage(TInPlaceType<SuccessType>(), OkValue)
 		{
-			Storage = Other.Storage;
 		}
-		return *this;
-	}
-
-	TInventoryResult& operator=(TInventoryResult&& Other)
-	{
-		if (&Other != this)
+		explicit TInventoryResult(SuccessType&& OkValue)
+			: Storage(TInPlaceType<SuccessType>(), MoveTemp(OkValue))
 		{
-			Storage = MoveTemp(Other.Storage);
 		}
-		return *this;
-	}
-PRAGMA_ENABLE_DEPRECATION_WARNINGS
+		explicit TInventoryResult(const ErrorType& ErrorValue)
+			: Storage(TInPlaceType<ErrorType>(), ErrorValue)
+		{
+		}
+		explicit TInventoryResult(ErrorType&& ErrorValue)
+			: Storage(TInPlaceType<ErrorType>(), MoveTemp(ErrorValue))
+		{
+		}
 
-	virtual ~TInventoryResult() = default;
+		PRAGMA_DISABLE_DEPRECATION_WARNINGS
+			TInventoryResult(const TInventoryResult& Other) = default;
+		TInventoryResult(TInventoryResult&& Other) = default;
 
-public:
-	/** Check if the value held in the result is a SuccessType. */
-	bool IsOk() const
-	{
-		return Storage.template IsType<SuccessType>();
-	}
+		TInventoryResult& operator=(const TInventoryResult& Other)
+		{
+			if (&Other != this)
+			{
+				Storage = Other.Storage;
+			}
+			return *this;
+		}
 
-	/** Check if the value held in the result is an ErrorType. */
-	bool IsError() const
-	{
-		return Storage.template IsType<ErrorType>();
-	}
+		TInventoryResult& operator=(TInventoryResult&& Other)
+		{
+			if (&Other != this)
+			{
+				Storage = MoveTemp(Other.Storage);
+			}
+			return *this;
+		}
+		PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
-	/** Returns the Ok value stored in the result. This mustn't be called on a result holding the error type */
-	const SuccessType& GetOkValue() const
-	{
-		checkf(IsOk(), TEXT("Is is an error to call GetOkValue() on a TInventoryTransactionResult that does not hold an ok value. Please either check IsOk() or use TryGetOkValue"));
-		return Storage.template Get<SuccessType>();
-	}
-	/** Returns the Ok value stored in the result. This mustn't be called on a result holding the error type */
-	SuccessType& GetOkValue()
-	{
-		checkf(IsOk(), TEXT("Is is an error to call GetOkValue() on a TInventoryTransactionResult that does not hold an ok value. Please either check IsOk() or use TryGetOkValue"));
-		return Storage.template Get<SuccessType>();
-	}
+			virtual ~TInventoryResult() = default;
 
-	/** Returns the Error value stored in the result. This mustn't be called on a result holding the success type */
-	const ErrorType& GetErrorValue() const
-	{
-		checkf(IsError(), TEXT("Is is an error to call GetErrorValue() on a TInventoryTransactionResult that does not hold an error value. Please either check IsError() or use TryGetErrorValue"));
-		return Storage.template Get<ErrorType>();
-	}
-	/** Returns the Error value stored in the result. This mustn't be called on a result holding the success type */
-	ErrorType& GetErrorValue()
-	{
-		checkf(IsError(), TEXT("Is is an error to call GetErrorValue() on a TInventoryTransactionResult that does not hold an error value. Please either check IsError() or use TryGetErrorValue"));
-		return Storage.template Get<ErrorType>();
-	}
+	public:
+		/** Check if the value held in the result is a SuccessType. */
+		bool IsOk() const
+		{
+			return Storage.template IsType<SuccessType>();
+		}
 
-	/** Tries to convert from TInventoryTransactionResult<Success, Error> to Success* if the result is successful. */
-	const SuccessType* TryGetOkValue() const
-	{
-		return const_cast<TInventoryResult*>(this)->TryGetOkValue();
-	}
-	/** Tries to convert from TInventoryTransactionResult<Success, Error> to Success* if the result is successful. */
-	SuccessType* TryGetOkValue()
-	{
-		return Storage.template TryGet<SuccessType>();
-	}
+		/** Check if the value held in the result is an ErrorType. */
+		bool IsError() const
+		{
+			return Storage.template IsType<ErrorType>();
+		}
 
-	/** Tries to convert from TInventoryTransactionResult<Success, Error> to Error* if the result is erroneous. */
-	const ErrorType* TryGetErrorValue() const
-	{
-		return const_cast<TInventoryResult*>(this)->TryGetErrorValue();
-	}
-	/** Tries to convert from TInventoryTransactionResult<Success, Error> to Error* if the result is erroneous. */
-	ErrorType* TryGetErrorValue()
-	{
-		return Storage.template TryGet<ErrorType>();
-	}
+		/** Returns the Ok value stored in the result. This mustn't be called on a result holding the error type */
+		const SuccessType& GetOkValue() const
+		{
+			checkf(IsOk(), TEXT("Is is an error to call GetOkValue() on a TInventoryTransactionResult that does not hold an ok value. Please either check IsOk() or use TryGetOkValue"));
+			return Storage.template Get<SuccessType>();
+		}
+		/** Returns the Ok value stored in the result. This mustn't be called on a result holding the error type */
+		SuccessType& GetOkValue()
+		{
+			checkf(IsOk(), TEXT("Is is an error to call GetOkValue() on a TInventoryTransactionResult that does not hold an ok value. Please either check IsOk() or use TryGetOkValue"));
+			return Storage.template Get<SuccessType>();
+		}
 
-	/** Unwraps the result, returning the success value if one is held, otherwise returning the default value passed. */
-	const SuccessType& GetOkOrDefault(const SuccessType& DefaultValue) const
-	{
-		return IsOk() ? GetOkValue() : DefaultValue;
-	}
+		/** Returns the Error value stored in the result. This mustn't be called on a result holding the success type */
+		const ErrorType& GetErrorValue() const
+		{
+			checkf(IsError(), TEXT("Is is an error to call GetErrorValue() on a TInventoryTransactionResult that does not hold an error value. Please either check IsError() or use TryGetErrorValue"));
+			return Storage.template Get<ErrorType>();
+		}
+		/** Returns the Error value stored in the result. This mustn't be called on a result holding the success type */
+		ErrorType& GetErrorValue()
+		{
+			checkf(IsError(), TEXT("Is is an error to call GetErrorValue() on a TInventoryTransactionResult that does not hold an error value. Please either check IsError() or use TryGetErrorValue"));
+			return Storage.template Get<ErrorType>();
+		}
+
+		/** Tries to convert from TInventoryTransactionResult<Success, Error> to Success* if the result is successful. */
+		const SuccessType* TryGetOkValue() const
+		{
+			return const_cast<TInventoryResult*>(this)->TryGetOkValue();
+		}
+		/** Tries to convert from TInventoryTransactionResult<Success, Error> to Success* if the result is successful. */
+		SuccessType* TryGetOkValue()
+		{
+			return Storage.template TryGet<SuccessType>();
+		}
+
+		/** Tries to convert from TInventoryTransactionResult<Success, Error> to Error* if the result is erroneous. */
+		const ErrorType* TryGetErrorValue() const
+		{
+			return const_cast<TInventoryResult*>(this)->TryGetErrorValue();
+		}
+		/** Tries to convert from TInventoryTransactionResult<Success, Error> to Error* if the result is erroneous. */
+		ErrorType* TryGetErrorValue()
+		{
+			return Storage.template TryGet<ErrorType>();
+		}
+
+		/** Unwraps the result, returning the success value if one is held, otherwise returning the default value passed. */
+		const SuccessType& GetOkOrDefault(const SuccessType& DefaultValue) const
+		{
+			return IsOk() ? GetOkValue() : DefaultValue;
+		}
 	
-private:
-	/** Location that the result's value is stored */
-	TVariant<SuccessType, ErrorType> Storage;
-};
+	private:
+		/** Location that the result's value is stored */
+		TVariant<SuccessType, ErrorType> Storage;
+	};
 
 
-template <typename OpType>
-class TInventoryTransactionResult : public TInventoryResult<typename OpType::Result, FInventoryError>
-{
-public:
-	using TInventoryResult<typename OpType::Result, FInventoryError>::TInventoryResult;
-};
-
-template <typename T>
-FString ToLogString(const TInventoryTransactionResult<T>& Result)
-{
-	if (Result.IsOk())
+	template <typename OpType>
+	class TInventoryTransactionResult : public TInventoryResult<typename OpType::Result, FInventoryError>
 	{
-		return ToLogString(Result.GetOkValue());
-	}
+	public:
+		using TInventoryResult<typename OpType::Result, FInventoryError>::TInventoryResult;
+	};
 
-	if (Result.IsError())
+	template <typename T>
+	FString ToLogString(const TInventoryTransactionResult<T>& Result)
 	{
-		return ToLogString(Result.GetErrorValue());
-	}
+		if (Result.IsOk())
+		{
+			return ToLogString(Result.GetOkValue());
+		}
 
-	return TEXT("Unknown result type");
+		if (Result.IsError())
+		{
+			return ToLogString(Result.GetErrorValue());
+		}
+
+		return TEXT("Unknown result type");
+	}
 }

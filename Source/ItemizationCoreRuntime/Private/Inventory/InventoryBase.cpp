@@ -15,6 +15,7 @@
 #include "ItemizationGameplayTags.h"
 #include "ItemizationLogChannels.h"
 #include "Inventory/InventoryChangeMessage.h"
+#include "Transactions/InventoryErrorDefinitions.h"
 #include "Transactions/InventoryTransaction_GiveRemoveItem.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(InventoryBase)
@@ -91,10 +92,51 @@ void AInventoryBase::PostInitializeComponents()
 	Super::PostInitializeComponents();
 }
 
-TInventoryOpHandle<FInventoryItemMoveOp> AInventoryBase::MoveItem(FInventoryItemMoveOp::Params&& Params)
+UE::Itemization::TInventoryOpHandle<FInventoryItemMoveOp> AInventoryBase::MoveItem(FInventoryItemMoveOp::Params&& Params)
 {
+	using namespace UE::Itemization;
 	TInventoryOpRef<FInventoryItemMoveOp> Op =
 		OpCache.GetOperation<FInventoryItemMoveOp>(MoveTemp(Params));
+
+	if (!Params.TargetInventory.IsValid() && !Params.SourceInventory.IsValid())
+	{
+		Op->SetError(Errors::InvalidParams());
+		return Op->GetHandle();
+	}
+	
+	Op->SetError(Errors::NotImplemented());
+	return Op->GetHandle();
+}
+
+UE::Itemization::TInventoryOpHandle<FInventoryItemGiveOp> AInventoryBase::GiveItem(
+	FInventoryItemGiveOp::Params&& Params)
+{
+	using namespace UE::Itemization;
+	TInventoryOpRef<FInventoryItemGiveOp> Op =
+		OpCache.GetOperation<FInventoryItemGiveOp>(MoveTemp(Params));
+
+	if (!Params.TargetInventory.IsValid() && !Params.SourceInventory.IsValid())
+	{
+		Op->SetError(Errors::InvalidParams());
+		return Op->GetHandle();
+	}
+
+	// 1. Check and find the item definition
+	Op->Then([this](TInventoryAsyncOp<FInventoryItemGiveOp>& InAsyncOp)
+	{
+		const FInventoryItemGiveOp::Params& Params = InAsyncOp.GetParams();
+
+		// Make sure we have a valid item
+		if (!Params.ItemId.IsValid())
+		{
+			InAsyncOp.SetError(Errors::InvalidItemId());
+			return Params.NumToGive;
+		}
+
+
+		// For now, we just assume we could add all items
+		return 0;
+	});
 
 	return Op->GetHandle();
 }

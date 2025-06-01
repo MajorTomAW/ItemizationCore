@@ -7,7 +7,7 @@
 #include "GameFramework/Actor.h"
 #include "Items/InventoryItemEntry.h"
 #include "Transactions/InventoryItemMoveOp.h"
-#include "Transactions/InventoryOpCache.h"
+#include "Transactions/InventoryAsyncOpCache.h"
 #include "InventoryBase.generated.h"
 
 struct FInventoryItemMoveOp;
@@ -64,7 +64,8 @@ public:
 	 *		– RemoveItem() Only the server can remove items.
 	 -----------------------------------------------------------------------------------------------------------------*/
 
-	MY_API virtual TInventoryOpHandle<FInventoryItemMoveOp> MoveItem(FInventoryItemMoveOp::Params&& Params);
+	MY_API virtual UE::Itemization::TInventoryOpHandle<FInventoryItemMoveOp> MoveItem(FInventoryItemMoveOp::Params&& Params);
+	MY_API virtual UE::Itemization::TInventoryOpHandle<FInventoryItemGiveOp> GiveItem(FInventoryItemGiveOp::Params&& Params);
 
 	/** Adds an item to the inventory. */
 	MY_API virtual FInventoryItemHandle GiveItem(const FInventoryItemEntry& ItemEntry, int32& OutExcess, FInventoryTransaction_GiveRemoveItem& Transaction);
@@ -155,7 +156,7 @@ private:
 	TArray<TObjectPtr<UInventoryItemInstance>>& GetAllItemInstances_Mutable() { return AllItemInstances; }
 
 	/** Cached inventory operations. */
-	FInventoryOpCache OpCache;
+	UE::Itemization::FInventoryAsyncOpCache OpCache;
 };
 
 
