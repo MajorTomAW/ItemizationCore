@@ -1,13 +1,13 @@
 ﻿{
 	"FileVersion": 3,
 	"Version": 1,
-	"VersionName": "0.6",
+	"VersionName": "0.4",
 	"FriendlyName": "Itemization Core",
-	"Description": "Plugin for an Inventory and Item gameplay system.",
+	"Description": "Plugin for an inventory and item gameplay system.",
 	"Category": "Gameplay",
 	"CreatedBy": "MajorT",
 	"CreatedByURL": "",
-	"DocsURL": "",
+	"DocsURL": "https://github.com/MajorTomAW",
 	"MarketplaceURL": "",
 	"CanContainContent": false,
 	"IsBetaVersion": false,
@@ -15,18 +15,29 @@
 	"Installed": false,
 	"Modules": [
 		{
-			"Name": "ItemizationCoreRuntime",
+			"Name": "ItemizationCore",
 			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "ItemizationEditor",
+			"Type": "Editor",
+			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "ItemizationGameFeatures",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "ItemizationK2Nodes",
+			"Type": "UncookedOnly",
 			"LoadingPhase": "Default"
 		}
 	],
 	"Plugins": [
 		{
-			"Name": "ModularGameplay",
-			"Enabled": true
-		},
-		{
-			"Name": "GameFeatures",
+			"Name": "GameplayAbilities",
 			"Enabled": true
 		},
 		{
@@ -35,6 +46,26 @@
 		},
 		{
 			"Name": "EnhancedInput",
+			"Enabled": true
+		},
+		{
+			"Name": "ModularGameplay",
+			"Enabled": true
+		},
+		{
+			"Name": "AssetManagerEditor",
+			"Enabled": true
+		},
+		{
+			"Name": "DataValidation",
+			"Enabled": true
+		},
+		{
+			"Name": "GameplayTagStacks",
+			"Enabled": true
+		},
+		{
+			"Name": "GameFeatures",
 			"Enabled": true
 		}
 	]
