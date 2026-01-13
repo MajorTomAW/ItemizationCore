@@ -18,14 +18,13 @@
 bool UItemizationItemFunctionLibrary::ItemHasTrait(const UItemDefinitionBase* ItemDefinition, FGameplayTag TraitToCheck)
 {
 	ITEM_DEFINITION_VALID_OR_RETURN(false)
-	
-	return FItemComponentData_Traits::HasTrait(ItemDefinition, TraitToCheck);
+	return ItemDefinition->HasTrait(TraitToCheck);
 }
 
 bool UItemizationItemFunctionLibrary::IsItemStackable(const UItemDefinitionBase* ItemDefinition)
 {
 	ITEM_DEFINITION_VALID_OR_RETURN(false)
-	
+
 	const FItemComponentData_MaxStackSize* MaxStackSizeData = ItemDefinition->GetItemData<FItemComponentData_MaxStackSize>();
 	if (MaxStackSizeData == nullptr)
 	{
@@ -63,10 +62,10 @@ TSoftObjectPtr<UTexture2D> UItemizationItemFunctionLibrary::GetItemIcon(const UI
 	return IconData->Icon;
 }
 
-FText UItemizationItemFunctionLibrary::GetItemName(const UItemDefinitionBase* ItemDefinition)
+FText UItemizationItemFunctionLibrary::GetItemName(const UItemDefinitionBase* ItemDefinition, bool bUsePlural)
 {
 	ITEM_DEFINITION_VALID_OR_RETURN(FText::GetEmpty())
-	return ItemDefinition->GetItemName();
+	return ItemDefinition->GetItemName(bUsePlural);
 }
 
 FText UItemizationItemFunctionLibrary::GetItemDescription(const UItemDefinitionBase* ItemDefinition, bool bFallbackToShort)

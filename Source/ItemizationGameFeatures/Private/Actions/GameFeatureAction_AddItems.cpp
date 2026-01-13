@@ -1,10 +1,10 @@
-﻿// Copyright © 2025 Playton. All Rights Reserved.
+﻿// Author: Tom Werner (MajorT), 2025 November
 
 
 #include "Actions/GameFeatureAction_AddItems.h"
 
 #include "Inventory/InventoryBase.h"
-#include "Inventory/Operations/InventoryOp_ItemAction.h"
+#include "Inventory/Operations/InventoryOp_GiveAction.h"
 #include "Items/Data/InitialItemGrant.h"
 
 
@@ -18,7 +18,7 @@ void UGameFeatureAction_AddItems::OnGameFeatureDeactivating(
 	FPerContextData* ActiveData = ContextData.Find(Context);
 	if (ensure(ActiveData))
 	{
-		
+
 	}
 }
 
@@ -53,15 +53,12 @@ void UGameFeatureAction_AddItems::OnInitItemizationData(
 
 	for (const auto& ItemGrant : ItemsToGive)
 	{
-		FInventoryOp_ItemAction::FParams Params;
+		FInventoryOp_GiveAction::FParams Params;
 		Params.SourceInventory = Inventory;
 		Params.TargetInventory = Inventory;
-		Params.Delta = ItemGrant.Count;
+		Params.NumGive = ItemGrant.Count;
 
-		AInventoryBase::FCreateItemEntryParams CreateItemParams;
-		CreateItemParams.ItemDefinition = ItemGrant.Item;
-		CreateItemParams.SourceObject = Inventory;
-		CreateItemParams.StackSize = ItemGrant.Count;
+		AInventoryBase::FCreateItemEntryParams CreateItemParams(ItemGrant.Item, ItemGrant.Count, Inventory);
 
 		Inventory->GiveItem(MoveTemp(Params), CreateItemParams);
 	}

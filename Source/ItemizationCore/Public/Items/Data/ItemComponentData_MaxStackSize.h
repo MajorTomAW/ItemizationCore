@@ -1,4 +1,4 @@
-﻿// Copyright © 2025 Playton. All Rights Reserved.
+﻿// Author: Tom Werner (MajorT), 2025 November
 
 #pragma once
 
@@ -29,6 +29,10 @@ public:
 
 protected:
 	//~ Begin FItemComponentData Interface
-	virtual void EvaluateItemEntry(FInventoryOp_ItemAction::FParams& Params) const override;
+	virtual void EvaluateItemEntry(FInventoryOp_GiveAction::FParams& Params) const override;
+
+#if WITH_EDITOR
+	virtual FText GetDescription() const override;
+#endif
 	//~ End FItemComponentData Interface
 };

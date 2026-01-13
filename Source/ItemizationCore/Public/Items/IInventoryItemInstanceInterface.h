@@ -9,13 +9,14 @@
 struct FInventoryHandle;
 struct FInventoryItemEntry;
 
+/** Interface for an object that can act as an item instance for an item entry in the inventory. */
 UINTERFACE(meta=(CannotImplementInterfaceInBlueprint), MinimalAPI)
 class UInventoryItemInstanceInterface : public UInterface
 {
 	GENERATED_BODY()
 };
 
-
+/** Interface for an object that can act as an item instance for an item entry in the inventory. */
 class IInventoryItemInstanceInterface
 {
 	GENERATED_BODY()
@@ -29,7 +30,7 @@ public:
 
 	/** Returns the source object that created this item instance, if any. */
 	virtual UObject* GetSourceObject() const = 0;
-	
+
 	/** Template function to cast the source object to a specific type. */
 	template <class SourceObjectType = UObject>
 	SourceObjectType* GetSourceObject() const

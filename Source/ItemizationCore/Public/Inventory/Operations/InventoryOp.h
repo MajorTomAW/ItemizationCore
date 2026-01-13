@@ -4,9 +4,9 @@
 
 namespace Private
 {
-		
+
 }
-	
+
 class FInventoryOp
 {
 public:
@@ -14,7 +14,8 @@ public:
 
 	int32 OpIndex = INDEX_NONE;
 	FString OpName;
-	
+	FString OpDebugString;
+
 	//@TODO: This is just experimental for testing right now.
 	uint8 bPendingRemoval : 1 = false;
 	friend class FInventoryOpCache;
@@ -34,6 +35,7 @@ public:
 		: Params(MoveTemp(InParams))
 	{
 		OpName = FString(OpType::Name);
+		OpDebugString = InParams.GetDebugString();
 		ConstructionTime = FPlatformTime::Seconds();
 	}
 

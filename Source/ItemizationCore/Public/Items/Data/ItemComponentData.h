@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Inventory/Operations/InventoryOp_ItemAction.h"
+#include "Inventory/Operations/InventoryOp_GiveAction.h"
 #include "StructUtils/InstancedStruct.h"
 
 #include "ItemComponentData.generated.h"
@@ -15,7 +15,7 @@ class UObject;
 class UWorld;
 struct FFrame;
 
-/** 
+/**
  * This struct represents the base item component data.
  * It can be used to define custom logic for items.
  * These are stored as instanced structs in the inventory system and have logic that can be called during runtime.
@@ -38,13 +38,16 @@ public:
 #if WITH_EDITOR
 	/** Validates the item component data. */
 	virtual EDataValidationResult IsDataValid(FDataValidationContext& Context) const;
+
+	/** Override this to add custom description to the list view of item datas. */
+	virtual FText GetDescription() const { return FText::GetEmpty(); }
 #endif
 
 	/**
 	 * Called before an Item Entry is added or removed from an inventory.
 	 * This is essential to fill in any important data in the un-initialized Item Entry.
 	 */
-	virtual void EvaluateItemEntry(FInventoryOp_ItemAction::FParams& Params) const;
+	virtual void EvaluateItemEntry(FInventoryOp_GiveAction::FParams& Params) const;
 
 	/**
 	 * Checks if two item entries can be merged into a single stack.
@@ -53,10 +56,22 @@ public:
 	virtual bool CanMergeItems(const FInventoryItemEntry& ThisEntry, const FInventoryItemEntry& OtherEntry) const;
 
 	/** Called after an item has been instantiated. */
-	virtual void OnItemInstanceCreated(FInventoryItemEntry& ItemEntry, const FInventoryHandle& InventoryHandle) const;
+	virtual void OnItemGiven(FInventoryItemEntry& ItemEntry, const FInventoryHandle& InventoryHandle) const;
 
 	/** Called when an item instance is removed from an inventory. */
-	virtual void OnItemInstanceRemoved(FInventoryItemEntry& ItemEntry, const FInventoryHandle& InventoryHandle) const;
+	virtual void OnItemRemoved(FInventoryItemEntry& ItemEntry, const FInventoryHandle& InventoryHandle) const;
+
+	/** Returns the logical name of this item data. */
+	FORCEINLINE static FName GetFName()
+	{
+		return StaticStruct()->GetFName();
+	}
+
+	/** Returns the logical name of this item data. */
+	FORCEINLINE static FString GetName()
+	{
+		return StaticStruct()->GetName();
+	}
 };
 
 
@@ -113,6 +128,12 @@ struct ITEMIZATIONCORE_API FItemComponentDataInstance
 	{
 		return Component.GetPtr<T>();
 	}
+	/*template <typename T>
+	requires std::is_base_of_v<FItemComponentData, std::decay_t<T>>
+	T* GetComponent() const
+	{
+		return Component.GetPtr<T>();
+	}*/
 
 	/** Returns true if this item component data is valid and has been initialized. */
 	bool IsValid() const { return Component.IsValid(); }

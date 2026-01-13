@@ -37,7 +37,7 @@ public:
 
 	/** Returns the item name as a plain text. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Itemization|Item")
-	static MY_API FText GetItemName(const UItemDefinitionBase* ItemDefinition);
+	static MY_API FText GetItemName(const UItemDefinitionBase* ItemDefinition, bool bUsePlural = false);
 
 	/** Returns the item description as a plain text. If bFallbackToShort is true, it will return the short description if the long one is not set. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Itemization|Item")

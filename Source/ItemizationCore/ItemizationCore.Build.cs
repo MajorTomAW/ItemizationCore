@@ -8,19 +8,20 @@ public class ItemizationCore : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
+
 		PublicDependencyModuleNames.AddRange(new []
 		{
 			"Core",
 			"NetCore",
 			"Iris",
 			"IrisCore",
+			"ApplicationCore",
 			"GameplayTags",
 			"GameplayAbilities",
 			"DeveloperSettings",
 			"ModularGameplay",
 			"GameplayTagStacks",
 		});
-
 		PrivateDependencyModuleNames.AddRange(new []
 		{
 			"CoreUObject",
@@ -34,7 +35,7 @@ public class ItemizationCore : ModuleRules
 			PrivateDependencyModuleNames.Add("Slate");
 			PrivateDependencyModuleNames.Add("SlateCore");
 		}
-        
+
 		SetupGameplayDebuggerSupport(Target);
 		SetupIrisSupport(Target);
 	}

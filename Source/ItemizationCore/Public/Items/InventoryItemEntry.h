@@ -21,6 +21,8 @@ class UItemDefinitionBase;
 class UInventoryItemInstance;
 class UInventoryComponent;
 
+#define UE_API ITEMIZATIONCORE_API
+
 /** Fast array serializer item for a single item entry in an inventory. */
 USTRUCT(BlueprintType)
 struct FInventoryItemEntry : public FFastArraySerializerItem
@@ -28,6 +30,7 @@ struct FInventoryItemEntry : public FFastArraySerializerItem
 	GENERATED_BODY()
 	friend struct FInventoryItemContainer;
 	friend class UInventoryComponent;
+	friend class AInventoryBase;
 
 public:
 	FInventoryItemEntry();
@@ -44,6 +47,9 @@ public:
 	/** Returns this item entry as a debug string. */
 	FString GetDebugString() const;
 
+	/** Returns this item entry's item definitions' name. */
+	FString GetItemName() const;
+
 	/** Prints out all stats associated with this item entry. */
 	void DebugPrintStats() const;
 
@@ -54,7 +60,7 @@ public:
 	TScriptInterface<IInventoryItemInstanceInterface> GetItemInstance() const;
 	void SetReplicatedItemInstance(const TScriptInterface<IInventoryItemInstanceInterface>& InInstance);
 	void SetNonReplicatedItemInstance(const TScriptInterface<IInventoryItemInstanceInterface>& InInstance);
-	
+
 	/** Returns a stat integer associated with the given tag. */
 	int32 GetStatValue(const FGameplayTag& Tag) const;
 
@@ -67,26 +73,35 @@ public:
 	/** Returns all stats as the raw tag count map. */
 	const FGameplayTagStackContainer& GetStatCountMap() const { return TagCountMap; }
 
+	/** Returns the item handle. */
+	const FInventoryItemHandle& GetItemHandle() const { return ItemHandle; }
+
+	/** Returns the item definition. */
+	const UItemDefinitionBase* GetItemDefinition() const { return ItemDefinition; }
+
+	/** Returns the source object that gave us this item. */
+	UObject* GetSourceObject() const { return SourceObject.Get(); }
+
+	/** Returns the last stack count that was locally observed. */
+	int32 GetLastObservedStackCount() const { return LastObservedStackCount; }
+
 	//~ Begin FFastArraySerializerItem Interface
 	void PreReplicatedRemove(const FInventoryItemContainer& InArraySerializer);
 	void PostReplicatedAdd(const FInventoryItemContainer& InArraySerializer);
 	void PostReplicatedChange(const FInventoryItemContainer& InArraySerializer);
 	//~ End FFastArraySerializerItem Interface
 
-public:
+private:
 	/** The unique handle to this item for outside references. */
 	UPROPERTY()
 	FInventoryItemHandle ItemHandle;
 
-	UPROPERTY()
+	UPROPERTY(meta=(DeprecatedProperty="Dont use this please"))
 	FItemComponentDataList ItemData;
 
 	/** The item definition that this entry represents. */
 	UPROPERTY()
 	TObjectPtr<UItemDefinitionBase> ItemDefinition;
-
-	UPROPERTY()
-	uint32 SlotNumber;
 
 	/** */
 	UPROPERTY()
@@ -108,7 +123,7 @@ protected:
 	/** Non-replicated item instance */
 	UPROPERTY(NotReplicated)
 	TObjectPtr<UObject> NonReplicatedInstance;
-	
+
 	/** Authority-only list of stat tags mapped to stat integer value.*/
 	UPROPERTY()
 	FGameplayTagStackContainer TagCountMap;
@@ -160,13 +175,16 @@ struct FInventoryItemContainer : public FFastArraySerializer
 	friend class AInventoryBase;
 
 public:
-	FInventoryItemContainer();
-	FInventoryItemContainer(AInventoryBase* InOwningInventory);
+	UE_API FInventoryItemContainer();
+	UE_API FInventoryItemContainer(AInventoryBase* InOwningInventory);
+
+	/** Tries to find an FInventoryItemEntry by its handle. */
+	UE_API FInventoryItemEntry* FindItemEntryByHandle(const FInventoryItemHandle& ItemHandle) const;
 
 	//~ Begin FFastArraySerializer Interface
-	void PreReplicatedRemove(const TArrayView<int32> RemovedIndices, int32 FinalSize);
-	void PostReplicatedAdd(const TArrayView<int32> AddedIndices, int32 FinalSize);
-	void PostReplicatedChange(const TArrayView<int32> ChangedIndices, int32 FinalSize);
+	UE_API void PreReplicatedRemove(const TArrayView<int32> RemovedIndices, int32 FinalSize);
+	UE_API void PostReplicatedAdd(const TArrayView<int32> AddedIndices, int32 FinalSize);
+	UE_API void PostReplicatedChange(const TArrayView<int32> ChangedIndices, int32 FinalSize);
 
 	bool NetDeltaSerialize(FNetDeltaSerializeInfo& DeltaParms)
 	{
@@ -180,14 +198,14 @@ public:
 		{
 			return Item.ReplicationID != INDEX_NONE;
 		}
-		
+
 		return true;
 	}
 	//~ End FFastArraySerializer Interface
 
 	/** TArray accessors for this container. */
 	CREATE_ARRAY_SERIALIZER_TARRAY_ACCESSORS(FInventoryItemContainer, FInventoryItemEntry, Items);
-	
+
 	/** List of item entries in this inventory. */
 	UPROPERTY()
 	TArray<FInventoryItemEntry> Items;
@@ -206,3 +224,5 @@ struct TStructOpsTypeTraits<FInventoryItemContainer> : TStructOpsTypeTraitsBase2
 		WithNetSharedSerialization = true,
 	};
 };
+
+#undef UE_API

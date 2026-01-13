@@ -18,4 +18,11 @@ public:
 	/** Icon texture to display in the UI. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category=Icon)
 	TSoftObjectPtr<UTexture2D> Icon;
+
+protected:
+	//~ Begin FItemComponentData Interface
+#if WITH_EDITOR
+	virtual FText GetDescription() const override;
+#endif
+	//~ End FItemComponentData Interface
 };

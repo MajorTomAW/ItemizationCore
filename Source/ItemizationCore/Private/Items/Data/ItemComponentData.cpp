@@ -20,7 +20,7 @@ void FItemComponentData::GetAssetRegistryTags(FAssetRegistryTagsContext Context)
 }
 
 void FItemComponentData::EvaluateItemEntry(
-	FInventoryOp_ItemAction::FParams& Params) const
+	FInventoryOp_GiveAction::FParams& Params) const
 {
 	// Stub
 }
@@ -32,14 +32,14 @@ bool FItemComponentData::CanMergeItems(
 	return true;
 }
 
-void FItemComponentData::OnItemInstanceCreated(
+void FItemComponentData::OnItemGiven(
 	FInventoryItemEntry& ItemEntry,
 	const FInventoryHandle& InventoryHandle) const
 {
 	// Stub
 }
 
-void FItemComponentData::OnItemInstanceRemoved(
+void FItemComponentData::OnItemRemoved(
 	FInventoryItemEntry& ItemEntry,
 	const FInventoryHandle& InventoryHandle) const
 {

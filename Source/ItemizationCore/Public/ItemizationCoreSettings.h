@@ -28,30 +28,33 @@ protected:
 
 public:
 	/** Tag, that if present on an item, will allow the item to stay in the inventory even if it's stack is empty. */
-	UPROPERTY(Config, EditDefaultsOnly, Category=Traits, meta=(ConfigRestartRequired=true))
+	UPROPERTY(Config, EditDefaultsOnly, Category=Traits)
 	FGameplayTag AllowEmptyStackTag;
 
 	/** Tag, that if present on an item, will hide the toast message when the item gets added to the inventory. */
-	UPROPERTY(Config, EditDefaultsOnly, Category=Traits, meta=(ConfigRestartRequired=true))
+	UPROPERTY(Config, EditDefaultsOnly, Category=Traits)
 	FGameplayTag HideToastTag;
 
 	/** Tag, that if present on an item, will prevent the item from being removed during RemoveAllInventoryItems. */
-	UPROPERTY(Config, EditDefaultsOnly, Category=Traits, meta=(ConfigRestartRequired=true))
+	UPROPERTY(Config, EditDefaultsOnly, Category=Traits)
 	FGameplayTag IgnoreRemoveAllTag;
 
 	/** Tag, that if present on an item, will count towards the inventory limit. */
-	UPROPERTY(Config, EditDefaultsOnly, Category=Traits, meta=(ConfigRestartRequired=true))
+	UPROPERTY(Config, EditDefaultsOnly, Category=Traits)
 	FGameplayTag CountTowardsLimitTag;
 
 	/** Tag, that if present on an item, will only allow a single stack of this item in the inventory list. */
-	UPROPERTY(Config, EditDefaultsOnly, Category=Traits, meta=(ConfigRestartRequired=true))
+	UPROPERTY(Config, EditDefaultsOnly, Category=Traits)
 	FGameplayTag SingleStackTag;
 
 	/** Tag, that if present on an item, will prevent the item from being saved in the inventory. (For test or runtime items) */
-	UPROPERTY(Config, EditDefaultsOnly, Category=Traits, meta=(ConfigRestartRequired=true))
+	UPROPERTY(Config, EditDefaultsOnly, Category=Traits)
 	FGameplayTag TransientTag;
 
-protected:
+	/** Tag, that if present on an item, will automatically combine with other stacks in the inventory (if any) to fill larger stacks first, before creating a new stack. */
+	UPROPERTY(Config, EditDefaultsOnly, Category=Traits)
+	FGameplayTag AutoCombineStacks;
+
 	/** List of item types registered in the itemization core system and asset manager. */
 	UPROPERTY(Config, EditDefaultsOnly, Category=ItemTypes)
 	TArray<FName> ItemTypes;

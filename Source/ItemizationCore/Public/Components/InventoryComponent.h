@@ -17,6 +17,7 @@
 class IInventoryItemInstanceInterface;
 class UItemDefinitionBase;
 class UInventoryItemInstance;
+
 /** Base class for all inventory managers. */
 UCLASS(Config=Game, ClassGroup=(Inventory), meta=(BlueprintSpawnableComponent), MinimalAPI, HideCategories=(ComponentTick, Activation, Tags))
 class UInventoryComponent
@@ -53,7 +54,7 @@ public:
 public:
 	UFUNCTION(BlueprintCallable, Category=Inventory)
 	TScriptInterface<IInventoryItemInstanceInterface> FindItemInstanceByHandle(const FInventoryItemHandle& ItemHandle) const;
-	
+
 	UFUNCTION(BlueprintCallable, Category=Inventory)
 	TArray<TScriptInterface<IInventoryItemInstanceInterface>> GetInventoryItems() const;
 
@@ -65,16 +66,17 @@ public:
 
 	/**
 	 * Attempts to give an item to the inventory.
-	 * Will be ignored if the actor is not auhoritative.
-	 * 
+	 * Will be ignored if the actor is not authoritative.
+	 *
 	 * @param ItemDefinition	The item definition to give.
 	 * @param StackCount		The number of items to give.
 	 * @param SourceObject		Optional source object giving the item.
+	 * @param GroupTag			Tag of the group to add the item to.
 	 * @param OutNumCouldNotAdd [OUT] The amount of items that could not be added to the inventory due to stack size limits or other restrictions.
 	 * @returns The handle to the item that was added, or an invalid handle if the item could not be added.
 	 */
-	UFUNCTION(BlueprintCallable, Category=Inventory, BlueprintAuthorityOnly)
-	FInventoryItemHandle TryGiveItem(UItemDefinitionBase* ItemDefinition, int32 StackCount, UObject* SourceObject, int32& OutNumCouldNotAdd);
+	UFUNCTION(BlueprintCallable, Category=Inventory, BlueprintAuthorityOnly, meta=(Categories="Inventory.Group"))
+	FInventoryItemHandle TryGiveItem(UItemDefinitionBase* ItemDefinition, int32 StackCount, UObject* SourceObject, FGameplayTag GroupTag, int32& OutNumCouldNotAdd);
 
 protected:
 	/** Creates the actual inventory actor storing it in the handle. */
@@ -84,13 +86,13 @@ protected:
 	/** Called right after the inventory was spawned or set by replication. */
 	MY_API virtual void OnInventoryCreated(AInventoryBase* Inventory);
 
-	MY_API virtual void InitInventoryGroups();
+	MY_API virtual void InitInventoryGroups(AInventoryBase* Inventory);
 
 public:
 	/** The inventory class to use for this inventory manager. */
 	UPROPERTY(Config, EditDefaultsOnly, BlueprintReadOnly, Category = InventoryConfig)
 	TSubclassOf<AInventoryBase> InventoryClass;
-	
+
 	/** Whether this component should automatically acquire an inventory object on begin-play. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = InventoryConfig)
 	uint8 bShouldAcquireInventoryOnInitialize:1;
@@ -98,7 +100,7 @@ public:
 	/** If true, the inventory will be attached to the owner of this component. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = InventoryConfig)
 	uint8 bAttachInventoryToOwner:1;
-	
+
 	/** Config data for this inventory manager. This should only be set through the editor as we currently don't support runtime changes. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = InventoryConfig)
 	TObjectPtr<class UInventoryConfigAsset> InventoryConfig;
@@ -114,11 +116,11 @@ public:
 	UFUNCTION()
 	MY_API virtual void OnRep_InventoryHandle();
 
-	UPROPERTY()
+	/*UPROPERTY()
 	TMap<FGameplayTag, FInventoryItemSlotGroup> ItemSlotGroups;
 
 	UPROPERTY(Replicated)
-	FInventorySlotContainer ItemSlotContainer;
+	FInventorySlotContainer ItemSlotContainer;*/
 };
 
 #undef MY_API

@@ -13,7 +13,7 @@ namespace Itemization::Tags
 	ITEMIZATION_TAG(TAG_ItemStat)
 	ITEMIZATION_TAG(TAG_ItemStat_MaxStackSize)
 	ITEMIZATION_TAG(TAG_ItemStat_CurrentStackSize)
-	
+
 	/** Item Traits */
 	ITEMIZATION_TAG(TAG_ItemTrait)
 	ITEMIZATION_TAG(TAG_ItemTrait_AllowEmptyFinalStack)
@@ -37,6 +37,9 @@ namespace Itemization::Tags
 	ITEMIZATION_TAG(TAG_ItemTrait_ShuffleTile)
 	ITEMIZATION_TAG(TAG_ItemTrait_SingleStack)
 	ITEMIZATION_TAG(TAG_ItemTrait_Transient)
+
+	/** Item Groups. */
+	ITEMIZATION_TAG(TAG_InventoryGroup_Inventory)
 }
 
 #undef ITEMIZATION_TAG

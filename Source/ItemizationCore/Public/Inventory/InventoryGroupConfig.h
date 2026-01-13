@@ -24,5 +24,5 @@ public:
 	uint32 NumItemColumns = 0;
 
 	UPROPERTY(EditAnywhere, Category = InventoryGroupConfig)
-	TMap<int32, FGameplayTagContainer> SlotTagMap;
+	TMap<uint32, FGameplayTagContainer> SlotTagMap;
 };

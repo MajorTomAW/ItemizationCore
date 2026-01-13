@@ -38,13 +38,19 @@ public:
 		FGameplayTagContainer* Context = nullptr;
 
 		/** The number of items to be removed (will always use the absolute value). */
-		int32 Delta = 0;
+		int32 NumRemove = 0;
 
-		
+
 		/** Helper function to check if any of the identifiers are valid. */
 		inline bool HasValidFilterFunc() const
 		{
 			return FilterFunc.IsSet();
+		}
+
+		/** Makes a debug string. */
+		inline FString GetDebugString() const
+		{
+			return FString::Printf(TEXT("(count: %d"),NumRemove);
 		}
 	};
 

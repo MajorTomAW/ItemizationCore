@@ -11,8 +11,7 @@
 /// FInventoryItemEntry
 
 FInventoryItemEntry::FInventoryItemEntry()
-	: SlotNumber(INDEX_NONE)
-	, LastObservedStackCount(INDEX_NONE)
+	: LastObservedStackCount(INDEX_NONE)
 	, bPendingRemove(false)
 {
 }
@@ -22,7 +21,6 @@ FInventoryItemEntry::FInventoryItemEntry(
 	UObject* InSourceObject,
 	int32 InCount)
 		: ItemDefinition(InItemDefinition)
-		, SlotNumber(INDEX_NONE)
 		, SourceObject(InSourceObject)
 		, LastObservedStackCount(InCount)
 		, bPendingRemove(false)
@@ -33,6 +31,11 @@ FInventoryItemEntry::FInventoryItemEntry(
 FString FInventoryItemEntry::GetDebugString() const
 {
 	return FString::Printf(TEXT("%s [%s]"), *GetNameSafe(GetItemInstance().GetObject()), *ItemHandle.ToString());
+}
+
+FString FInventoryItemEntry::GetItemName() const
+{
+	return GetNameSafe(ItemDefinition);
 }
 
 void FInventoryItemEntry::DebugPrintStats() const
@@ -52,7 +55,6 @@ void FInventoryItemEntry::Reset()
 	ItemDefinition = nullptr;
 	SourceObject = nullptr;
 	//ItemData.Reset();
-	SlotNumber = INDEX_NONE;
 	LastObservedStackCount = INDEX_NONE;
 	ItemHandle.Reset();
 	bPendingRemove = false;
@@ -79,7 +81,7 @@ void FInventoryItemEntry::SetReplicatedItemInstance(const TScriptInterface<IInve
 	checkf(NonReplicatedInstance == nullptr,
 		TEXT("You cannot set the replicated instance if a non-replicated instance [%s] already exists!"),
 		*GetNameSafe(NonReplicatedInstance));
-	
+
 	ReplicatedInstance = InInstance.GetObject();
 }
 
@@ -138,6 +140,27 @@ FInventoryItemContainer::FInventoryItemContainer()
 FInventoryItemContainer::FInventoryItemContainer(AInventoryBase* InOwningInventory)
 	: OwningInventory(InOwningInventory)
 {
+}
+
+FInventoryItemEntry* FInventoryItemContainer::FindItemEntryByHandle(const FInventoryItemHandle& ItemHandle) const
+{
+	for (auto& Entry : Items)
+	{
+		// Skip pending removals
+		if (Entry.bPendingRemove)
+		{
+			continue;
+		}
+
+		if (Entry != ItemHandle)
+		{
+			continue;
+		}
+
+		return const_cast<FInventoryItemEntry*>(&Entry);
+	}
+
+	return nullptr;
 }
 
 void FInventoryItemContainer::PreReplicatedRemove(const TArrayView<int32> RemovedIndices, int32 FinalSize)

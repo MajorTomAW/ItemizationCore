@@ -11,3 +11,5 @@ DECLARE_STATS_GROUP(TEXT("ItemizationCore"), STATGROUP_ItemizationCore, STATCAT_
 
 DECLARE_ITEMIZATION_STAT("Find Item Instance By Handle", FindItemInstanceByHandle);
 DECLARE_ITEMIZATION_STAT("Find Item Entry By Handle", FindItemEntryByHandle);
+DECLARE_ITEMIZATION_STAT("Find Item Instances In Group", FindItemInstancesInGroup);
+DECLARE_ITEMIZATION_STAT("Find Item Slot By Handle", FindItemSlotByHandle);

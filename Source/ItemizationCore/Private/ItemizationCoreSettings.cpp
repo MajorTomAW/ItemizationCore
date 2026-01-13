@@ -15,6 +15,7 @@ UItemizationCoreSettings::UItemizationCoreSettings(const FObjectInitializer& Obj
 	CountTowardsLimitTag = Itemization::Tags::TAG_ItemTrait_InventorySizeLimited;
 	SingleStackTag = Itemization::Tags::TAG_ItemTrait_SingleStack;
 	TransientTag = Itemization::Tags::TAG_ItemTrait_Transient;
+	AutoCombineStacks = Itemization::Tags::TAG_ItemTrait_AutoCombineStacks;
 
 	ItemTypes.Append({NAME_None, "ItemDefinition"});
 }

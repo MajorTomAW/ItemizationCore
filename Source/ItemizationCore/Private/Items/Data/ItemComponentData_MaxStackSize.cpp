@@ -1,4 +1,4 @@
-﻿// Copyright © 2025 Playton. All Rights Reserved.
+﻿// Author: Tom Werner (MajorT), 2025 November
 
 
 #include "Items/Data/ItemComponentData_MaxStackSize.h"
@@ -14,7 +14,14 @@ int32 FItemComponentData_MaxStackSize::GetMaxStackSize() const
 	return MaxStackSize.AsInteger();
 }
 
-void FItemComponentData_MaxStackSize::EvaluateItemEntry(FInventoryOp_ItemAction::FParams& Params) const
+void FItemComponentData_MaxStackSize::EvaluateItemEntry(FInventoryOp_GiveAction::FParams& Params) const
 {
 	Params.ItemEntry->SetStatValue(Itemization::Tags::TAG_ItemStat_MaxStackSize, GetMaxStackSize());
 }
+
+#if WITH_EDITOR
+FText FItemComponentData_MaxStackSize::GetDescription() const
+{
+	return FText::Format(INVTEXT("Max Stack Size: {0}"), GetMaxStackSize());
+}
+#endif

@@ -26,8 +26,10 @@ public:
 protected:
 	bool WrapStringAccordingToViewport(const FString& InString, FString& OutString, FGameplayDebuggerCanvasContext& CanvasContext, float ViewportWidth) const;
 	void DrawInventoryItems(FGameplayDebuggerCanvasContext& CanvasContext, const APlayerController* OwnerPC) const;
+	void DrawInventorySlots(FGameplayDebuggerCanvasContext& CanvasContext, const APlayerController* OwnerPC) const;
 
 	void OnShowItemHandlesToggle() { bShowItemHandles = !bShowItemHandles; }
+	void OnShowItemSlotsToggle() { bShowItemSlots = !bShowItemSlots; }
 	void OnShowItemStatesToggle() { bShowItemStates = !bShowItemStates; }
 	void OnShowInstanceToggle() { bShowInstance = !bShowInstance; }
 	void OnShowInventoryOpsToggle() { bShowInventoryOps = !bShowInventoryOps; }
@@ -52,9 +54,18 @@ protected:
 		};
 		TArray<FItemDebug> Items;
 
+		struct FSlotDebug
+		{
+			uint32 RowIndex = 0;
+			uint32 ColumnIndex = 0;
+			FString ItemName;
+			FString GroupName;
+		};
+		TArray<FSlotDebug> Slots;
+
 		struct FInventoryOpDebug
 		{
-			FString DisplayName;
+			FString DebugString;
 			double TimeRemaining = 0.0;
 		};
 		TArray<FInventoryOpDebug> Operations;
@@ -80,6 +91,7 @@ private:
 	bool bShowItemStates = false;
 	bool bShowInstance = true;
 	bool bShowInventoryOps = false;
+	bool bShowItemSlots = true;
 };
 
 #endif

@@ -13,7 +13,11 @@
 #define LOCTEXT_NAMESPACE "InventoryItemInstance"
 #endif
 
+#include "AbilitySystemComponent.h"
+#include "AbilitySystemGlobals.h"
+#include "ActiveGameplayEffectHandle.h"
 #include "ItemizationCoreLogChannels.h"
+#include "Abilities/GameplayAbility.h"
 #include "Inventory/InventoryBase.h"
 #include "Items/InventoryItemEntry.h"
 #include "Net/UnrealNetwork.h"
@@ -34,7 +38,7 @@ UWorld* UInventoryItemInstance::GetWorld() const
 		ITEMIZATION_ERROR_NET("cannot be called on a CDO of %s", *GetName());
 		return nullptr;
 	}
-	
+
 	return GetOuter()->GetWorld();
 }
 
@@ -112,7 +116,7 @@ void UInventoryItemInstance::RegisterReplicationFragments(
 	UE::Net::EFragmentRegistrationFlags RegistrationFlags)
 {
 	using namespace UE::Net;
-	
+
 	// Build description and allocate PropertyReplicationFragments for this UObject.
 	FReplicationFragmentUtil::CreateAndRegisterFragmentsForObject(this, Context, RegistrationFlags);
 }
@@ -197,10 +201,80 @@ UObject* UInventoryItemInstance::GetSourceObject() const
 {
 	if (const FInventoryItemEntry* ItemEntry = GetItemEntry())
 	{
-		return ItemEntry->SourceObject.Get();
+		return ItemEntry->GetSourceObject();
 	}
 
 	return nullptr;
+}
+
+FGameplayAbilitySpecHandle UInventoryItemInstance::TryGiveAbility(
+	TSubclassOf<UGameplayAbility> AbilityClass,
+	int32 Level,
+	int32 InputId,
+	FName SourceItemId)
+{
+	if (!IsValid(AbilityClass))
+	{
+		return FGameplayAbilitySpecHandle();
+	}
+
+	UAbilitySystemComponent* OwnerASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(GetOwningInventory()->GetOwner());
+	if (!ensureMsgf(IsValid(OwnerASC), TEXT("TryGiveAbility called on an inventory who's owner doesn't have an Ability System Component")))
+	{
+		return FGameplayAbilitySpecHandle();
+	}
+
+	FGameplayAbilitySpec Spec = {AbilityClass, Level, InputId, this};
+	FGameplayAbilitySpecHandle Handle = OwnerASC->GiveAbility(Spec);
+
+	if (Handle.IsValid())
+	{
+		GrantedHandlesContainer.AddGrantedAbilityHandle(Handle, EItemState::InInventory, SourceItemId);
+	}
+
+	return Handle;
+}
+
+void UInventoryItemInstance::TryClearAbilities(FName SourceItemId)
+{
+	if (SourceItemId == NAME_None)
+	{
+	}
+}
+
+FActiveGameplayEffectHandle UInventoryItemInstance::TryApplyGameplayEffect(
+	TSubclassOf<UGameplayEffect> EffectClass,
+	float Level,
+	FName SourceItemId)
+{
+	if (!IsValid(EffectClass))
+	{
+		return FActiveGameplayEffectHandle();
+	}
+
+	UAbilitySystemComponent* OwnerASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(GetOwningInventory()->GetOwner());
+	if (!ensureMsgf(IsValid(OwnerASC), TEXT("TryApplyGameplayEffect called on an inventory who's owner doesn't have an Ability System Component")))
+	{
+		return FActiveGameplayEffectHandle();
+	}
+
+	FActiveGameplayEffectHandle Result;
+	FGameplayEffectContextHandle ContextHandle = OwnerASC->MakeEffectContext();
+	ContextHandle.AddSourceObject(this);
+	ContextHandle.AddInstigator(OwnerASC->GetOwnerActor(), GetOwningInventory());
+
+	FGameplayEffectSpecHandle SpecHandle = OwnerASC->MakeOutgoingSpec(EffectClass, Level, ContextHandle);
+	if (SpecHandle.IsValid())
+	{
+		FActiveGameplayEffectHandle ActiveSpecHandle = OwnerASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+		if (ActiveSpecHandle.IsValid())
+		{
+			GrantedHandlesContainer.AddGrantedEffectHandle(ActiveSpecHandle, EItemState::InInventory, SourceItemId);
+			Result = ActiveSpecHandle;
+		}
+	}
+
+	return Result;
 }
 
 const FGameplayTagStackContainer* UInventoryItemInstance::GetOwnedGameplayTagStacks() const

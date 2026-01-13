@@ -7,11 +7,15 @@
 #include "ItemizationCoreStats.h"
 #include "ItemizationCoreSettings.h"
 #include "Components/GameFrameworkComponentManager.h"
+#include "Inventory/InventoryConfigAsset.h"
 #include "Inventory/Operations/InventoryOp.h"
-#include "ItemizationCore/Public/Inventory/Operations/InventoryOp_ItemAction.h"
+#include "Inventory/Operations/InventoryOp_PlaceItemInSlot.h"
+#include "ItemizationCore/Public/Inventory/Operations/InventoryOp_GiveAction.h"
 #include "Items/InventoryItemInstance.h"
 #include "Items/ItemDefinitionBase.h"
+#include "Items/Data/ItemComponentData_DisallowInventorySlot.h"
 #include "Items/Data/ItemComponentData_Traits.h"
+#include "Net/UnrealNetwork.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(InventoryBase)
 
@@ -27,6 +31,8 @@ namespace InventoryCVars
 
 AInventoryBase::AInventoryBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
+	, InventoryList(this)
+	, InventorySlots(this)
 {
 #if WITH_EDITORONLY_DATA
 	bIsSpatiallyLoaded = false;
@@ -40,7 +46,7 @@ AInventoryBase::AInventoryBase(const FObjectInitializer& ObjectInitializer)
 	bNetUseOwnerRelevancy = true;
 	bReplicateUsingRegisteredSubObjectList = true;
 	NetPriority = 3.0f;
-	
+
 	SetReplicatingMovement(false);
 	SetNetUpdateFrequency(10.0f);
 	SetMinNetUpdateFrequency(2.f);
@@ -70,19 +76,25 @@ void AInventoryBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	UGameFrameworkComponentManager::RemoveGameFrameworkComponentReceiver(this);
 
 	UWorld const* World = GetWorld();
-	
+
 	// Stop our timer that clears timed out or finished requests
 	if (IsValid(World))
 	{
 		World->GetTimerManager().ClearTimer(FetchOpValidnessTimerHandle);
 	}
-	
+
 	Super::EndPlay(EndPlayReason);
 }
 
 void AInventoryBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	FDoRepLifetimeParams SharedParms;
+	SharedParms.Condition = COND_AutonomousOnly;
+
+	DOREPLIFETIME_WITH_PARAMS(ThisClass, InventoryList, SharedParms)
+	DOREPLIFETIME_WITH_PARAMS(ThisClass, InventorySlots, SharedParms)
 }
 
 bool AInventoryBase::ReplicateSubobjects(UActorChannel* Channel, FOutBunch* Bunch, FReplicationFlags* RepFlags)
@@ -121,8 +133,8 @@ FInventoryItemEntry AInventoryBase::CreateItemEntry(const FCreateItemEntryParams
 	return FInventoryItemEntry(InParams.ItemDefinition.Get(), InParams.SourceObject.Get(), InParams.StackSize);
 }
 
-TInventoryOpPtr<FInventoryOp_ItemAction> AInventoryBase::GiveItem(
-	FInventoryOp_ItemAction::FParams&& Params,
+TInventoryOpPtr<FInventoryOp_GiveAction> AInventoryBase::GiveItem(
+	FInventoryOp_GiveAction::FParams&& Params,
 	const FCreateItemEntryParams& CreateItemParams)
 {
 	check(CreateItemParams.ItemDefinition.IsValid());
@@ -147,7 +159,7 @@ TInventoryOpPtr<FInventoryOp_ItemAction> AInventoryBase::GiveItem(
 	ITEMIZATION_LOG("Giving item '%s' [%s]\tSize: %d/%d\tSource: %s",
 		*GetNameSafe(Params.ItemEntry->ItemDefinition),
 		*Params.ItemEntry->ItemHandle.ToString(),
-		Params.Delta,
+		Params.NumGive,
 		MaxStackSize,
 		*GetNameSafe(Params.ItemEntry->SourceObject.Get()))
 
@@ -155,8 +167,8 @@ TInventoryOpPtr<FInventoryOp_ItemAction> AInventoryBase::GiveItem(
 #endif
 
 	// Create the operation
-	TInventoryOpRef<FInventoryOp_ItemAction> NewOp
-		= OpCache.MakeSharedOp<FInventoryOp_ItemAction>(MoveTemp(Params));
+	TInventoryOpRef<FInventoryOp_GiveAction> NewOp
+		= OpCache.MakeSharedOp<FInventoryOp_GiveAction>(MoveTemp(Params));
 
 	// Call the native version to actually give the item
 	NativeGiveItem(NewOp);
@@ -185,10 +197,10 @@ TInventoryOpPtr<FInventoryOp_RemoveItem> AInventoryBase::RemoveItem(FInventoryOp
 	return NewOp;
 }
 
-/*FInventoryItemHandle AInventoryBase::GiveItem(TInventoryOpRef<FInventoryOp_ItemAction> Action)
+/*FInventoryItemHandle AInventoryBase::GiveItem(TInventoryOpRef<FInventoryOp_GiveAction> Action)
 {
 	check(Action->Params.ItemEntry);
-	FInventoryOp_ItemAction::FParams& Params = Action->Params;
+	FInventoryOp_GiveAction::FParams& Params = Action->Params;
 
 	//@TODO: If locked, add to pending list
 
@@ -196,11 +208,11 @@ TInventoryOpPtr<FInventoryOp_RemoveItem> AInventoryBase::RemoveItem(FInventoryOp
 	EvaluateItemEntry(Params);
 	const int32 MaxStackSize = Params.ItemEntry->GetStatValue(Itemization::Tags::TAG_ItemStat_MaxStackSize);
 
-	
+
 	ITEMIZATION_LOG_NET("Giving item [%s] %s\tSize: %d/%d\tSource: %s",
 		*Params.ItemEntry->ItemHandle.ToString(),
 		*GetNameSafe(Params.ItemEntry->ItemDefinition),
-		Params.Delta,
+		Params.NumRemove,
 		MaxStackSize,
 		*GetNameSafe(Params.ItemEntry->SourceObject.Get()));
 	Params.ItemEntry->DebugPrintStats();
@@ -210,30 +222,19 @@ TInventoryOpPtr<FInventoryOp_RemoveItem> AInventoryBase::RemoveItem(FInventoryOp
 
 FInventoryItemEntry* AInventoryBase::FindItemEntryByHandle(const FInventoryItemHandle& ItemHandle) const
 {
-	SCOPE_CYCLE_COUNTER(STAT_FindItemEntryByHandle);
+	SCOPE_CYCLE_COUNTER(STAT_FindItemEntryByHandle)
+	return InventoryList.FindItemEntryByHandle(ItemHandle);
+}
 
-	for (const FInventoryItemEntry& ItemEntry : InventoryList.Items)
-	{
-		if (ItemEntry.ItemHandle != ItemHandle)
-		{
-			continue;
-		}
-
-		// Skip items that are pending removal
-		if (ItemEntry.bPendingRemove)
-		{
-			continue;
-		}
-
-		return &const_cast<FInventoryItemEntry&>(ItemEntry);
-	}
-
-	return nullptr;
+FInventoryItemSlot* AInventoryBase::FindItemSlotByHandle(const FInventorySlotHandle& SlotHandle) const
+{
+	SCOPE_CYCLE_COUNTER(STAT_FindItemSlotByHandle)
+	return InventorySlots.FindItemSlotByHandle(SlotHandle);
 }
 
 TScriptInterface<IInventoryItemInstanceInterface> AInventoryBase::FindItemInstanceByHandle(const FInventoryItemHandle& ItemHandle) const
 {
-	SCOPE_CYCLE_COUNTER(STAT_FindItemInstanceByHandle);
+	SCOPE_CYCLE_COUNTER(STAT_FindItemInstanceByHandle)
 
 	if (const FInventoryItemEntry* ItemEntry = FindItemEntryByHandle(ItemHandle))
 	{
@@ -243,12 +244,44 @@ TScriptInterface<IInventoryItemInstanceInterface> AInventoryBase::FindItemInstan
 	return nullptr;
 }
 
+TArray<TScriptInterface<IInventoryItemInstanceInterface>> AInventoryBase::GetItemInstancesInGroup(
+	const FGameplayTag& InGroup)
+{
+	SCOPE_CYCLE_COUNTER(STAT_FindItemInstancesInGroup)
+
+	TArray<TScriptInterface<IInventoryItemInstanceInterface>> Result;
+	TArray<FInventoryItemHandle> ItemHandlesInGroup = InventorySlots.FindItemHandlesInGroup(InGroup);
+
+	for (const auto& Handle : ItemHandlesInGroup)
+	{
+		if (const FInventoryItemEntry* ItemEntry = FindItemEntryByHandle(Handle))
+		{
+			Result.Add(ItemEntry->GetItemInstance());
+		}
+	}
+
+	return Result;
+}
+
 void AInventoryBase::OnRemoveItem(FInventoryItemEntry& ItemEntry)
 {
+	// Remove the item instance in case we created one
 	TScriptInterface<IInventoryItemInstanceInterface> Instance = ItemEntry.GetItemInstance();
 	if (IsValid(Instance.GetObject()))
 	{
 		Instance->OnRemovedFromInventory(ItemEntry, InventoryHandle);
+	}
+
+	// Notify the item data
+	if (ItemEntry.ItemDefinition)
+	{
+		for (const FItemComponentData* Data : ItemEntry.ItemDefinition->GetDataList())
+		{
+			if (Data != nullptr)
+			{
+				Data->OnItemRemoved(ItemEntry, InventoryHandle);
+			}
+		}
 	}
 
 	// Broadcast the change event
@@ -262,13 +295,14 @@ void AInventoryBase::OnGiveItem(FInventoryItemEntry& ItemEntry)
 		return;
 	}
 
+	// Check if we should create a new item instance
 	TScriptInterface<IInventoryItemInstanceInterface> Instance = ItemEntry.GetItemInstance();
-	if (Instance == nullptr)
+	if (Instance == nullptr && ItemEntry.ItemDefinition->WantsItemInstance())
 	{
 		// Create a new instance for this item entry in case we have a non-replicated one
 		const UObject* CDO =ItemEntry.ItemDefinition->GetItemInstanceClass()->GetDefaultObject();
 		const IInventoryItemInstanceInterface* InstanceInterface = Cast<IInventoryItemInstanceInterface>(CDO);
-		
+
 		if (InstanceInterface && ShouldCreateNewInstanceOfItem(ItemEntry) && !InstanceInterface->GetIsReplicated())
 		{
 			Instance = CreateNewInstanceOfItem(ItemEntry);
@@ -279,10 +313,24 @@ void AInventoryBase::OnGiveItem(FInventoryItemEntry& ItemEntry)
 			}
 		}
 	}
-	
+
+	// Notify the item data
+	for (const FItemComponentData* Data : ItemEntry.ItemDefinition->GetDataList())
+	{
+		if (Data != nullptr)
+		{
+			Data->OnItemGiven(ItemEntry, InventoryHandle);
+		}
+	}
+
 	// Broadcast the change event
 	NotifyItemAdded(ItemEntry, ItemEntry.LastObservedStackCount,
 		ItemEntry.GetStatValue(Itemization::Tags::TAG_ItemStat_CurrentStackSize));
+}
+
+FInventoryItemSlot* AInventoryBase::GetNextUnoccupiedItemSlot(const FGameplayTag& InGroupTag) const
+{
+	return InventorySlots.GetNextUnoccupiedItemSlotInGroup(InGroupTag);
 }
 
 TArray<TScriptInterface<IInventoryItemInstanceInterface>> AInventoryBase::GetAllItemInstancesAsInterfaces() const
@@ -305,34 +353,85 @@ TArray<TScriptInterface<IInventoryItemInstanceInterface>> AInventoryBase::GetAll
 	return Result;
 }
 
-void AInventoryBase::EvaluateItemEntry(FInventoryOp_ItemAction::FParams& Params)
+void AInventoryBase::InitializeInventorySlots(const UInventoryConfigAsset* InventoryConfig)
+{
+	if (!ensure(IsValid(InventoryConfig)))
+	{
+		return;
+	}
+
+	// Server can't create slots
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	for (const auto& Config : InventoryConfig->InventoryGroupConfigs)
+	{
+		if (!ensureMsgf(Config.GroupType.IsValid(), TEXT("Attempted to initialize an inventory with an inventory config asset that has an group config with an invalid group tag!!")))
+		{
+			continue;
+		}
+
+		uint32 SlotIndex = 0;
+		for (uint32 RowIdx = 0; RowIdx < Config.NumItemRows; ++RowIdx)
+		{
+			for (uint32 ColIdx = 0; ColIdx < Config.NumItemColumns; ++ColIdx)
+			{
+				SlotIndex++;
+
+				FInventorySlotHandle SlotHandle(RowIdx, ColIdx);
+
+				// Create the default item slot and assign its values
+				FInventoryItemSlot& NewSlot = InventorySlots.AddDefaulted_GetRef();
+				NewSlot.SetGroupTag(Config.GroupType);
+				NewSlot.SetSlotHandle(SlotHandle);
+
+				// See if we have slot tags
+				if (const FGameplayTagContainer* SlotTags = Config.SlotTagMap.Find(SlotIndex))
+				{
+					NewSlot.SetSlotTags(*SlotTags);
+
+					ITEMIZATION_LOG("Found slot tags for slot [%s: %s]: %s", *Config.GroupType.ToString(), *SlotHandle.ToString(), *SlotTags->ToString())
+				}
+
+				// Mark the item dirty so it replicates
+				InventorySlots.MarkItemDirty(NewSlot);
+			}
+		}
+	}
+}
+
+void AInventoryBase::EvaluateItemEntry(FInventoryOp_GiveAction::FParams& Params)
 {
 	if (!ensure(Params.ItemEntry->ItemDefinition))
 	{
 		return;
 	}
 
-	if (!ensure(Params.ItemEntry->GetStatValue(Itemization::Tags::TAG_ItemStat_CurrentStackSize)) ==
-		Params.Delta)
+	if (!ensure(Params.ItemEntry->GetStatValue(Itemization::Tags::TAG_ItemStat_CurrentStackSize) ==
+		Params.NumGive))
 	{
-		Params.Delta = Params.ItemEntry->GetStatValue(Itemization::Tags::TAG_ItemStat_CurrentStackSize);
+		Params.NumGive = Params.ItemEntry->GetStatValue(Itemization::Tags::TAG_ItemStat_CurrentStackSize);
 	}
-	
+
 	for (const FItemComponentData* ItemData : Params.ItemEntry->ItemDefinition->GetDataList())
 	{
 		ItemData->EvaluateItemEntry(Params);
 	}
 }
 
-void AInventoryBase::NativeGiveItem(const TInventoryOpRef<FInventoryOp_ItemAction> Op)
+void AInventoryBase::NativeGiveItem(const TInventoryOpRef<FInventoryOp_GiveAction>& Op)
 {
 	using namespace Itemization::Tags;
-	
-	FInventoryOp_ItemAction::FParams& Params = Op->Params;
-	FInventoryOp_ItemAction::FResult& Result = Op->Result;
+
+	FInventoryOp_GiveAction::FParams& Params = Op->Params;
+	FInventoryOp_GiveAction::FResult& Result = Op->Result;
+
+	const UItemDefinitionBase* ItemDefinition = Params.ItemEntry->GetItemDefinition();
 
 	// We assume that we couldn't add anything yet, as we will do this later underneath
-	Result.Excess = Params.Delta;
+	Result.Excess = Params.NumGive;
 
 	FInventoryItemHandle LastRelevantHandle = FInventoryItemHandle::InvalidHandle;
 
@@ -341,13 +440,13 @@ void AInventoryBase::NativeGiveItem(const TInventoryOpRef<FInventoryOp_ItemActio
 
 	// Try to find existing stacks first and fill them up
 	// Only after that, we will create a new stack if we can
-	if (MaxStackSize > 1)
+	if (MaxStackSize > 1 && CanAutoCombineStacks(ItemDefinition))
 	{
 		// Iterate over all items in the inventory and try to find a stack that we can merge with
 		for (FInventoryItemEntry& FoundEntry : InventoryList)
 		{
 			// Skip items that are not of the same type
-			if (FoundEntry.ItemDefinition != Params.ItemEntry->ItemDefinition)
+			if (FoundEntry.ItemDefinition != ItemDefinition)
 			{
 				continue;
 			}
@@ -372,7 +471,7 @@ void AInventoryBase::NativeGiveItem(const TInventoryOpRef<FInventoryOp_ItemActio
 					FoundEntry.GetStatValue(TAG_ItemStat_CurrentStackSize));
 
 				// Mark the item dirty for replication
-				MarkItemEntryDirty(FoundEntry, true);
+				MarkInventoryDirty(InventoryList, FoundEntry, true, !FoundEntry.GetItemInstance());
 			}
 		}
 	}
@@ -383,6 +482,21 @@ void AInventoryBase::NativeGiveItem(const TInventoryOpRef<FInventoryOp_ItemActio
 		// Sometimes we may not be able to create a new stack.
 		// E.g., if the item is restricted to a single stack and we already have one
 		if (!CanCreateNewStack(Params))
+		{
+			break;
+		}
+
+		// Try to find a slot that is still unoccupied
+		FInventoryItemSlot* SlotToUse = GetNextUnoccupiedItemSlot(Params.GroupTag);
+		if (SlotToUse == nullptr)
+		{
+			// No unoccupied slot was found, so we can't add the item
+			break;
+		}
+
+		// Check if the item can actually be placed in the found slot
+		// Maybe there is an item data that restricts it?
+		if (!CanPlaceItemInSlot(ItemDefinition, *SlotToUse))
 		{
 			break;
 		}
@@ -406,11 +520,14 @@ void AInventoryBase::NativeGiveItem(const TInventoryOpRef<FInventoryOp_ItemActio
 			CreateNewInstanceOfItem(NewEntry);
 		}
 
+		// Place the item inside the slot
+		PlaceItemInSlot(NewEntry, *SlotToUse);
+
 		// Initialize the just give item entry
 		OnGiveItem(NewEntry);
 
 		// Mark the item dirty for replication
-		MarkItemEntryDirty(NewEntry, true);
+		MarkInventoryDirty(InventoryList, NewEntry, true, !NewEntry.GetItemInstance());
 	}
 
 	// Make sure the excess doesn't go below 0
@@ -418,9 +535,9 @@ void AInventoryBase::NativeGiveItem(const TInventoryOpRef<FInventoryOp_ItemActio
 	Result.ItemHandle = LastRelevantHandle;
 }
 
-bool AInventoryBase::NativeRemoveItem(TInventoryOpRef<FInventoryOp_RemoveItem> Op, bool bRecursive)
+bool AInventoryBase::NativeRemoveItem(const TInventoryOpRef<FInventoryOp_RemoveItem>& Op, bool bRecursive)
 {
-	int32 NumToRemove = Op->Params.Delta != INDEX_NONE ? FMath::Abs(Op->Params.Delta) : TNumericLimits<int32>::Max();
+	int32 NumToRemove = Op->Params.NumRemove != INDEX_NONE ? FMath::Abs(Op->Params.NumRemove) : TNumericLimits<int32>::Max();
 
 	//@TODO: Check pending adds first
 
@@ -461,7 +578,7 @@ bool AInventoryBase::NativeRemoveItem(TInventoryOpRef<FInventoryOp_RemoveItem> O
 #endif
 
 		// Mark dirty for replication
-		MarkItemEntryDirty(ItemEntry, true);
+		MarkInventoryDirty(InventoryList, ItemEntry, true, !ItemEntry.GetItemInstance());
 
 		// If the stack size is now empty, remove the item from the inventory
 		if (ItemEntry.GetStatValue(TAG_ItemStat_CurrentStackSize) <= 0)
@@ -481,8 +598,58 @@ bool AInventoryBase::NativeRemoveItem(TInventoryOpRef<FInventoryOp_RemoveItem> O
 			}
 		}
 	}
-	
+
 	return bRemovedAny;
+}
+
+void AInventoryBase::NativePlaceItemInSlot(const TInventoryOpRef<FInventoryOp_PlaceItemInSlot>& Op)
+{
+	FInventoryOp_PlaceItemInSlot::FParams& Params = Op->Params;
+	FInventoryOp_PlaceItemInSlot::FResult& Result = Op->Result;
+
+	// Default to false
+	Result.bSuccess = false;
+
+	// Make sure we got valid params passed
+	if (Params.ItemEntry == nullptr)
+	{
+		return;
+	}
+
+	// Find the item slot we want to place in
+	FInventoryItemSlot* TargetSlot = Params.ResolveItemSlot(this);
+	if (TargetSlot == nullptr)
+	{
+		return;
+	}
+
+
+	// Assign the slot
+	TargetSlot->SetItemHandle(Params.ItemEntry->GetItemHandle());
+	Result.bSuccess = true;
+
+	// Mark dirty for replication
+	MarkInventoryDirty(InventorySlots, *Params.ItemEntry, true);
+}
+
+TInventoryOpPtr<FInventoryOp_PlaceItemInSlot> AInventoryBase::PlaceItemInSlot(FInventoryItemEntry& ItemEntry, FInventoryItemSlot& Slot)
+{
+	checkf(Slot.IsUnoccupied(), TEXT("You can't place an item in a slot that is already occupied!!"))
+	checkf(ItemEntry.GetItemHandle().IsValid(), TEXT("You can't place an item with an invalid handle (%s) inside a slot!!"), *Slot.GetItemHandle().ToString())
+
+	// Build the place item in slot params
+	FInventoryOp_PlaceItemInSlot::FParams Params;
+	Params.GroupTag = Slot.GetGroupTag();
+	Params.ItemEntry = &ItemEntry;
+	Params.TargetSlot = &Slot;
+
+	// Create the operation
+	TInventoryOpRef<FInventoryOp_PlaceItemInSlot> NewOp
+		= OpCache.MakeSharedOp<FInventoryOp_PlaceItemInSlot>(MoveTemp(Params));
+
+	// Perform the op
+	NativePlaceItemInSlot(NewOp);
+	return NewOp;
 }
 
 bool AInventoryBase::CanMergeItems(const FInventoryItemEntry& ThisEntry, const FInventoryItemEntry& OtherEntry) const
@@ -523,20 +690,54 @@ void AInventoryBase::MergeItems(const FInventoryItemEntry& ThisEntry, FInventory
 		FMath::Min(MaxStackSize, ThisStackSize + OtherStackSize));
 }
 
-bool AInventoryBase::CanCreateNewStack(const FInventoryOp_ItemAction::FParams& Params)
+bool AInventoryBase::CanCreateNewStack(const FInventoryOp_GiveAction::FParams& Params) const
 {
-	if (!IsValid(Params.ItemEntry->ItemDefinition))
+	if (!IsValid(Params.ItemEntry->GetItemDefinition()))
 	{
 		return false;
 	}
 
 	// If we only allow a single stack of the item, only return true if we don't already have one
-	if (FItemComponentData_Traits::HasTrait(Params.ItemEntry->ItemDefinition,
-		UItemizationCoreSettings::Get()->SingleStackTag))
+	if (Params.ItemEntry->GetItemDefinition()->HasTrait(UItemizationCoreSettings::Get()->SingleStackTag))
 	{
-		return InventoryList.Items.Contains(Params.ItemEntry->ItemDefinition) == false;
+		if (InventoryList.Items.Contains(Params.ItemEntry->ItemDefinition))
+		{
+			return false;
+		}
 	}
-	
+
+	return true;
+}
+
+bool AInventoryBase::CanAutoCombineStacks(const UItemDefinitionBase* ItemDefinition) const
+{
+	if (!IsValid(ItemDefinition))
+	{
+		return false;
+	}
+
+	// Check for the trait tag
+	return ItemDefinition->HasTrait(UItemizationCoreSettings::Get()->AutoCombineStacks);
+}
+
+bool AInventoryBase::CanPlaceItemInSlot(
+	const UItemDefinitionBase* ItemDefinition,
+	const FInventoryItemSlot& Slot) const
+{
+	if (!IsValid(ItemDefinition))
+	{
+		return false;
+	}
+
+	if (const FItemComponentData_DisallowInventorySlot* DisallowSlotData =
+		ItemDefinition->GetItemData<FItemComponentData_DisallowInventorySlot>())
+	{
+		if (Slot.HasAnySlotTags(DisallowSlotData->DisallowedSlotTags))
+		{
+			return false;
+		}
+	}
+
 	return true;
 }
 
@@ -609,6 +810,10 @@ void AInventoryBase::OnRep_InventoryList()
 	}
 }
 
+void AInventoryBase::OnRep_InventorySlots()
+{
+}
+
 void AInventoryBase::AddReplicatedItemInstance(const TScriptInterface<IInventoryItemInstanceInterface>& ItemInstance)
 {
 	TArray<TObjectPtr<UObject>>& ReplicatedInstances = GetAllItemInstances_Mutable();
@@ -636,7 +841,7 @@ void AInventoryBase::RemoveReplicatedItemInstance(const TScriptInterface<IInvent
 	}
 }
 
-void AInventoryBase::MarkItemEntryDirty(FInventoryItemEntry& ItemEntry, bool bWasAddOrChange)
+/*void AInventoryBase::MarkItemEntryDirty(FInventoryItemEntry& ItemEntry, bool bWasAddOrChange)
 {
 	if (Owner->HasAuthority())
 	{
@@ -655,11 +860,11 @@ void AInventoryBase::MarkItemEntryDirty(FInventoryItemEntry& ItemEntry, bool bWa
 		// Client-side, mark the entire array dirty so it will be replicated
 		InventoryList.MarkArrayDirty();
 	}
-}
+}*/
 
 void AInventoryBase::FetchOpValidness()
 {
-	TArray<uint32> RemoveIndices;
+	TArray<int32> RemoveIndices;
 	for (const auto& OpPtr : OpCache.GetPendingOperations())
 	{
 		if (!OpPtr->bPendingRemoval)

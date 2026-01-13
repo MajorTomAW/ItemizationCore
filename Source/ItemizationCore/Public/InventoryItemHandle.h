@@ -15,20 +15,20 @@ struct alignas(4) FInventoryItemHandle
 public:
 	enum
 	{
-		INVALID_HANDLE = 0x0, // Invalid handle value
+		INVALID_HANDLE = 0, // Invalid handle value
 	};
 
 	/** Generates a new uid and sets it to this handle. */
 	void GenerateNewUID();
 
 	/** Returns this handles raw value. */
-	uint32 Get() const
+	[[nodiscard]] uint32 Get() const
 	{
 		return UID;
 	}
 
 	/** Converts this handle to a string. */
-	FString ToString() const
+	[[nodiscard]] FString ToString() const
 	{
 		return IsValid() ? FString::Printf(TEXT("0x%08X|(%lu)"), UID, UID) : TEXT("NullHandle");
 	}
@@ -43,7 +43,6 @@ public:
 	inline bool IsValid() const
 	{
 		return UID != INVALID_HANDLE;
-		
 	}
 
 	static FInventoryItemHandle InvalidHandle;
@@ -83,7 +82,7 @@ public:
 	{
 		return IsValid();
 	}
-	
+
 	explicit operator uint32() const
 	{
 		return Get();

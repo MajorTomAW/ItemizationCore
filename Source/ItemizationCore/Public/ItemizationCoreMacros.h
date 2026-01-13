@@ -42,6 +42,7 @@
 	void AddUninitialized(int32 Count) { PropertyName.AddUninitialized(Count); } \
 	int32 AddDefaulted(int32 Count) { return PropertyName.AddDefaulted(Count); } \
 	int32 AddDefaulted() { return PropertyName.AddDefaulted(); } \
+	PropertyType& AddDefaulted_GetRef() { return PropertyName.AddDefaulted_GetRef(); } \
 	TArray<PropertyType>::TConstIterator CreateConstIterator() const { return PropertyName.CreateConstIterator(); } \
 	TArray<PropertyType>::TIterator CreateIterator() { return PropertyName.CreateIterator(); } \
 	friend TArray<PropertyType>::TConstIterator begin(const ClassName& Array) { return Array.CreateConstIterator(); } \

@@ -7,12 +7,17 @@
 
 #if WITH_EDITOR
 #include "UObject/ObjectSaveContext.h"
+#include "Misc/DataValidation.h"
 #endif
 
 #include "ItemizationCoreLogChannels.h"
 #include "Items/Data/ItemComponentData_Icon.h"
+#include "Items/Data/ItemComponentData_Traits.h"
+#include "UObject/AssetRegistryTagsContext.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(ItemDefinitionBase)
+
+#define LOCTEXT_NAMESPACE "ItemDefinition"
 
 UItemDefinitionBase::UItemDefinitionBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -34,10 +39,90 @@ FPrimaryAssetId UItemDefinitionBase::GetPrimaryAssetId() const
 			: GetFName());
 }
 
+void UItemDefinitionBase::GetAssetRegistryTags(FAssetRegistryTagsContext Context) const
+{
+	Super::GetAssetRegistryTags(Context);
+
+	Context.AddTag(FAssetRegistryTag(
+		FPrimaryAssetId::PrimaryAssetDisplayNameTag,
+		ItemName.ToString(),
+		FAssetRegistryTag::TT_Alphabetical));
+}
+
 #if WITH_EDITOR
 void UItemDefinitionBase::PostSaveRoot(FObjectPostSaveRootContext ObjectSaveContext)
 {
 	ItemAssetId = GetFName();
+	ItemId = GetPrimaryAssetId().ToString();
+}
+
+void UItemDefinitionBase::PostRename(UObject* OldOuter, const FName OldName)
+{
+	Super::PostRename(OldOuter, OldName);
+
+	ItemAssetId = GetFName();
+	ItemId = GetPrimaryAssetId().ToString();
+	MarkPackageDirty();
+}
+
+void UItemDefinitionBase::PostLoad()
+{
+	Super::PostLoad();
+
+	bool bShouldDirty = false;
+	if (ItemAssetId != GetFName())
+	{
+		ItemAssetId = GetFName();
+		bShouldDirty = true;
+	}
+
+	if (ItemId != GetPrimaryAssetId().ToString())
+	{
+		ItemId = GetPrimaryAssetId().ToString();
+		bShouldDirty = true;
+	}
+
+	if (bShouldDirty)
+	{
+		MarkPackageDirty();
+	}
+}
+
+EDataValidationResult UItemDefinitionBase::IsDataValid(class FDataValidationContext& Context) const
+{
+	EDataValidationResult Result = Super::IsDataValid(Context);
+
+	if (ItemAssetType.IsNone() || !GetPrimaryAssetId().PrimaryAssetType.IsValid())
+	{
+		Result = EDataValidationResult::Invalid;
+		Context.AddError(FText::Format(LOCTEXT("InvalidAssetType", "ItemDefinition '{0}' has an invalid PrimaryAssetType."),
+			FText::FromName(GetFName())));
+	}
+
+	if (ItemAssetId.IsNone() || GetPrimaryAssetId().PrimaryAssetName.IsNone())
+	{
+		Result = EDataValidationResult::Invalid;
+		Context.AddError(FText::Format(LOCTEXT("InvalidAssetName", "ItemDefinition '{0}' has an invalid PrimaryAssetName."),
+			FText::FromName(GetFName())));
+	}
+
+	// Validate the item data
+	for (const auto& Instance : DataList)
+	{
+		if (!Instance.Component.IsValid() || !Instance.Component.GetPtr<FItemComponentData>())
+		{
+			Result = EDataValidationResult::Invalid;
+			Context.AddError(FText::Format(LOCTEXT("InvalidItemData", "ItemDefinition '{0}' has an invalid item component data."),
+				FText::FromName(GetFName())));
+
+			continue;
+		}
+
+		const FItemComponentData* Data = Instance.Component.GetPtr<FItemComponentData>();
+		Result = CombineDataValidationResults(Result, Data->IsDataValid(Context));
+	}
+
+	return Result;
 }
 #endif
 
@@ -51,7 +136,7 @@ DEFINE_FUNCTION(UItemDefinitionBase::execK2_QueryItemData)
 {
 	// Get the result enum (out ref)
 	P_GET_ENUM_REF(EItemDataQueryResult, Result);
-	
+
 	// Get the item data type (in)
 	P_GET_OBJECT_REF(UScriptStruct, ItemDataType);
 
@@ -78,7 +163,7 @@ DEFINE_FUNCTION(UItemDefinitionBase::execK2_QueryItemData)
 
 			// Set the result to "Found"
 			Result = EItemDataQueryResult::Found;
-			
+
 			break;
 		}
 	}
@@ -113,6 +198,22 @@ const FItemComponentData* UItemDefinitionBase::GetItemData(const UScriptStruct* 
 	return nullptr;
 }
 
+
+FText UItemDefinitionBase::GetItemName(bool bUsePlural) const
+{
+	if (ItemName.IsEmpty())
+	{
+		return FText::FromString(GetNameSafe(this));
+	}
+
+	return FText::Format(INVTEXT("{0}{1}|plural(other=s)"), ItemName, bUsePlural ? 2 : 1);
+}
+
+FText UItemDefinitionBase::GetItemTypeName() const
+{
+	return FText::FromString(GetPrimaryAssetId().PrimaryAssetType.ToString());
+}
+
 FText UItemDefinitionBase::GetItemDescription(bool bFallbackToShort) const
 {
 	if (!ItemDescription.IsEmpty())
@@ -130,11 +231,17 @@ FText UItemDefinitionBase::GetItemDescription(bool bFallbackToShort) const
 
 FText UItemDefinitionBase::GetItemRichDescription() const
 {
-	//@TODO: Implement rich description logic, possibly using a data table or similar structure.
-	return FText::Format(
-		NSLOCTEXT("ItemDefinitionBase", "RichDescriptionFormat", "{0}\n\n{1}"),
-		ItemShortDescription,
-		ItemDescription);
+	return ItemShortDescription;
+}
+
+bool UItemDefinitionBase::HasTrait(const FGameplayTag& TraitToCheck) const
+{
+	if (const FItemComponentData_Traits* TraitsData = GetItemData<FItemComponentData_Traits>())
+	{
+		return TraitsData->HasTrait(TraitToCheck);
+	}
+
+	return false;
 }
 
 TArray<TSoftObjectPtr<const UScriptStruct>> UItemDefinitionBase::GetDisallowedDataTypes() const
@@ -151,6 +258,8 @@ TArray<TSoftObjectPtr<const UScriptStruct>> UItemDefinitionBase::GetDisallowedDa
 
 		DisallowedTypes.Add(Instance.Component.GetScriptStruct());
 	}
-	
+
 	return DisallowedTypes;
 }
+
+#undef LOCTEXT_NAMESPACE

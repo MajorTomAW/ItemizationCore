@@ -18,9 +18,9 @@ struct FItemComponentData_Traits : public FItemComponentData
 
 public:
 	FItemComponentData_Traits();
-	static bool HasTrait(const UItemDefinitionBase* InItemDefinition, const FGameplayTag& TraitToCheck);
+	bool HasTrait(const FGameplayTag& TraitToCheck) const;
 
-public:
+protected:
 	/** Traits that this item has. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=Traits, meta=(Categories="Item.Trait"))
 	FGameplayTagContainer Traits;
@@ -29,6 +29,7 @@ protected:
 	//~ Begin FItemComponentData Interface
 #if WITH_EDITOR
 	virtual EDataValidationResult IsDataValid(FDataValidationContext& Context) const override;
+	virtual FText GetDescription() const override;
 #endif
 	//~ End FItemComponentData Interface
 };

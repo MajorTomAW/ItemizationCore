@@ -17,10 +17,10 @@ UInventoryComponent::UInventoryComponent(const FObjectInitializer& ObjectInitial
 	: Super(ObjectInitializer)
 {
 	bAutoActivate = true;
-	
+
 	PrimaryComponentTick.bStartWithTickEnabled = false;
 	PrimaryComponentTick.bCanEverTick = true;
-	
+
 	SetIsReplicatedByDefault(true);
 	bReplicateUsingRegisteredSubObjectList = true;
 
@@ -56,8 +56,7 @@ void UInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 	SharedParams.bIsPushBased = true;
 
 	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, InventoryHandle, SharedParams);
-	DOREPLIFETIME(ThisClass, ItemSlotContainer);
-	
+
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 }
 
@@ -88,7 +87,7 @@ void UInventoryComponent::InitializeComponent()
 				*GetNameSafe(InventoryHandle.GetInventory()), *GetNameSafe(GetOwner()));
 			InventoryHandle.Reset();
 		}
-		
+
 		ITEMIZATION_VERBOSE_CONTEXT("Acquiring inventory on initialize for %s.",
 			*GetNameSafe(GetOwner()));
 
@@ -153,35 +152,13 @@ TArray<TScriptInterface<IInventoryItemInstanceInterface>> UInventoryComponent::G
 
 TArray<TScriptInterface<IInventoryItemInstanceInterface>> UInventoryComponent::GetInventoryItemsInGroup(FGameplayTag Group) const
 {
-	TArray<TScriptInterface<IInventoryItemInstanceInterface>> Result;
-
 	AInventoryBase* Inventory = GetInventory();
 	if (!IsValid(Inventory))
 	{
-		return Result;
-	}
-	
-	if (const FInventoryItemSlotGroup* SlotGroup = ItemSlotGroups.Find(Group))
-	{
-		check(SlotGroup->GroupTag.MatchesTagExact(Group));
-
-		for (const auto& SlotEntry : SlotGroup->SlotList)
-		{
-			// Skip empty slots
-			if (!SlotEntry.ItemHandle.IsValid())
-			{
-				continue;
-			}
-
-			// Try to find the item instance by handle
-			if (TScriptInterface<IInventoryItemInstanceInterface> ItemInstance = FindItemInstanceByHandle(SlotEntry.ItemHandle))
-			{
-				Result.Add(ItemInstance);
-			}
-		}
+		return {};
 	}
 
-	return Result;
+	return Inventory->GetItemInstancesInGroup(Group);
 }
 
 TArray<TScriptInterface<IInventoryItemInstanceInterface>> UInventoryComponent::GetInventoryItemsInGroups(TArray<FGameplayTag> Groups) const
@@ -201,7 +178,12 @@ TArray<TScriptInterface<IInventoryItemInstanceInterface>> UInventoryComponent::G
 	return Result;
 }
 
-FInventoryItemHandle UInventoryComponent::TryGiveItem(UItemDefinitionBase* ItemDefinition, int32 StackCount, UObject* SourceObject, int32& OutNumCouldNotAdd)
+FInventoryItemHandle UInventoryComponent::TryGiveItem(
+	UItemDefinitionBase* ItemDefinition,
+	int32 StackCount,
+	UObject* SourceObject,
+	FGameplayTag GroupTag,
+	int32& OutNumCouldNotAdd)
 {
 	FInventoryItemHandle Result = FInventoryItemHandle::InvalidHandle;
 
@@ -214,27 +196,29 @@ FInventoryItemHandle UInventoryComponent::TryGiveItem(UItemDefinitionBase* ItemD
 	}
 
 	// Build our give item operation parameters
-	FInventoryOp_ItemAction::FParams Params;
+	FInventoryOp_GiveAction::FParams Params;
 	Params.TargetInventory = Inventory;
-	Params.Delta = StackCount;
+	Params.NumGive = StackCount;
+	Params.GroupTag = GroupTag;
 
 	const AInventoryBase::FCreateItemEntryParams CreateItemParams { ItemDefinition, StackCount, SourceObject };
-	
-	// Actually give the item
-	const TInventoryOpPtr<FInventoryOp_ItemAction> Op = Inventory->GiveItem(MoveTemp(Params), CreateItemParams);
-	
-	Result = Op->Result.ItemHandle;
 
-	// Let us know about how many items could not be added
-	OutNumCouldNotAdd = Op->Result.Excess;
-	
+	// Actually give the item
+	if (const TInventoryOpPtr<FInventoryOp_GiveAction> Op = Inventory->GiveItem(MoveTemp(Params), CreateItemParams))
+	{
+		Result = Op->Result.ItemHandle;
+
+		// Let us know about how many items could not be added
+		OutNumCouldNotAdd = Op->Result.Excess;
+	}
+
 	return Result;
 }
 
 void UInventoryComponent::CreateInventory()
 {
 	UWorld* const World = GetWorld();
-	
+
 	const ENetMode NetMode = World->GetNetMode();
 	check(NetMode != NM_Client);
 
@@ -256,7 +240,7 @@ void UInventoryComponent::CreateInventory()
 		World->SpawnActor<AInventoryBase>(Class, SpawnInfo);
 
 	MARK_PROPERTY_DIRTY_FROM_NAME(ThisClass, InventoryHandle, this);
-	
+
 	InventoryHandle.AssignInventory(SpawnedInventory);
 	AuthorityInventory = SpawnedInventory;
 
@@ -266,10 +250,10 @@ void UInventoryComponent::CreateInventory()
 void UInventoryComponent::OnInventoryCreated(AInventoryBase* Inventory)
 {
 	Inventory->InventoryHandle = InventoryHandle;
-	
+
 	if (HasAuthority())
 	{
-		InitInventoryGroups();
+		InitInventoryGroups(Inventory);
 	}
 
 	ITEMIZATION_DISPLAY_NET("Inventory [%s] created for %s.",
@@ -291,21 +275,14 @@ void UInventoryComponent::OnInventoryCreated(AInventoryBase* Inventory)
 	}
 }
 
-void UInventoryComponent::InitInventoryGroups()
+void UInventoryComponent::InitInventoryGroups(AInventoryBase* Inventory)
 {
 	if (!IsValid(InventoryConfig))
 	{
 		return;
 	}
-	
-	for (const auto& Config : InventoryConfig->InventoryGroupConfigs)
-	{
-		// Should always be a valid group type
-		if (!ensure(Config.GroupType.IsValid()))
-		{
-			continue;
-		}
-	}
+
+	Inventory->InitializeInventorySlots(InventoryConfig);
 }
 
 

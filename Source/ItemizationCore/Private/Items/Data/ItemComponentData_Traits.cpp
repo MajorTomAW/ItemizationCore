@@ -3,25 +3,57 @@
 
 #include "Items/Data/ItemComponentData_Traits.h"
 
+#include "ItemizationCoreTags.h"
+#include "Inventory/Operations/InventoryOpCache.h"
 #include "Items/ItemDefinitionBase.h"
+
+#if WITH_EDITOR
+#include "Misc/DataValidation.h"
+
+#define LOCTEXT_NAMESPACE "ItemComponentData_OwnedGameplayTags"
+#endif
 
 FItemComponentData_Traits::FItemComponentData_Traits()
 {
+	Traits.AddTag(Itemization::Tags::TAG_ItemTrait_AutoCombineStacks);
+	Traits.AddTag(Itemization::Tags::TAG_ItemTrait_InventorySizeLimited);
 }
 
-bool FItemComponentData_Traits::HasTrait(const UItemDefinitionBase* InItemDefinition, const FGameplayTag& TraitToCheck)
+bool FItemComponentData_Traits::HasTrait(const FGameplayTag& TraitToCheck) const
 {
-	if (const FItemComponentData_Traits* TraitsData = InItemDefinition->GetItemData<FItemComponentData_Traits>())
-	{
-		return TraitsData->Traits.HasTagExact(TraitToCheck);
-	}
-
-	return false;
+	return Traits.HasTagExact(TraitToCheck);
 }
 
 #if WITH_EDITOR
 EDataValidationResult FItemComponentData_Traits::IsDataValid(FDataValidationContext& Context) const
 {
-	return FItemComponentData::IsDataValid(Context);
+	EDataValidationResult Result = FItemComponentData::IsDataValid(Context);
+
+	if (Traits.IsEmpty())
+	{
+		Context.AddWarning(LOCTEXT("EmptyGameplayTraits", "Traits is empty and has no function. Keeping it is just waste of performance."));
+	}
+
+	return Result;
 }
+
+FText FItemComponentData_Traits::GetDescription() const
+{
+	if (Traits.IsEmpty())
+	{
+		return FText::FromString(TEXT("None"));
+	}
+
+	FStringBuilderBase StringBuilder;
+	StringBuilder.Append(TEXT("Traits:"));
+
+	for (const auto& Tag : Traits)
+	{
+		StringBuilder.Append("\n\t" + Tag.GetTagName().ToString());
+	}
+
+	return FText::FromString(StringBuilder.ToString());
+}
+
+#undef LOCTEXT_NAMESPACE
 #endif

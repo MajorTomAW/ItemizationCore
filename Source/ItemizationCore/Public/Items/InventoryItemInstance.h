@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "IGameplayTagStackInterface.h"
+#include "IInventoryAbilityItemInstanceInterface.h"
 #include "IInventoryItemInstanceInterface.h"
 #include "InventoryHandle.h"
 #include "InventoryItemHandle.h"
@@ -23,11 +24,17 @@ struct FOutParmRec;
 
 #define MY_API ITEMIZATIONCORE_API
 
-/** Instance of an item in an inventory. Note that not every item entry has to have an instance. */
+/** Instance of an item in an inventory.
+ * However, not every item entry has to have an instance!
+ *
+ * [NOTE] You don't necessarily need to subclass this UInventoryItemInstance, any object that inherits the
+ * IInventoryItemInstanceInterface interface can act as one.
+ */
 UCLASS(BlueprintType, Blueprintable, MinimalAPI)
 class UInventoryItemInstance
 	: public UObject
 	, public IInventoryItemInstanceInterface
+	, public IInventoryAbilityItemInstanceInterface
 	, public IGameplayTagStackInterface
 {
 	GENERATED_BODY()
@@ -53,7 +60,7 @@ public:
 	//~ End UObject Interface
 
 	//~ Begin IInventoryItemInstanceInterface
-	
+
 	/** Called when this item instance is added to an inventory. */
 	MY_API virtual void OnAddedToInventory(FInventoryItemEntry& ItemEntry, const FInventoryHandle& InventoryHandle) override;
 
@@ -66,8 +73,15 @@ public:
 	/** Returns the source object that instigated the item instance creation. */
 	UFUNCTION(BlueprintCallable, Category = Item)
 	MY_API virtual UObject* GetSourceObject() const override;
-	
+
 	//~ End IInventoryItemInstanceInterface
+
+	//~ Begin IInventoryAbilityItemInstanceInterface
+	virtual FGameplayAbilitySpecHandle TryGiveAbility(TSubclassOf<UGameplayAbility> AbilityClass, int32 Level = 0, int32 InputId = INDEX_NONE, FName SourceItemId = NAME_None) override;
+	virtual void TryClearAbilities(FName SourceItemId) override;
+
+	virtual FActiveGameplayEffectHandle TryApplyGameplayEffect(TSubclassOf<UGameplayEffect> EffectClass, float Level, FName SourceItemId = NAME_None) override;
+	//~ End IInventoryAbilityItemInstanceInterface
 
 	//~ Begin IGameplayTagStackInterface
 	virtual const FGameplayTagStackContainer* GetOwnedGameplayTagStacks() const override;
@@ -94,6 +108,10 @@ protected:
 	/** Cached reference to the inventory that this item instance is part of. This should usually be the same as the outer. */
 	UPROPERTY(Transient)
 	FInventoryHandle OwningInventoryHandle;
+
+	/** Authority-only handles to granted abilities and effects. */
+	UPROPERTY(Transient)
+	FAbilityItemGrantedHandlesContainer GrantedHandlesContainer;
 
 	/** Handle to the item entry that this instance is associated with. */
 	mutable FInventoryItemHandle ItemHandle;
