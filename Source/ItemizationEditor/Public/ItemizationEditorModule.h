@@ -1,15 +1,13 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
-
 #include "Modules/ModuleManager.h"
 
-#define MY_API ITEMIZATIONEDITOR_API
-
+class UItemDefinitionBase;
+class IItemDefinitionApp;
 constexpr char ModuleName[] = "ItemizationEditor";
 
-class IItemDefinitionApplication;
-class UItemDefinitionBase;
+#define UE_API ITEMIZATIONEDITOR_API
 
 class IItemizationEditorModule
 	: public IModuleInterface
@@ -18,13 +16,13 @@ class IItemizationEditorModule
 {
 public:
 	/** Gets this module, will attempt to load and should always exist. */
-	MY_API static IItemizationEditorModule& GetModule()
+	UE_API static IItemizationEditorModule& GetModule()
 	{
 		return FModuleManager::LoadModuleChecked<IItemizationEditorModule>(ModuleName);
 	}
 
 	/** Gets this module, will not attempt to load and may not exist. */
-	MY_API static IItemizationEditorModule* GetModulePtr()
+	UE_API static IItemizationEditorModule* GetModulePtr()
 	{
 		return FModuleManager::GetModulePtr<IItemizationEditorModule>(ModuleName);
 	}
@@ -34,17 +32,17 @@ public:
 	 *
 	 * @returns True if the module is loaded and ready to use
 	 */
-	MY_API static bool IsAvailable()
+	UE_API static bool IsAvailable()
 	{
 		return FModuleManager::Get().IsModuleLoaded(ModuleName);
 	}
 
 public:
 	/** Creates an instance of the ItemDefinition editor. */
-	virtual TSharedRef<IItemDefinitionApplication> CreateItemDefinitionEditor(
+	virtual TSharedRef<IItemDefinitionApp> CreateItemDefinitionApp(
 		const EToolkitMode::Type Mode,
 		const TSharedPtr<IToolkitHost>& InitToolkitHost,
 		UItemDefinitionBase* ItemDefinition) = 0;
 };
 
-#undef MY_API
+#undef UE_API

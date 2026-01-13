@@ -1,12 +1,13 @@
-﻿// Author: Tom Werner (MajorT), 2025
+﻿// Author: Tom Werner (MajorT), 2025 November
 
 #pragma once
-#include "Toolkits/ItemDefinitionApplicationMode.h"
 
-class FItemDefinitionAppMode_Default : public FItemDefinitionApplicationMode
+#include "Toolkits/Modes/ItemDefinitionAppMode.h"
+
+class FItemDefinitionAppMode_Default : public FItemDefinitionAppMode
 {
 public:
-	FItemDefinitionAppMode_Default(const TSharedPtr<IItemDefinitionApplication>& InApp);
+	FItemDefinitionAppMode_Default(const TSharedPtr<IItemDefinitionApp>& InApp);
 
 	/** Name of this mode */
 	static const FName ModeId;

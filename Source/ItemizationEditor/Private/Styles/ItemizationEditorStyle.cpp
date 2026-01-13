@@ -1,14 +1,13 @@
-﻿// Author: Tom Werner (MajorT), 2025
+﻿// Author: Tom Werner (MajorT), 2025 November
 
 
 #include "ItemizationEditorStyle.h"
 
 #include "Interfaces/IPluginManager.h"
-#include "Styling/SlateStyleMacros.h"
 #include "Styling/SlateStyleRegistry.h"
+#include "Styling/SlateStyleMacros.h"
 
-TSharedPtr<FItemizationEditorStyle> FItemizationEditorStyle::Singleton;
-
+TSharedPtr<FItemizationEditorStyle> FItemizationEditorStyle::Instance = nullptr;
 
 FItemizationEditorStyle::FItemizationEditorStyle()
 	: FSlateStyleSet("ItemizationEditorStyle")
@@ -17,17 +16,48 @@ FItemizationEditorStyle::FItemizationEditorStyle()
 	const FString BaseDir = IPluginManager::Get().FindPlugin(TEXT("ItemizationCore"))->GetBaseDir();
 	FSlateStyleSet::SetContentRoot(FPaths::EngineContentDir() / TEXT("Editor/Slate"));
 	FSlateStyleSet::SetCoreContentRoot(FPaths::EngineContentDir() / TEXT("Slate"));
-	
+
+	const FScrollBarStyle ScrollBar = FAppStyle::GetWidgetStyle<FScrollBarStyle>("ScrollBar");
+	const FTextBlockStyle& NormalText = FAppStyle::Get().GetWidgetStyle<FTextBlockStyle>("NormalText");
+
+	// Item Data
+	{
+		Set("ItemComponent.Data.Border", new FSlateRoundedBoxBrush(FLinearColor::White, 6.f));
+		Set("ItemComponent.Data", new FSlateRoundedBoxBrush(FLinearColor::White, 4.f));
+	}
+
+	// Widgets
+	const FLinearColor SelectionColor = FColor(0, 0, 0, 32);
+	const FTableRowStyle& NormalTableRowStyle = FAppStyle::Get().GetWidgetStyle<FTableRowStyle>("TableView.Row");
+	Set("ItemData.Selection",
+		FTableRowStyle(NormalTableRowStyle)
+		.SetActiveBrush(CORE_IMAGE_BRUSH("Common/Selection", CoreStyleConstants::Icon8x8, SelectionColor))
+		.SetActiveHoveredBrush(CORE_IMAGE_BRUSH("Common/Selection", CoreStyleConstants::Icon8x8, SelectionColor))
+		.SetInactiveBrush(CORE_IMAGE_BRUSH("Common/Selection", CoreStyleConstants::Icon8x8, SelectionColor))
+		.SetInactiveHoveredBrush(CORE_IMAGE_BRUSH("Common/Selection", CoreStyleConstants::Icon8x8, SelectionColor))
+		.SetSelectorFocusedBrush(CORE_IMAGE_BRUSH("Common/Selection", CoreStyleConstants::Icon8x8, SelectionColor))
+	);
+
+	// Text
+	{
+		const FLinearColor ForegroundCol =  FStyleColors::Foreground.GetSpecifiedColor();
+
+		Set("ItemData.Description", FTextBlockStyle(NormalText)
+			.SetFont(DEFAULT_FONT("Regular", 10))
+			.SetColorAndOpacity(ForegroundCol.CopyWithNewOpacity(0.8f)));
+
+		Set("ItemData.Title", FTextBlockStyle(NormalText)
+			.SetFont(DEFAULT_FONT("Bold", 12))
+			.SetColorAndOpacity(FLinearColor(230.0f / 255.0f, 230.0f / 255.0f, 230.0f / 255.0f, 0.9f)));
+	}
+
 	// Colors
-	Set("Colors.ClassColor", FLinearColor(FColor::FromHex("#26601eff")));
+	Set("Colors.ItemDefinitionBase", FLinearColor(FColor::FromHex("#26601eff")));
 	Set("Colors.TabColorScale", FLinearColor(FColor::FromHex("#26601eaa")));
 
-	// Asset Icons
-	Set("ItemComponentData_Icon", new IMAGE_BRUSH_SVG("Starship/AssetIcons/Texture2D_64", CoreStyleConstants::Icon20x20));
-	
 	// Editor Icons
 	Set("Icons.Details", new IMAGE_BRUSH_SVG("Starship/Common/Details", CoreStyleConstants::Icon16x16));
-	Set("Icons.Components", new IMAGE_BRUSH_SVG("Starship/Common/Component", CoreStyleConstants::Icon16x16));
+	Set("Icons.DataList", new IMAGE_BRUSH_SVG("Starship/Common/Component", CoreStyleConstants::Icon16x16));
 	Set("Icons.Viewport", new IMAGE_BRUSH_SVG("Starship/Common/Viewports", CoreStyleConstants::Icon16x16));
 	Set("Icons.DisplayInfo", new IMAGE_BRUSH_SVG("Starship/Common/SaveThumbnail", CoreStyleConstants::Icon16x16));
 	Set("Icons.Placement", new IMAGE_BRUSH_SVG("Starship/Common/PlaceActors", CoreStyleConstants::Icon16x16));
@@ -39,31 +69,34 @@ FItemizationEditorStyle::FItemizationEditorStyle()
 	Set("Icons.Equipment", new IMAGE_BRUSH_SVG("Starship/AssetIcons/Pawn_16", CoreStyleConstants::Icon16x16));
 
 	FSlateStyleSet::SetContentRoot(FPaths::EngineContentDir() / TEXT("Slate"));
-	Set("Icons.Development", new IMAGE_BRUSH_SVG("Starship/Common/settings", CoreStyleConstants::Icon16x16));
-	
-	FSlateStyleRegistry::RegisterSlateStyle(*this);
+	Set("Icons.Settings", new IMAGE_BRUSH_SVG("Starship/Common/settings", CoreStyleConstants::Icon16x16));
 }
 
 FItemizationEditorStyle::~FItemizationEditorStyle()
 {
-	FSlateStyleRegistry::UnRegisterSlateStyle(*this);
+	Unregister();
 }
 
-TSharedRef<FItemizationEditorStyle> FItemizationEditorStyle::Get()
+FItemizationEditorStyle& FItemizationEditorStyle::Get()
 {
-	if (!Singleton.IsValid())
+	if (!Instance.IsValid())
 	{
-		Singleton = MakeShared<FItemizationEditorStyle>();
+		Instance = MakeShared<FItemizationEditorStyle>();
 	}
 
-	return Singleton.ToSharedRef();
+	return *Instance.Get();
 }
 
-void FItemizationEditorStyle::Shutdown()
+void FItemizationEditorStyle::Register()
 {
-	if (Singleton.IsValid())
+	FSlateStyleRegistry::RegisterSlateStyle(Get());
+}
+
+void FItemizationEditorStyle::Unregister()
+{
+	if (Instance.IsValid())
 	{
-		Singleton.Reset();
-		FSlateStyleRegistry::UnRegisterSlateStyle("ItemizationEditorStyle");
+		FSlateStyleRegistry::UnRegisterSlateStyle(*Instance);
+		Instance.Reset();
 	}
 }

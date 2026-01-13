@@ -1,17 +1,20 @@
-﻿// Author: Tom Werner (MajorT), 2025
+﻿// Author: Tom Werner (MajorT), 2025 November
 
 
-#include "AssetTools/AssetDefinition_ItemDefinitionBase.h"
+#include "AssetDefinition_ItemDefinitionBase.h"
 
 #include "ItemizationEditorModule.h"
 #include "Items/ItemDefinitionBase.h"
 #include "Styles/ItemizationEditorStyle.h"
 
-#define LOCTEXT_NAMESPACE "ItemizationEditor"
+
+#include UE_INLINE_GENERATED_CPP_BY_NAME(AssetDefinition_ItemDefinitionBase)
+
+#define LOCTEXT_NAMESPACE "AssetDefinition_ItemDefinitionBase"
 
 FText UAssetDefinition_ItemDefinitionBase::GetAssetDisplayName() const
 {
-	return LOCTEXT("ItemDefinitionAssetDisplayName", "Item Definition");
+	return LOCTEXT("DisplayName", "Item Definition");
 }
 
 FText UAssetDefinition_ItemDefinitionBase::GetAssetDisplayName(const FAssetData& AssetData) const
@@ -31,7 +34,7 @@ FText UAssetDefinition_ItemDefinitionBase::GetAssetDescription(const FAssetData&
 
 FLinearColor UAssetDefinition_ItemDefinitionBase::GetAssetColor() const
 {
-	return FLinearColor(FItemizationEditorStyle::Get()->GetColor("Colors.ClassColor"));
+	return FItemizationEditorStyle::Get().GetColor("Colors.ItemDefinitionBase");
 }
 
 TSoftClassPtr<> UAssetDefinition_ItemDefinitionBase::GetAssetClass() const
@@ -60,9 +63,8 @@ EAssetCommandResult UAssetDefinition_ItemDefinitionBase::OpenAssets(const FAsset
 	IItemizationEditorModule& ItemizationEditor = IItemizationEditorModule::GetModule();
 	for (UItemDefinitionBase* ItemDefinition : OpenArgs.LoadObjects<UItemDefinitionBase>())
 	{
-		ItemizationEditor.CreateItemDefinitionEditor(EToolkitMode::Standalone, OpenArgs.ToolkitHost, ItemDefinition);
+		ItemizationEditor.CreateItemDefinitionApp(EToolkitMode::Standalone, OpenArgs.ToolkitHost, ItemDefinition);
 	}
-	
 	return EAssetCommandResult::Handled;
 }
 
