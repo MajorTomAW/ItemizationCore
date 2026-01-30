@@ -12,6 +12,8 @@
 #include "InventoryItemSlot.generated.h"
 
 
+class ASlottableInventory;
+struct FInventoryItemEntry;
 struct FInventoryItemSlotGroup;
 class AInventoryBase;
 
@@ -79,18 +81,20 @@ public:
 		return ItemId;
 	}
 
+	/** Returns true if this slot is occupied. */
+	bool IsOccupied() const
+	{
+		return ItemId.IsValid();
+	}
+
 	/** Returns true if this slot is unoccupied. */
 	bool IsUnoccupied() const
 	{
-		// Count as unoccupied when no item Id is set
-		return !ItemId.IsValid();
+		return !IsOccupied();
 	}
 
 	/** Places an item in this slot. */
-	void SetItemId(const FInventoryItemId& NewItemId)
-	{
-		ItemId = NewItemId;
-	}
+	void AssignItemToSlot(const FInventoryItemEntry& ItemEntry);
 
 	/** Sets the group tag. */
 	void SetGroupTag(const FGameplayTag& NewGroupTag)
@@ -110,6 +114,24 @@ public:
 		SlotId = NewSlotId;
 	}
 
+	/** Marks this slot dirty. */
+	void MarkSlotDirty();
+
+	/** Attempts to resolve the item instance. */
+	void TryResolveItemInstance();
+
+	/** Returns the owning inventory of this item. */
+	ASlottableInventory* GetOwningInventory() const { return OwningInventory.Get(); }
+
+	/** Sets the owning inventory of this item. */
+	void SetOwningInventory(ASlottableInventory* InOwningInventory);
+
+	//~ Begin FFastArraySerializerItem Interface
+	void PreReplicatedRemove(const FInventorySlotList& InArraySerializer);
+	void PostReplicatedAdd(const FInventorySlotList& InArraySerializer);
+	void PostReplicatedChange(const FInventorySlotList& InArraySerializer);
+	//~ End FFastArraySerializerItem Interface
+
 private:
 	/** The slot group tag. */
 	UPROPERTY()
@@ -126,6 +148,14 @@ private:
 	/** The unique Id to the item in this slot. */
 	UPROPERTY()
 	FInventoryItemId ItemId;
+
+	/** Non replicated item instance that lives inside this slot. Gets resolved when item id is assigned. */
+	UPROPERTY(NotReplicated)
+	TWeakObjectPtr<UObject> ItemInstance;
+
+	/** Reference to the owning inventory. */
+	UPROPERTY(NotReplicated)
+	TWeakObjectPtr<ASlottableInventory> OwningInventory;
 
 public:
 	bool operator==(const FInventoryItemSlot& Other) const
@@ -170,8 +200,15 @@ struct FInventorySlotList : public FFastArraySerializer
 	GENERATED_BODY()
 
 public:
-	UE_API FInventorySlotList();
-	UE_API FInventorySlotList(AInventoryBase* InOwningInventory);
+	FInventorySlotList() = delete; // We always need an associated inventory
+	UE_API FInventorySlotList(ASlottableInventory* InOwningInventory);
+
+	/** Adds an item slot to this list. */
+	UE_API FInventoryItemSlot& AddSlotToList(FInventoryItemSlot ItemSlot);
+	UE_API FInventoryItemSlot& AddSlotToList_Defaulted();
+
+	/** Removes an item slot from this list. */
+	UE_API bool RemoveSlotFromList(FInventorySlotId SlotId);
 
 	/** Tries to find an FInventoryItemSlot by its Id. */
 	UE_API FInventoryItemSlot* FindItemSlotBySlotId(const FInventorySlotId& SlotId) const;
@@ -192,8 +229,11 @@ public:
 	/** Returns all item Ids. */
 	UE_API TArray<FInventoryItemId> GetAllItemIds() const;
 
-	/** Tries to find the next free item slop in the given group. */
-	UE_API FInventoryItemSlot* GetNextUnoccupiedItemSlotInGroup(const FGameplayTag& InGroupTag) const;
+	/** Tries to find the next free item slot in the given group. */
+	UE_API FInventoryItemSlot* GetNextUnoccupiedSlotInGroup(const FGameplayTag& InGroupTag) const;
+
+	/** Tries to find the next free item slot id in the given group. */
+	UE_API FInventorySlotId GetNextUnoccupiedSlotIdInGroup(const FGameplayTag& InGroupTag) const;
 
 	/** Finds all slot groups. */
 	UE_API TArray<FGameplayTag> GetAllItemGroups() const;
@@ -212,14 +252,14 @@ public:
 	/** TArray accessors for this container. */
 	CREATE_ARRAY_SERIALIZER_TARRAY_ACCESSORS(FInventorySlotList, FInventoryItemSlot, ItemSlots);
 
-public:
+private:
 	/** List of all item slots, should be preallocated at the inventory's creation. */
 	UPROPERTY()
 	TArray<FInventoryItemSlot> ItemSlots;
 
 	/** The Inventory class that owns this list. */
 	UPROPERTY(NotReplicated)
-	TObjectPtr<AInventoryBase> OwningInventory;
+	TObjectPtr<ASlottableInventory> OwningInventory;
 	
 	/** Faster lookup of item slots per inventory group. */
 	TMap<FGameplayTag, FInventoryItemSlotGroup> ItemSlotGroups;

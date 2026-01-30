@@ -9,7 +9,7 @@
 
 ASlottableInventory::ASlottableInventory(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
-	, SlotList(this)
+	, InventorySlotList(this)
 {
 }
 
@@ -30,6 +30,12 @@ TInventoryOpPtr<FInventoryOp_PlaceItemInSlot> ASlottableInventory::PlaceItemInSl
 		return nullptr;
 	}
 
+	if (Params.ResolveItemSlot(this) == nullptr)
+	{
+		ITEMIZATION_WARN("Unable to resolve item slot")
+		return nullptr;
+	}
+
 	ITEMIZATION_LOG("Placing item (%s) in slot (%s) in inventory (%s)",
 		*GetNameSafe(Params.ItemEntry->GetItemDefinition()),
 		*Params.ResolveItemSlot(this)->GetSlotId().ToString(),
@@ -43,6 +49,16 @@ TInventoryOpPtr<FInventoryOp_PlaceItemInSlot> ASlottableInventory::PlaceItemInSl
 	return NewOp;
 }
 
+FInventorySlotId ASlottableInventory::GetNextUnoccupiedSlotIdInGroup(FGameplayTag GroupTag) const
+{
+	return InventorySlotList.GetNextUnoccupiedSlotIdInGroup(GroupTag);
+}
+
+FInventoryItemSlot* ASlottableInventory::GetNextUnoccupiedSlotInGroup(const FGameplayTag& GroupTag) const
+{
+	return InventorySlotList.GetNextUnoccupiedSlotInGroup(GroupTag);
+}
+
 void ASlottableInventory::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -50,11 +66,48 @@ void ASlottableInventory::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 	FDoRepLifetimeParams SharedParams;
 	SharedParams.Condition = COND_ReplayOrOwner;
 
-	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, SlotList, SharedParams)
+	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, InventorySlotList, SharedParams)
+}
+
+void ASlottableInventory::MarkItemSlotDirty(
+	FInventoryItemSlot& ItemSlot,
+	bool bWasAddOrChange,
+	bool bForceMarkSlotDirty)
+{
+	if (HasAuthority())
+	{
+		if (bWasAddOrChange || bForceMarkSlotDirty)
+		{
+			InventorySlotList.MarkItemDirty(ItemSlot);
+		}
+		else
+		{
+			InventorySlotList.MarkArrayDirty();
+		}
+	}
+	else
+	{
+		// Client-side, mark the entire array dirty so it will be replicated
+		InventorySlotList.MarkArrayDirty();
+	}
 }
 
 void ASlottableInventory::ProcessPlaceItemInSlotOperation(
 	const TInventoryOpRef<FInventoryOp_PlaceItemInSlot>& PlaceItemInSlotOp)
 {
-	//@TODO
+	FInventoryOp_PlaceItemInSlot::FParams& Params = PlaceItemInSlotOp->Params;
+	FInventoryOp_PlaceItemInSlot::FResult& Result = PlaceItemInSlotOp->Result;
+
+	// Default to false, in case we early-out
+	Result.bSuccess = false;
+
+	// Resolve the item slot
+	FInventoryItemSlot* ItemSlot = Params.ResolveItemSlot(this);
+	check(ItemSlot)
+
+	//@TODO: Swap slots? Idk what to do here right now, will decide in future
+	ItemSlot->IsOccupied();
+
+	// Assign the slot
+	ItemSlot->AssignItemToSlot(*Params.ItemEntry);
 }
