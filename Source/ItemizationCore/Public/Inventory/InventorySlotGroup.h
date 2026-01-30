@@ -16,6 +16,6 @@ public:
 	UPROPERTY()
 	FGameplayTag GroupTag;
 
-	UPROPERTY()
-	TArray<FInventoryItemSlot> SlotList;
+	/** List of slot pointers. */
+	TArray<FInventoryItemSlot*> SlotList;
 };

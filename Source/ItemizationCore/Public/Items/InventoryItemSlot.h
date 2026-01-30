@@ -12,6 +12,7 @@
 #include "InventoryItemSlot.generated.h"
 
 
+struct FInventoryItemSlotGroup;
 class AInventoryBase;
 
 #define UE_API ITEMIZATIONCORE_API
@@ -173,16 +174,20 @@ public:
 	UE_API FInventorySlotList(AInventoryBase* InOwningInventory);
 
 	/** Tries to find an FInventoryItemSlot by its Id. */
-	UE_API FInventoryItemSlot* FindItemSlotById(const FInventorySlotId& SlotId) const;
+	UE_API FInventoryItemSlot* FindItemSlotBySlotId(const FInventorySlotId& SlotId) const;
 
 	/** Tries to find an FInventoryItemSlot by an item Id. */
-	UE_API FInventoryItemSlot* FindItemSlotById(const FInventoryItemId& ItemId) const;
+	UE_API FInventoryItemSlot* FindItemSlotByItemId(const FInventoryItemId& ItemId) const;
+
+	/** Tries to find an item slot group. */
+	UE_API FInventoryItemSlotGroup* FindItemSlotGroup(const FGameplayTag& GroupTag);
+	UE_API const FInventoryItemSlotGroup* FindItemSlotGroup(const FGameplayTag& GroupTag) const;
 
 	/** Returns all item slots in the given group. */
 	UE_API TArray<FInventoryItemSlot*> FindSlotsInGroup(const FGameplayTag& InGroupTag) const;
 
 	/** Returns all item Ids in the given group. */
-	UE_API TArray<FInventoryItemId> FindItemIdsInGroup(const FGameplayTag& InGroupTag) const;
+	UE_API TArray<FInventoryItemId> GetItemIdsInGroup(const FGameplayTag& InGroupTag) const;
 
 	/** Returns all item Ids. */
 	UE_API TArray<FInventoryItemId> GetAllItemIds() const;
@@ -194,6 +199,10 @@ public:
 	UE_API TArray<FGameplayTag> GetAllItemGroups() const;
 
 	//~ Begin FFastArraySerializer Interface
+	UE_API void PreReplicatedRemove(const TArrayView<int32> RemovedIndices, int32 FinalSize);
+	UE_API void PostReplicatedAdd(const TArrayView<int32> AddedIndices, int32 FinalSize);
+	UE_API void PostReplicatedChange(const TArrayView<int32> ChangedIndices, int32 FinalSize);
+	
 	bool NetDeltaSerialize(FNetDeltaSerializeInfo& DeltaParms)
 	{
 		return FFastArraySerializer::FastArrayDeltaSerialize<FInventoryItemSlot, FInventorySlotList>(ItemSlots, DeltaParms, *this);
@@ -213,7 +222,7 @@ public:
 	TObjectPtr<AInventoryBase> OwningInventory;
 	
 	/** Faster lookup of item slots per inventory group. */
-	TMap<FGameplayTag, TArray<FInventoryItemSlot>> ItemSlotLookupMap;
+	TMap<FGameplayTag, FInventoryItemSlotGroup> ItemSlotGroups;
 };
 
 template<>
