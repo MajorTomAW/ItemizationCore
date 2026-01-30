@@ -125,7 +125,7 @@ void FGameplayDebuggerCategory_Itemization::CollectData(APlayerController* Owner
 		// Find inventory system data
 		DataPack.Items.Reset();
 		DataPack.Inventory.OwnerActor = GetNameSafe(Inventory->GetOwner());
-		DataPack.Inventory.NumReplicatedItems = Inventory->GetAllItemInstances().Num();
+		DataPack.Inventory.NumReplicatedItems = Inventory->GetReplicatedItemInstances().Num();
 
 		int32 NumNonReplicatedItems = 0;
 		for (const FInventoryItemEntry& Item : Inventory->GetInventoryList())
@@ -152,7 +152,7 @@ void FGameplayDebuggerCategory_Itemization::CollectData(APlayerController* Owner
 		}
 
 		// Find items data
-		const FInventoryItemContainer& ItemContainer = Inventory->GetInventoryList();
+		const FInventoryItemList& ItemContainer = Inventory->GetInventoryList();
 		for (int32 i = 0; i < ItemContainer.Num(); i++)
 		{
 			const FInventoryItemEntry& ItemEntry = ItemContainer[i];
@@ -170,10 +170,10 @@ void FGameplayDebuggerCategory_Itemization::CollectData(APlayerController* Owner
 			ItemData.SourceObject.RemoveFromStart(DEFAULT_OBJECT_PREFIX);
 			ItemData.SourceObject.RemoveFromEnd(TEXT("_C"));
 
-			ItemData.StackSize = ItemEntry.GetStatValue(Itemization::Tags::TAG_ItemStat_CurrentStackSize);
-			ItemData.MaxStackSize = ItemEntry.GetStatValue(Itemization::Tags::TAG_ItemStat_MaxStackSize);
+			ItemData.StackSize = ItemEntry.GetStackSize();
+			ItemData.MaxStackSize = ItemEntry.GetItemDefinition()->GetMaxStackSize();
 
-			ItemData.UID = ItemEntry.GetItemHandle().Get();
+			ItemData.UID = ItemEntry.GetItemId().Get();
 
 			ItemData.bIsActive = false;
 			ItemData.bIsEquipped = false;
@@ -182,7 +182,8 @@ void FGameplayDebuggerCategory_Itemization::CollectData(APlayerController* Owner
 		}
 
 		// Find slots data
-		for (const auto& GroupTag : Inventory->GetSlotList().GetAllItemGroups())
+		//@TODO: Uncomment
+		/*for (const auto& GroupTag : Inventory->GetSlotList().GetAllItemGroups())
 		{
 			TArray<FInventoryItemSlot*> Slots = Inventory->GetSlotList().FindSlotsInGroup(GroupTag);
 			for (const FInventoryItemSlot* Slot : Slots)
@@ -193,7 +194,7 @@ void FGameplayDebuggerCategory_Itemization::CollectData(APlayerController* Owner
 				SlotData.ColumnIndex = Slot->GetColumnIndex();
 				SlotData.ItemName = TEXT("Empty");
 
-				if (const FInventoryItemEntry* ItemInSlot = ItemContainer.FindItemEntryByHandle(Slot->GetItemHandle()))
+				if (const FInventoryItemEntry* ItemInSlot = ItemContainer.FindItemEntryById(Slot->GetItemHandle()))
 				{
 					if (const UItemDefinitionBase* ItemDefinition = ItemInSlot->GetItemDefinition())
 					{
@@ -203,7 +204,7 @@ void FGameplayDebuggerCategory_Itemization::CollectData(APlayerController* Owner
 
 				DataPack.Slots.Add(SlotData);
 			}
-		}
+		}*/
 	}
 }
 
@@ -217,7 +218,7 @@ void FGameplayDebuggerCategory_Itemization::DrawData(
 		const TCHAR* Active = TEXT("{green}");
 		const TCHAR* Inactive = TEXT("{grey}");
 
-		CanvasContext.Printf(TEXT("Item UID [%s%s{white}]\tSlots [%s%s{white}]\tItem States [%s%s{white}]\tInstance [%s%s{white}]\tOperations [%s%s{white}]"),
+		CanvasContext.Printf(TEXT("Item Id [%s%s{white}]\tSlots [%s%s{white}]\tItem States [%s%s{white}]\tInstance [%s%s{white}]\tOperations [%s%s{white}]"),
 			bShowItemHandles ? Active : Inactive, *GetInputHandlerDescription(0),
 			bShowItemSlots ? Active : Inactive, *GetInputHandlerDescription(1),
 			bShowItemStates ? Active : Inactive, *GetInputHandlerDescription(2),
@@ -312,7 +313,7 @@ void FGameplayDebuggerCategory_Itemization::DrawInventoryItems(
 		CanvasContext.MeasureString(TEXT("stack: 00/00"), StackNameSize, TempSizeY);
 
 		if (bShowItemHandles)
-			CanvasContext.MeasureString(TEXT("UID: 000"), HandleNameSize, TempSizeY);
+			CanvasContext.MeasureString(TEXT("Id: 000"), HandleNameSize, TempSizeY);
 
 		if (bShowItemStates)
 			CanvasContext.MeasureString(TEXT("state: active"), HandleNameSize, TempSizeY);
@@ -358,7 +359,7 @@ void FGameplayDebuggerCategory_Itemization::DrawInventoryItems(
 	}
 
 	CanvasContext.CursorX = Padding;
-	CanvasContext.Printf(TEXT("Items"));
+	CanvasContext.Printf(TEXT("Items [%u]"), DataPack.Inventory.NumNonReplicatedItems + DataPack.Inventory.NumReplicatedItems);
 	CanvasContext.CursorX += Padding;
 
 	for (const FRepData::FItemDebug& Item : DataPack.Items)
@@ -382,7 +383,7 @@ void FGameplayDebuggerCategory_Itemization::DrawInventoryItems(
 
 		if (bShowItemHandles)
 		{
-			CanvasContext.PrintAt(CurX + ObjNameSize * IndentAmount + SourceNameSize + StackNameSize, CurY, FString::Printf(TEXT("{grey}UID: {white}%03d"), Item.UID));
+			CanvasContext.PrintAt(CurX + ObjNameSize * IndentAmount + SourceNameSize + StackNameSize, CurY, FString::Printf(TEXT("{grey}Id: {white}%03d"), Item.UID));
 			IndentAmount += 0.4f;
 		}
 

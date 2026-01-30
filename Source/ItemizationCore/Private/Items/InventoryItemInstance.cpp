@@ -189,21 +189,22 @@ EDataValidationResult UInventoryItemInstance::IsDataValid(FDataValidationContext
 }
 #endif
 
-void UInventoryItemInstance::OnAddedToInventory(FInventoryItemEntry& ItemEntry, const FInventoryHandle& InventoryHandle)
+void UInventoryItemInstance::OnAddedToInventory(FInventoryItemEntry& InItemEntry, const FInventoryHandle& InventoryHandle)
 {
+	ItemEntry = &InItemEntry;
 }
 
-void UInventoryItemInstance::OnRemovedFromInventory(FInventoryItemEntry& ItemEntry, const FInventoryHandle& InventoryHandle)
+void UInventoryItemInstance::OnRemovedFromInventory(FInventoryItemEntry& InItemEntry, const FInventoryHandle& InventoryHandle)
 {
 }
 
 UObject* UInventoryItemInstance::GetSourceObject() const
 {
-	if (const FInventoryItemEntry* ItemEntry = GetItemEntry())
+	if (ItemEntry != nullptr)
 	{
 		return ItemEntry->GetSourceObject();
 	}
-
+	
 	return nullptr;
 }
 
@@ -277,10 +278,6 @@ FActiveGameplayEffectHandle UInventoryItemInstance::TryApplyGameplayEffect(
 	return Result;
 }
 
-const FGameplayTagStackContainer* UInventoryItemInstance::GetOwnedGameplayTagStacks() const
-{
-	return GetItemEntry() ? &GetItemEntry()->GetStatCountMap() : nullptr;
-}
 
 ENetRole UInventoryItemInstance::GetLocalRole() const
 {
@@ -295,11 +292,7 @@ bool UInventoryItemInstance::HasAuthority() const
 
 FInventoryItemEntry* UInventoryItemInstance::GetItemEntry() const
 {
-	AInventoryBase const* MyInventory = GetOwningInventory();
-	check(MyInventory);
-
-	//return MyInventory->FindItemEntryFromHandle(ItemHandle); @TODO
-	return nullptr;
+	return ItemEntry;
 }
 
 AInventoryBase* UInventoryItemInstance::GetOwningInventory() const

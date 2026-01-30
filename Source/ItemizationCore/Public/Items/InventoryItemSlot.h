@@ -4,8 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
-#include "InventoryItemHandle.h"
-#include "InventorySlotHandle.h"
+#include "InventoryItemId.h"
+#include "InventorySlotId.h"
 #include "ItemizationCoreMacros.h"
 #include "Net/Serialization/FastArraySerializer.h"
 
@@ -21,7 +21,7 @@ USTRUCT(BlueprintType, MinimalAPI)
 struct FInventoryItemSlot : public FFastArraySerializerItem
 {
 	GENERATED_BODY()
-	friend struct FInventorySlotContainer;
+	friend struct FInventorySlotList;
 	friend class AInventoryBase;
 
 public:
@@ -54,41 +54,41 @@ public:
 		return SlotTags.HasAnyExact(SlotTagsToCheck);
 	}
 
-	/** Returns the slot handle of this slot. */
-	const FInventorySlotHandle& GetSlotHandle() const
+	/** Returns the slot Id of this slot. */
+	const FInventorySlotId& GetSlotId() const
 	{
-		return SlotHandle;
+		return SlotId;
 	}
 
 	/** Returns the row index of this slot. */
 	uint32 GetRowIndex() const
 	{
-		return SlotHandle.GetRowIndex();
+		return SlotId.GetRowIndex();
 	}
 
 	/** Returns the column index of this slot. */
 	uint32 GetColumnIndex() const
 	{
-		return SlotHandle.GetColumnIndex();
+		return SlotId.GetColumnIndex();
 	}
 
-	/** Returns the item handle (can often be an invalid handle). */
-	const FInventoryItemHandle& GetItemHandle() const
+	/** Returns the item Id (can often be an invalid Id). */
+	const FInventoryItemId& GetItemId() const
 	{
-		return ItemHandle;
+		return ItemId;
 	}
 
 	/** Returns true if this slot is unoccupied. */
 	bool IsUnoccupied() const
 	{
-		// Count as unoccupied when no item handle is set
-		return !ItemHandle.IsValid();
+		// Count as unoccupied when no item Id is set
+		return !ItemId.IsValid();
 	}
 
 	/** Places an item in this slot. */
-	void SetItemHandle(const FInventoryItemHandle& NewItemHandle)
+	void SetItemId(const FInventoryItemId& NewItemId)
 	{
-		ItemHandle = NewItemHandle;
+		ItemId = NewItemId;
 	}
 
 	/** Sets the group tag. */
@@ -103,10 +103,10 @@ public:
 		SlotTags = NewSlotTags;
 	}
 
-	/** Sets the slot handle. */
-	void SetSlotHandle(const FInventorySlotHandle& NewSlotHandle)
+	/** Sets the slot Id. */
+	void SetSlotId(const FInventorySlotId& NewSlotId)
 	{
-		SlotHandle = NewSlotHandle;
+		SlotId = NewSlotId;
 	}
 
 private:
@@ -118,33 +118,33 @@ private:
 	UPROPERTY()
 	FGameplayTagContainer SlotTags;
 
-	/** The unique handle to this slot for outside references. */
+	/** The unique Id to this slot for outside references. */
 	UPROPERTY()
-	FInventorySlotHandle SlotHandle;
+	FInventorySlotId SlotId;
 
-	/** The unique handle to the item in this slot. */
+	/** The unique Id to the item in this slot. */
 	UPROPERTY()
-	FInventoryItemHandle ItemHandle;
+	FInventoryItemId ItemId;
 
 public:
 	bool operator==(const FInventoryItemSlot& Other) const
 	{
-		return SlotHandle == Other.SlotHandle;
+		return SlotId == Other.SlotId;
 	}
 
-	bool operator==(const FInventorySlotHandle& OtherSlotHandle) const
+	bool operator==(const FInventorySlotId& OtherSlotId) const
 	{
-		return SlotHandle == OtherSlotHandle;
+		return SlotId == OtherSlotId;
 	}
 
-	bool operator==(const FInventoryItemHandle& OtherItemHandle) const
+	bool operator==(const FInventoryItemId& OtherItemId) const
 	{
-		return ItemHandle == OtherItemHandle;
+		return ItemId == OtherItemId;
 	}
 
 	bool operator<(const FInventoryItemSlot& Other) const
 	{
-		return SlotHandle < Other.SlotHandle;
+		return SlotId < Other.SlotId;
 	}
 	bool operator>(const FInventoryItemSlot& Other) const
 	{
@@ -164,28 +164,28 @@ struct TStructOpsTypeTraits<FInventoryItemSlot> : TStructOpsTypeTraitsBase2<FInv
 
 /** Fast array serializer for a list of item slots in an inventory. */
 USTRUCT(BlueprintType, MinimalAPI)
-struct FInventorySlotContainer : public FFastArraySerializer
+struct FInventorySlotList : public FFastArraySerializer
 {
 	GENERATED_BODY()
 
 public:
-	UE_API FInventorySlotContainer();
-	UE_API FInventorySlotContainer(AInventoryBase* InOwningInventory);
+	UE_API FInventorySlotList();
+	UE_API FInventorySlotList(AInventoryBase* InOwningInventory);
 
-	/** Tries to find an FInventoryItemSlot by its handle. */
-	UE_API FInventoryItemSlot* FindItemSlotByHandle(const FInventorySlotHandle& SlotHandle) const;
+	/** Tries to find an FInventoryItemSlot by its Id. */
+	UE_API FInventoryItemSlot* FindItemSlotById(const FInventorySlotId& SlotId) const;
 
-	/** Tries to find an FInventoryItemSlot by an item handle. */
-	UE_API FInventoryItemSlot* FindItemSlotByHandle(const FInventoryItemHandle& ItemHandle) const;
+	/** Tries to find an FInventoryItemSlot by an item Id. */
+	UE_API FInventoryItemSlot* FindItemSlotById(const FInventoryItemId& ItemId) const;
 
 	/** Returns all item slots in the given group. */
 	UE_API TArray<FInventoryItemSlot*> FindSlotsInGroup(const FGameplayTag& InGroupTag) const;
 
-	/** Returns all item handles in the given group. */
-	UE_API TArray<FInventoryItemHandle> FindItemHandlesInGroup(const FGameplayTag& InGroupTag) const;
+	/** Returns all item Ids in the given group. */
+	UE_API TArray<FInventoryItemId> FindItemIdsInGroup(const FGameplayTag& InGroupTag) const;
 
-	/** Returns all item handles. */
-	UE_API TArray<FInventoryItemHandle> GetAllItemHandles() const;
+	/** Returns all item Ids. */
+	UE_API TArray<FInventoryItemId> GetAllItemIds() const;
 
 	/** Tries to find the next free item slop in the given group. */
 	UE_API FInventoryItemSlot* GetNextUnoccupiedItemSlotInGroup(const FGameplayTag& InGroupTag) const;
@@ -196,12 +196,12 @@ public:
 	//~ Begin FFastArraySerializer Interface
 	bool NetDeltaSerialize(FNetDeltaSerializeInfo& DeltaParms)
 	{
-		return FFastArraySerializer::FastArrayDeltaSerialize<FInventoryItemSlot, FInventorySlotContainer>(ItemSlots, DeltaParms, *this);
+		return FFastArraySerializer::FastArrayDeltaSerialize<FInventoryItemSlot, FInventorySlotList>(ItemSlots, DeltaParms, *this);
 	}
 	//~ End FFastArraySerializer Interface
 
 	/** TArray accessors for this container. */
-	CREATE_ARRAY_SERIALIZER_TARRAY_ACCESSORS(FInventorySlotContainer, FInventoryItemSlot, ItemSlots);
+	CREATE_ARRAY_SERIALIZER_TARRAY_ACCESSORS(FInventorySlotList, FInventoryItemSlot, ItemSlots);
 
 public:
 	/** List of all item slots, should be preallocated at the inventory's creation. */
@@ -211,15 +211,13 @@ public:
 	/** The Inventory class that owns this list. */
 	UPROPERTY(NotReplicated)
 	TObjectPtr<AInventoryBase> OwningInventory;
-
-	//@TODO: Want to find a way not having to query all group tags just to find all slots in a group
-	/*/** Faster lookup of item slots per inventory group. #1#
-	UPROPERTY(NotReplicated)
-	TMap<FGameplayTag, TArray<FInventoryItemSlot>> ItemSlotLookupMap;*/
+	
+	/** Faster lookup of item slots per inventory group. */
+	TMap<FGameplayTag, TArray<FInventoryItemSlot>> ItemSlotLookupMap;
 };
 
 template<>
-struct TStructOpsTypeTraits<FInventorySlotContainer> : TStructOpsTypeTraitsBase2<FInventorySlotContainer>
+struct TStructOpsTypeTraits<FInventorySlotList> : TStructOpsTypeTraitsBase2<FInventorySlotList>
 {
 	enum
 	{

@@ -28,8 +28,8 @@ class TInventoryOp
 	, public TSharedFromThis<TInventoryOp<OpType>>
 {
 public:
-	using ParamsType = typename OpType::FParams;
-	using ResultType = typename OpType::FResult;
+	using ParamsType = OpType::FParams;
+	using ResultType = OpType::FResult;
 
 	TInventoryOp(ParamsType&& InParams)
 		: Params(MoveTemp(InParams))

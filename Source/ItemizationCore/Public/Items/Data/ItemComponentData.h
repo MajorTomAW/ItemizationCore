@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Inventory/Operations/InventoryOp_GiveAction.h"
+#include "Inventory/Operations/InventoryOp_GiveItem.h"
 #include "StructUtils/InstancedStruct.h"
 
 #include "ItemComponentData.generated.h"
@@ -44,10 +44,10 @@ public:
 #endif
 
 	/**
-	 * Called before an Item Entry is added or removed from an inventory.
-	 * This is essential to fill in any important data in the un-initialized Item Entry.
+	 * Called right after a new item entry was created.
+	 * Can be used to alter the item entry before its used.
 	 */
-	virtual void EvaluateItemEntry(FInventoryOp_GiveAction::FParams& Params) const;
+	virtual void PostItemEntryCreated(FInventoryItemEntry& ItemEntry) const;
 
 	/**
 	 * Checks if two item entries can be merged into a single stack.

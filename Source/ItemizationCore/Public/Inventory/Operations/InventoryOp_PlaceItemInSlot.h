@@ -3,8 +3,8 @@
 #pragma once
 
 #include "GameplayTagContainer.h"
-#include "InventoryItemHandle.h"
-#include "InventorySlotHandle.h"
+#include "InventoryItemId.h"
+#include "InventorySlotId.h"
 #include "InventoryTrackableOp.h"
 #include "ItemizationCoreTags.h"
 
@@ -24,7 +24,7 @@ public:
 		FGameplayTag GroupTag = Itemization::Tags::TAG_InventoryGroup_Inventory;
 
 		/** The specific slot this item wants to be placed in. DON'T READ, JUST WRITE! USE ResolveItemSlot() instead. */
-		FInventorySlotHandle TargetSlotHandle;
+		FInventorySlotId TargetSlotHandle;
 
 		/** The raw item slot. DON'T READ, JUST WRITE! USE ResolveItemSlot() instead.*/
 		FInventoryItemSlot* TargetSlot = nullptr;
@@ -35,7 +35,7 @@ public:
 		FString GetDebugString() const
 		{
 			return FString::Printf(TEXT("(item: %s) -> (slot: %s)"),
-				*ItemEntry->GetItemName(),
+				*ItemEntry->GetItemName().ToString(),
 				*TargetSlot->GetDebugString());
 		}
 	};
@@ -49,7 +49,10 @@ public:
 
 inline FInventoryItemSlot* FInventoryOp_PlaceItemInSlot::FParams::ResolveItemSlot(AInventoryBase* TargetInventory) const
 {
-	if (!IsValid(TargetInventory))
+	//@TODO: Uncomment
+	unimplemented()
+	return nullptr;
+	/*if (!IsValid(TargetInventory))
 	{
 		return nullptr;
 	}
@@ -64,5 +67,5 @@ inline FInventoryItemSlot* FInventoryOp_PlaceItemInSlot::FParams::ResolveItemSlo
 		return nullptr;
 	}
 
-	return TargetInventory->FindItemSlotByHandle(TargetSlotHandle);
+	return TargetInventory->FindItemSlotByHandle(TargetSlotHandle);*/
 }

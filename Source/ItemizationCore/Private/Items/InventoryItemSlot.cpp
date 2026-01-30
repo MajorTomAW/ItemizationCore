@@ -8,21 +8,21 @@ FString FInventoryItemSlot::GetDebugString() const
 	return FString::Printf(TEXT("r: %u, c: %u"), GetRowIndex(), GetColumnIndex());
 }
 
-FInventorySlotContainer::FInventorySlotContainer()
+FInventorySlotList::FInventorySlotList()
 	: OwningInventory(nullptr)
 {
 }
 
-FInventorySlotContainer::FInventorySlotContainer(AInventoryBase* InOwningInventory)
+FInventorySlotList::FInventorySlotList(AInventoryBase* InOwningInventory)
 	: OwningInventory(InOwningInventory)
 {
 }
 
-FInventoryItemSlot* FInventorySlotContainer::FindItemSlotByHandle(const FInventorySlotHandle& SlotHandle) const
+FInventoryItemSlot* FInventorySlotList::FindItemSlotById(const FInventorySlotId& SlotId) const
 {
 	for (auto& Slot : ItemSlots)
 	{
-		if (Slot != SlotHandle)
+		if (Slot != SlotId)
 		{
 			continue;
 		}
@@ -33,11 +33,11 @@ FInventoryItemSlot* FInventorySlotContainer::FindItemSlotByHandle(const FInvento
 	return nullptr;
 }
 
-FInventoryItemSlot* FInventorySlotContainer::FindItemSlotByHandle(const FInventoryItemHandle& ItemHandle) const
+FInventoryItemSlot* FInventorySlotList::FindItemSlotById(const FInventoryItemId& ItemId) const
 {
 	for (auto& Slot : ItemSlots)
 	{
-		if (Slot != ItemHandle)
+		if (Slot != ItemId)
 		{
 			continue;
 		}
@@ -48,7 +48,7 @@ FInventoryItemSlot* FInventorySlotContainer::FindItemSlotByHandle(const FInvento
 	return nullptr;
 }
 
-TArray<FInventoryItemSlot*> FInventorySlotContainer::FindSlotsInGroup(const FGameplayTag& InGroupTag) const
+TArray<FInventoryItemSlot*> FInventorySlotList::FindSlotsInGroup(const FGameplayTag& InGroupTag) const
 {
 	TArray<FInventoryItemSlot*> Slots;
 
@@ -65,9 +65,9 @@ TArray<FInventoryItemSlot*> FInventorySlotContainer::FindSlotsInGroup(const FGam
 	return Slots;
 }
 
-TArray<FInventoryItemHandle> FInventorySlotContainer::FindItemHandlesInGroup(const FGameplayTag& InGroupTag) const
+TArray<FInventoryItemId> FInventorySlotList::FindItemIdsInGroup(const FGameplayTag& InGroupTag) const
 {
-	TArray<FInventoryItemHandle> ItemHandles;
+	TArray<FInventoryItemId> ItemIds;
 
 	for (auto& Slot : ItemSlots)
 	{
@@ -76,35 +76,35 @@ TArray<FInventoryItemHandle> FInventorySlotContainer::FindItemHandlesInGroup(con
 			continue;
 		}
 
-		if (!Slot.GetItemHandle().IsValid())
+		if (!Slot.GetItemId().IsValid())
 		{
 			continue;
 		}
 
-		ItemHandles.Add(Slot.GetItemHandle());
+		ItemIds.Add(Slot.GetItemId());
 	}
 
-	return ItemHandles;
+	return ItemIds;
 }
 
-TArray<FInventoryItemHandle> FInventorySlotContainer::GetAllItemHandles() const
+TArray<FInventoryItemId> FInventorySlotList::GetAllItemIds() const
 {
-	TArray<FInventoryItemHandle> ItemHandles;
+	TArray<FInventoryItemId> ItemIds;
 
 	for (auto& Slot : ItemSlots)
 	{
-		if (!Slot.GetItemHandle().IsValid())
+		if (!Slot.GetItemId().IsValid())
 		{
 			continue;
 		}
 
-		ItemHandles.Add(Slot.GetItemHandle());
+		ItemIds.Add(Slot.GetItemId());
 	}
 
-	return ItemHandles;
+	return ItemIds;
 }
 
-FInventoryItemSlot* FInventorySlotContainer::GetNextUnoccupiedItemSlotInGroup(const FGameplayTag& InGroupTag) const
+FInventoryItemSlot* FInventorySlotList::GetNextUnoccupiedItemSlotInGroup(const FGameplayTag& InGroupTag) const
 {
 	for (auto& Slot : ItemSlots)
 	{
@@ -114,7 +114,7 @@ FInventoryItemSlot* FInventorySlotContainer::GetNextUnoccupiedItemSlotInGroup(co
 		}
 
 		// Valid means its occupied
-		if (Slot.GetItemHandle().IsValid())
+		if (Slot.GetItemId().IsValid())
 		{
 			continue;
 		}
@@ -125,7 +125,7 @@ FInventoryItemSlot* FInventorySlotContainer::GetNextUnoccupiedItemSlotInGroup(co
 	return nullptr;
 }
 
-TArray<FGameplayTag> FInventorySlotContainer::GetAllItemGroups() const
+TArray<FGameplayTag> FInventorySlotList::GetAllItemGroups() const
 {
 	TArray<FGameplayTag> GroupTags;
 	for (auto& Slot : ItemSlots)

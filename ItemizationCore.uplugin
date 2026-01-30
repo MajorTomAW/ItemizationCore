@@ -66,10 +66,6 @@
 			"Enabled": true
 		},
 		{
-			"Name": "GameplayTagStacks",
-			"Enabled": true
-		},
-		{
 			"Name": "GameFeatures",
 			"Enabled": true
 		},

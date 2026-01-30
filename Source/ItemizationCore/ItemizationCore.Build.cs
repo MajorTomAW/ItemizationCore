@@ -20,7 +20,6 @@ public class ItemizationCore : ModuleRules
 			"GameplayAbilities",
 			"DeveloperSettings",
 			"ModularGameplay",
-			"GameplayTagStacks",
 		});
 		PrivateDependencyModuleNames.AddRange(new []
 		{

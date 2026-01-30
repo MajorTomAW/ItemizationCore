@@ -10,7 +10,7 @@ FItemComponentData_SlotSize::FItemComponentData_SlotSize()
 {
 }
 
-void FItemComponentData_SlotSize::EvaluateItemEntry(FInventoryOp_GiveAction::FParams& Params) const
+void FItemComponentData_SlotSize::PostItemEntryCreated(FInventoryItemEntry& ItemEntry) const
 {
 	//@TODO: Inject slot size ?Params.ItemEntry->SetStatValue(Itemization::Tags::)
 }

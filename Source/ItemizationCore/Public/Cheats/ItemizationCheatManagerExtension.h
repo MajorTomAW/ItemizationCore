@@ -5,7 +5,10 @@
 #include "CoreMinimal.h"
 #include "ConsoleSettings.h"
 #include "GameFramework/CheatManager.h"
+
 #include "ItemizationCheatManagerExtension.generated.h"
+
+class UItemDefinitionBase;
 
 /** Cheats for the itemization core */
 UCLASS(NotBlueprintable)
@@ -30,4 +33,39 @@ protected:
 	 */
 	UFUNCTION(Exec)
 	void GiveItem(const FString& ItemAssetId, int32 Count = 1) const;
+
+	/**
+	 * Removes the specified amount of the specified item from the owning player's inventory.
+	 * @param ItemAssetId PrimaryAssetId and Name of the item,
+	 * @param Count The number of items to remove. Default is 1.
+	 */
+	UFUNCTION(Exec)
+	void RemoveItem(const FString& ItemAssetId, int32 Count = 1) const;
+
+	/**
+	 * Removes the specified amount of the specified item from the owning player's inventory.
+	 * @param ItemId UID of the item to remove
+	 * @param Count The number of items to remove. Default is 1.
+	 */
+	UFUNCTION(Exec)
+	void RemoveItemById(uint32 ItemId, int32 Count = 1) const;
+
+	/**
+	 * Drops the specified amount of the specified item as a pickup into the world.
+	 * @param ItemAssetId
+	 * @param Count
+	 */
+	UFUNCTION(Exec)
+	void DropItem(const FString& ItemAssetId, int32 Count = 1) const;
+
+	/**
+	 * Drops the specified amount of the specified item as a pickup into the world.
+	 * @param ItemId UID of the item to drop
+	 * @param Count
+	 */
+	UFUNCTION(Exec)
+	void DropItemById(uint32 ItemId, int32 Count = 1) const;
+
+private:
+	UItemDefinitionBase* FindItemDefinition(const FString& ItemAssetId) const;
 };

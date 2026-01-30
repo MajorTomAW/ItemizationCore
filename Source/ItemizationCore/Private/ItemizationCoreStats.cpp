@@ -2,7 +2,11 @@
 
 #include "ItemizationCoreStats.h"
 
-DEFINE_STAT(STAT_FindItemEntryByHandle);
-DEFINE_STAT(STAT_FindItemInstanceByHandle);
-DEFINE_STAT(STAT_FindItemInstancesInGroup);
-DEFINE_STAT(STAT_FindItemSlotByHandle);
+DEFINE_STAT(STAT_Itemization_FindItemEntryByHandle);
+DEFINE_STAT(STAT_Itemization_FindItemInstanceByHandle);
+DEFINE_STAT(STAT_Itemization_FindItemInstancesInGroup);
+DEFINE_STAT(STAT_Itemization_FindItemSlotByHandle);
+DEFINE_STAT(STAT_Itemization_GiveItem);
+DEFINE_STAT(STAT_Itemization_RemoveItem);
+DEFINE_STAT(STAT_Itemization_PlaceItemInSlot);
+DEFINE_STAT(STAT_Itemization_DropItem);

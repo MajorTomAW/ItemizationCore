@@ -2,15 +2,16 @@
 
 #pragma once
 
-#include "InventoryItemHandle.generated.h"
+#include "InventoryItemId.generated.h"
 
 /** Globally unique handle that points to an exact FInventoryItemEntry in an inventory. */
 USTRUCT(BlueprintType)
-struct alignas(4) FInventoryItemHandle
+struct alignas(4) FInventoryItemId
 {
 	GENERATED_BODY()
 
-	FInventoryItemHandle() = default;
+	FInventoryItemId() : UID(INVALID_HANDLE) {}
+	explicit FInventoryItemId(uint32 InUID) : UID(InUID) {}
 
 public:
 	enum
@@ -19,7 +20,7 @@ public:
 	};
 
 	/** Generates a new uid and sets it to this handle. */
-	void GenerateNewUID();
+	void GenerateNewId();
 
 	/** Returns this handles raw value. */
 	[[nodiscard]] uint32 Get() const
@@ -45,31 +46,31 @@ public:
 		return UID != INVALID_HANDLE;
 	}
 
-	static FInventoryItemHandle InvalidHandle;
+	static FInventoryItemId InvalidId;
 
 public:
 	/** Compares this handle with another handle. */
-	bool operator==(const FInventoryItemHandle& Other) const
+	bool operator==(const FInventoryItemId& Other) const
 	{
 		return Get() == Other.Get();
 	}
-	bool operator!=(const FInventoryItemHandle& Other) const
+	bool operator!=(const FInventoryItemId& Other) const
 	{
 		return !operator==(Other);
 	}
 
 	/** For sorting purposes. */
-	bool operator<(const FInventoryItemHandle& Other) const { return Get() < Other.Get(); }
+	bool operator<(const FInventoryItemId& Other) const { return Get() < Other.Get(); }
 
 	/** Archive operator for serialization. */
-	friend FArchive& operator<<(FArchive& Ar, FInventoryItemHandle& ItemHandle)
+	friend FArchive& operator<<(FArchive& Ar, FInventoryItemId& ItemHandle)
 	{
 		Ar << ItemHandle.UID;
 		return Ar;
 	}
 
 	/** Returns a hash value for this handle. */
-	friend uint32 GetTypeHash(const FInventoryItemHandle& ItemHandle)
+	friend uint32 GetTypeHash(const FInventoryItemId& ItemHandle)
 	{
 		return ::GetTypeHash(ItemHandle.UID);
 	}
@@ -94,5 +95,5 @@ private:
 	uint32 UID = INVALID_HANDLE;
 };
 
-static_assert(sizeof(FInventoryItemHandle) == sizeof(uint32), "Expected FInventoryItemHandle to be 4 bytes.");
-static_assert(alignof(FInventoryItemHandle) == sizeof(uint32), "Expected FInventoryItemHandle to be aligned to 4 bytes.");
+static_assert(sizeof(FInventoryItemId) == sizeof(uint32), "Expected FInventoryItemId to be 4 bytes.");
+static_assert(alignof(FInventoryItemId) == sizeof(uint32), "Expected FInventoryItemId to be aligned to 4 bytes.");

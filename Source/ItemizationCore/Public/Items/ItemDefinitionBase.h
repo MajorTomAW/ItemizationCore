@@ -91,7 +91,6 @@ public:
 	}
 
 	TSoftClassPtr<UObject> GetItemInstanceClass() const { return ItemInstanceClass; }
-	bool WantsItemInstance() const { return bWantsItemInstance; }
 
 	/** Returns the item name as a plain text. */
 	UFUNCTION(BlueprintCallable, Category=Item)
@@ -119,7 +118,11 @@ public:
 
 	/** Returns true, if this item has the given trait tag. */
 	UFUNCTION(BlueprintCallable, Category=Item, meta=(Categories="Item.Trait"))
-	bool HasTrait(const FGameplayTag& TraitToCheck) const;
+	virtual bool HasTrait(const FGameplayTag& TraitToCheck) const;
+
+	/** Returns the max stack size of this item. */
+	UFUNCTION(BlueprintCallable, Category=Item)
+	virtual int32 GetMaxStackSize() const;
 
 	virtual TArray<TSoftObjectPtr<const UScriptStruct>> GetDisallowedDataTypes() const;
 
@@ -140,12 +143,8 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category=General, meta = (DisplayName = "Documentation URL"))
 	FString DocumentationURL;
 
-	/** Whether this item wants an instance once given to an inventory. */
-	UPROPERTY(EditDefaultsOnly, Category=General)
-	bool bWantsItemInstance;
-
 	/** The class of the item instance that should be created when this item is given to an inventory. */
-	UPROPERTY(EditDefaultsOnly, meta=(EditCondition=bWantsItemInstance, MustImplement="/Script/ItemizationCore.InventoryItemInstanceInterface"), Category=General)
+	UPROPERTY(EditDefaultsOnly, meta=(MustImplement="/Script/ItemizationCore.InventoryItemInstanceInterface"), Category=General)
 	TSoftClassPtr<UObject> ItemInstanceClass;
 
 

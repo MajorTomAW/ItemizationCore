@@ -19,8 +19,8 @@ void FItemComponentData::GetAssetRegistryTags(FAssetRegistryTagsContext Context)
 	// Stub
 }
 
-void FItemComponentData::EvaluateItemEntry(
-	FInventoryOp_GiveAction::FParams& Params) const
+void FItemComponentData::PostItemEntryCreated(
+	FInventoryItemEntry& ItemEntry) const
 {
 	// Stub
 }

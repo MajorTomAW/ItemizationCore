@@ -118,7 +118,7 @@ EDataValidationResult UInventoryComponent::IsDataValid(FDataValidationContext& C
 
 #endif
 
-TScriptInterface<IInventoryItemInstanceInterface> UInventoryComponent::FindItemInstanceByHandle(const FInventoryItemHandle& ItemHandle) const
+TScriptInterface<IInventoryItemInstanceInterface> UInventoryComponent::FindItemInstanceById(const FInventoryItemId& ItemId) const
 {
 	AInventoryBase* Inventory = GetInventory();
 	if (!IsValid(Inventory))
@@ -127,14 +127,14 @@ TScriptInterface<IInventoryItemInstanceInterface> UInventoryComponent::FindItemI
 	}
 
 	// Find the item instance in the inventory
-	TScriptInterface<IInventoryItemInstanceInterface> ItemInstance = Inventory->FindItemInstanceByHandle(ItemHandle);
+	TScriptInterface<IInventoryItemInstanceInterface> ItemInstance = Inventory->FindItemInstanceById(ItemId);
 	if (IsValid(ItemInstance.GetObject()))
 	{
 		return ItemInstance;
 	}
 
 	ITEMIZATION_WARN_CONTEXT("Could not find item instance with handle [%s] in inventory [%s] for %s.",
-		*ItemHandle.ToString(), *GetNameSafe(Inventory), *GetNameSafe(GetOwner()));
+		*ItemId.ToString(), *GetNameSafe(Inventory), *GetNameSafe(GetOwner()));
 
 	return nullptr;
 }
@@ -147,10 +147,10 @@ TArray<TScriptInterface<IInventoryItemInstanceInterface>> UInventoryComponent::G
 		return TArray<TScriptInterface<IInventoryItemInstanceInterface>>();
 	}
 
-	return Inventory->GetAllItemInstancesAsInterfaces();
+	return Inventory->GetAllItemInstances();
 }
 
-TArray<TScriptInterface<IInventoryItemInstanceInterface>> UInventoryComponent::GetInventoryItemsInGroup(FGameplayTag Group) const
+/*TArray<TScriptInterface<IInventoryItemInstanceInterface>> UInventoryComponent::GetInventoryItemsInGroup(FGameplayTag Group) const
 {
 	AInventoryBase* Inventory = GetInventory();
 	if (!IsValid(Inventory))
@@ -159,9 +159,9 @@ TArray<TScriptInterface<IInventoryItemInstanceInterface>> UInventoryComponent::G
 	}
 
 	return Inventory->GetItemInstancesInGroup(Group);
-}
+}*/
 
-TArray<TScriptInterface<IInventoryItemInstanceInterface>> UInventoryComponent::GetInventoryItemsInGroups(TArray<FGameplayTag> Groups) const
+/*TArray<TScriptInterface<IInventoryItemInstanceInterface>> UInventoryComponent::GetInventoryItemsInGroups(TArray<FGameplayTag> Groups) const
 {
 	TArray<TScriptInterface<IInventoryItemInstanceInterface>> Result;
 	AInventoryBase* Inventory = GetInventory();
@@ -176,16 +176,16 @@ TArray<TScriptInterface<IInventoryItemInstanceInterface>> UInventoryComponent::G
 	}
 
 	return Result;
-}
+}*/
 
-FInventoryItemHandle UInventoryComponent::TryGiveItem(
+FInventoryItemId UInventoryComponent::TryGiveItem(
 	UItemDefinitionBase* ItemDefinition,
 	int32 StackCount,
 	UObject* SourceObject,
 	FGameplayTag GroupTag,
 	int32& OutNumCouldNotAdd)
 {
-	FInventoryItemHandle Result = FInventoryItemHandle::InvalidHandle;
+	FInventoryItemId Result = FInventoryItemId::InvalidId;
 
 	AInventoryBase* Inventory = GetInventory();
 	if (!IsValid(Inventory))
@@ -196,20 +196,106 @@ FInventoryItemHandle UInventoryComponent::TryGiveItem(
 	}
 
 	// Build our give item operation parameters
-	FInventoryOp_GiveAction::FParams Params;
-	Params.TargetInventory = Inventory;
+	FInventoryOp_GiveItem::FParams Params;
+	Params.ItemDefinition = ItemDefinition;
 	Params.NumGive = StackCount;
 	Params.GroupTag = GroupTag;
-
-	const AInventoryBase::FCreateItemEntryParams CreateItemParams { ItemDefinition, StackCount, SourceObject };
+	Params.SourceObject = SourceObject;
 
 	// Actually give the item
-	if (const TInventoryOpPtr<FInventoryOp_GiveAction> Op = Inventory->GiveItem(MoveTemp(Params), CreateItemParams))
+	if (const TInventoryOpPtr<FInventoryOp_GiveItem> Op = Inventory->GiveItem(MoveTemp(Params)))
 	{
-		Result = Op->Result.ItemHandle;
+		Result = Op->Result.ItemId;
 
 		// Let us know about how many items could not be added
 		OutNumCouldNotAdd = Op->Result.Excess;
+	}
+
+	return Result;
+}
+
+int32 UInventoryComponent::TryRemoveItemByDefinition(
+	const UItemDefinitionBase* ItemDefinition,
+	int32 NumRemove,
+	FGameplayTag GroupTag)
+{
+	int32 Result = NumRemove;
+	AInventoryBase* Inventory = GetInventory();
+	if (!IsValid(Inventory))
+	{
+		ITEMIZATION_ERROR_CONTEXT("Cannot remove item [%s] from inventory [%s] for %s. Inventory is invalid.",
+			*GetNameSafe(ItemDefinition), *GetNameSafe(Inventory), *GetNameSafe(GetOwner()));
+		return Result;
+	}
+
+	// Build our remove item operation parameters
+	FInventoryOp_RemoveItem::FParams Params;
+	Params.ItemDefinition = ItemDefinition;
+	Params.NumRemove = NumRemove;
+	Params.GroupTag = GroupTag;
+
+	// Actually remove the item
+	if (const TInventoryOpPtr<FInventoryOp_RemoveItem> Op = Inventory->RemoveItem(MoveTemp(Params)))
+	{
+		Result = Op->Result.NumRemoved;
+	}
+
+	return Result;
+}
+
+int32 UInventoryComponent::TryRemoveItemById(
+	const FInventoryItemId& ItemId,
+	int32 NumRemove,
+	FGameplayTag GroupTag)
+{
+	int32 Result = NumRemove;
+	AInventoryBase* Inventory = GetInventory();
+	if (!IsValid(Inventory))
+	{
+		ITEMIZATION_ERROR_CONTEXT("Cannot remove item [%s] from inventory [%s] for %s. Inventory is invalid.",
+			*ItemId.ToString(), *GetNameSafe(Inventory), *GetNameSafe(GetOwner()));
+		return Result;
+	}
+
+	// Build our remove item operation parameters
+	FInventoryOp_RemoveItem::FParams Params;
+	Params.ItemId = ItemId;
+	Params.NumRemove = NumRemove;
+	Params.GroupTag = GroupTag;
+
+	// Actually remove the item
+	if (const TInventoryOpPtr<FInventoryOp_RemoveItem> Op = Inventory->RemoveItem(MoveTemp(Params)))
+	{
+		Result = Op->Result.NumRemoved;
+	}
+
+	return Result;
+}
+
+int32 UInventoryComponent::TryRemoveItem(
+	TScriptInterface<IInventoryItemInstanceInterface> ItemInstance,
+	int32 NumRemove,
+	FGameplayTag GroupTag)
+{
+	int32 Result = NumRemove;
+	AInventoryBase* Inventory = GetInventory();
+	if (!IsValid(Inventory))
+	{
+		ITEMIZATION_ERROR_CONTEXT("Cannot remove item [%s] from inventory [%s] for %s. Inventory is invalid.",
+			*GetNameSafe(ItemInstance.GetObject()), *GetNameSafe(Inventory), *GetNameSafe(GetOwner()));
+		return Result;
+	}
+
+	// Build our remove item operation parameters
+	FInventoryOp_RemoveItem::FParams Params;
+	Params.ItemInstance = ItemInstance.GetObject();
+	Params.NumRemove = NumRemove;
+	Params.GroupTag = GroupTag;
+
+	// Actually remove the item
+	if (const TInventoryOpPtr<FInventoryOp_RemoveItem> Op = Inventory->RemoveItem(MoveTemp(Params)))
+	{
+		Result = Op->Result.NumRemoved;
 	}
 
 	return Result;
@@ -282,7 +368,7 @@ void UInventoryComponent::InitInventoryGroups(AInventoryBase* Inventory)
 		return;
 	}
 
-	Inventory->InitializeInventorySlots(InventoryConfig);
+	//Inventory->InitializeInventorySlots(InventoryConfig);
 }
 
 

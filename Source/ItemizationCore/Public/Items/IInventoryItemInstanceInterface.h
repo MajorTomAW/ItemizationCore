@@ -28,6 +28,9 @@ public:
 	/** Called right before the item instance is removed from an inventory. */
 	virtual void OnRemovedFromInventory(FInventoryItemEntry& ItemEntry, const FInventoryHandle& OwningInventoryHandle) = 0;
 
+	/** Checks whether this item can be combined with the given one. */
+	virtual bool CanCombineWith(const FInventoryItemEntry& ItemEntry) const { return true; }
+
 	/** Returns the source object that created this item instance, if any. */
 	virtual UObject* GetSourceObject() const = 0;
 
@@ -37,6 +40,9 @@ public:
 	{
 		return Cast<SourceObjectType>(GetSourceObject());
 	}
+
+	/** Returns the item entry of this instance. */
+	virtual FInventoryItemEntry* GetItemEntry() const = 0;
 
 	/** Returns if this item instance wants to be replicated. */
 	virtual bool GetIsReplicated() const { return false; };

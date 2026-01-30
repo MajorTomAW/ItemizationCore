@@ -25,7 +25,7 @@ public:
 
 protected:
 	//~ Begin FItemComponentData Interface
-	virtual void EvaluateItemEntry(FInventoryOp_GiveAction::FParams& Params) const override;
+	virtual void PostItemEntryCreated(FInventoryItemEntry& ItemEntry) const override;
 
 #if WITH_EDITOR
 	virtual FText GetDescription() const override;

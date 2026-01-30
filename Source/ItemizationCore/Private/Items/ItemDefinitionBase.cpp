@@ -12,6 +12,7 @@
 
 #include "ItemizationCoreLogChannels.h"
 #include "Items/Data/ItemComponentData_Icon.h"
+#include "Items/Data/ItemComponentData_MaxStackSize.h"
 #include "Items/Data/ItemComponentData_Traits.h"
 #include "UObject/AssetRegistryTagsContext.h"
 
@@ -21,7 +22,6 @@
 
 UItemDefinitionBase::UItemDefinitionBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
-	, bWantsItemInstance(true) // Default to true
 	, ItemInstanceClass(UInventoryItemInstance::StaticClass())
 {
 	ItemAssetType = "ItemDefinition";
@@ -242,6 +242,17 @@ bool UItemDefinitionBase::HasTrait(const FGameplayTag& TraitToCheck) const
 	}
 
 	return false;
+}
+
+int32 UItemDefinitionBase::GetMaxStackSize() const
+{
+	if (const FItemComponentData_MaxStackSize* MaxStackSizeData = GetItemData<FItemComponentData_MaxStackSize>())
+	{
+		return MaxStackSizeData->GetMaxStackSize();
+	}
+
+	// Without max stack size item data, max stack size is assumed to be 1
+	return 1;
 }
 
 TArray<TSoftObjectPtr<const UScriptStruct>> UItemDefinitionBase::GetDisallowedDataTypes() const

@@ -7,8 +7,8 @@
 
 #include "GameFeatureAction_AddItems.generated.h"
 
-struct FInitialItemGrant;
-struct FInventoryItemHandle;
+struct FItemAndCount;
+struct FInventoryItemId;
 
 
 /** GameFeatureAction responsible for adding items to an inventory once activated. */
@@ -39,12 +39,12 @@ protected:
 private:
 	/** List of items to give to the actor when the game feature is activated. */
 	UPROPERTY(EditAnywhere, Category = "Items")
-	TArray<FInitialItemGrant> ItemsToGive;
+	TArray<FItemAndCount> ItemsToGive;
 
 private:
 	struct FPerActorData
 	{
-		TArray<FInventoryItemHandle> ItemsGiven;
+		TArray<FInventoryItemId> ItemsGiven;
 	};
 
 	struct FPerContextData

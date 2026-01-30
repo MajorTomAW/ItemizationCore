@@ -7,7 +7,9 @@
 #include "Components/InventoryComponent.h"
 #include "Engine/AssetManager.h"
 #include "Engine/Console.h"
+#include "Inventory/InventoryBase.h"
 #include "Items/ItemDefinitionBase.h"
+#include "Items/IInventoryItemInstanceInterface.h"
 
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(ItemizationCheatManagerExtension)
@@ -56,12 +58,23 @@ void UItemizationCheatManagerExtension::PopulateAutoCompleteEntries(TArray<FAuto
 			continue;
 		}
 
-		FAutoCompleteCommand AutoCompleteCmd;
-		AutoCompleteCmd.Command = FString::Printf(TEXT("GiveItem %s"), *AssetData.GetPrimaryAssetId().ToString());
-		AutoCompleteCmd.Desc = FString::Printf(TEXT("Gives %s to the owning player."), *AssetData.GetPrimaryAssetId().PrimaryAssetName.ToString());
-		AutoCompleteCmd.Color = ConsoleSettings->AutoCompleteCommandColor;
+		// Give Command
+		{
+			FAutoCompleteCommand AutoCompleteCmd;
+			AutoCompleteCmd.Command = FString::Printf(TEXT("GiveItem %s"), *AssetData.GetPrimaryAssetId().ToString());
+			AutoCompleteCmd.Desc = FString::Printf(TEXT("Gives %s to the owning player."), *AssetData.GetPrimaryAssetId().PrimaryAssetName.ToString());
+			AutoCompleteCmd.Color = ConsoleSettings->InputColor;
+			AutoCompleteCommands.Add(AutoCompleteCmd);
+		}
 
-		AutoCompleteCommands.Add(AutoCompleteCmd);
+		// Remove Command
+		{
+			FAutoCompleteCommand AutoCompleteCmd;
+			AutoCompleteCmd.Command = FString::Printf(TEXT("RemoveItem %s"), *AssetData.GetPrimaryAssetId().ToString());
+			AutoCompleteCmd.Desc = FString::Printf(TEXT("Removes %s from the owning player."), *AssetData.GetPrimaryAssetId().PrimaryAssetName.ToString());
+			AutoCompleteCmd.Color = ConsoleSettings->InputColor;
+			AutoCompleteCommands.Add(AutoCompleteCmd);
+		}
 	}
 #endif
 }
@@ -77,17 +90,114 @@ void UItemizationCheatManagerExtension::GiveItem(const FString& ItemAssetId, int
 		return;
 	}
 
+	UItemDefinitionBase* ItemDef = FindItemDefinition(ItemAssetId);
+	if (!IsValid(ItemDef))
+	{
+		return;
+	}
+
+	UE_LOG(LogConsoleResponse, Log, TEXT("Giving Item %s (count: %d) to %s"), *ItemAssetId, Count, *PC->GetName())
+
+	int32 Excess;
+	InventoryComp->TryGiveItem(ItemDef, Count, PC, Itemization::Tags::TAG_InventoryGroup_Inventory, Excess);
+#endif
+}
+
+void UItemizationCheatManagerExtension::RemoveItem(const FString& ItemAssetId, int32 Count) const
+{
+#if UE_WITH_CHEAT_MANAGER
+	APlayerController* PC = GetPlayerController();
+	UInventoryComponent* InventoryComp = PC ? PC->FindComponentByClass<UInventoryComponent>() : nullptr;
+	if (!IsValid(InventoryComp))
+	{
+		UE_LOG(LogConsoleResponse, Warning, TEXT("%s does not have an Inventory Component."), *GetNameSafe(PC))
+		return;
+	}
+
+	UItemDefinitionBase* ItemDef = FindItemDefinition(ItemAssetId);
+	if (!IsValid(ItemDef))
+	{
+		return;
+	}
+
+	UE_LOG(LogConsoleResponse, Log, TEXT("Removing Item %s (count: %d) from %s"), *ItemAssetId, Count, *PC->GetName())
+
+	InventoryComp->TryRemoveItemByDefinition(ItemDef, Count, FGameplayTag());
+#endif
+}
+
+void UItemizationCheatManagerExtension::RemoveItemById(uint32 ItemId, int32 Count) const
+{
+#if UE_WITH_CHEAT_MANAGER
+	APlayerController* PC = GetPlayerController();
+	UInventoryComponent* InventoryComp = PC ? PC->FindComponentByClass<UInventoryComponent>() : nullptr;
+	if (!IsValid(InventoryComp))
+	{
+		UE_LOG(LogConsoleResponse, Warning, TEXT("%s does not have an Inventory Component."), *GetNameSafe(PC))
+		return;
+	}
+
+	UE_LOG(LogConsoleResponse, Log, TEXT("Removing Item %u (count: %d) from %s"), ItemId, Count, *PC->GetName())
+
+	InventoryComp->TryRemoveItemById(FInventoryItemId(ItemId), Count, FGameplayTag());
+#endif
+}
+
+void UItemizationCheatManagerExtension::DropItem(const FString& ItemAssetId, int32 Count) const
+{
+#if UE_WITH_CHEAT_MANAGER
+	APlayerController* PC = GetPlayerController();
+	UInventoryComponent* InventoryComp = PC ? PC->FindComponentByClass<UInventoryComponent>() : nullptr;
+	if (!IsValid(InventoryComp))
+	{
+		UE_LOG(LogConsoleResponse, Warning, TEXT("%s does not have an Inventory Component."), *GetNameSafe(PC))
+		return;
+	}
+
+	UItemDefinitionBase* ItemDef = FindItemDefinition(ItemAssetId);
+	if (!IsValid(ItemDef))
+	{
+		return;
+	}
+
+	UE_LOG(LogConsoleResponse, Log, TEXT("Dropping item %s (count: %d) from %s"), *ItemAssetId, Count, *PC->GetName())
+
+	//@TODO: Use inventory comp wrapper for this
+	InventoryComp->GetInventory()->DropItem(ItemDef, Count);
+#endif
+}
+
+void UItemizationCheatManagerExtension::DropItemById(uint32 ItemId, int32 Count) const
+{
+#if UE_WITH_CHEAT_MANAGER
+	APlayerController* PC = GetPlayerController();
+	UInventoryComponent* InventoryComp = PC ? PC->FindComponentByClass<UInventoryComponent>() : nullptr;
+	if (!IsValid(InventoryComp))
+	{
+		UE_LOG(LogConsoleResponse, Warning, TEXT("%s does not have an Inventory Component."), *GetNameSafe(PC))
+		return;
+	}
+
+	UE_LOG(LogConsoleResponse, Log, TEXT("Dropping item %u (count: %d) from %s"), ItemId, Count, *PC->GetName())
+
+	//@TODO: Use inventory comp wrapper for this
+	InventoryComp->GetInventory()->DropItem(FInventoryItemId(ItemId), Count);
+#endif
+}
+
+UItemDefinitionBase* UItemizationCheatManagerExtension::FindItemDefinition(const FString& ItemAssetId) const
+{
 	if (ItemAssetId.IsEmpty())
 	{
 		UE_LOG(LogConsoleResponse, Error, TEXT("Passed in an empty Item Asset Id"))
-		return;
+		return nullptr;
 	}
 
 	FPrimaryAssetId PrimaryAssetId(ItemAssetId);
 	if (!PrimaryAssetId.IsValid())
 	{
 		UE_LOG(LogConsoleResponse, Error, TEXT("Item Asset Id (%s) is valid but couldn't be resolved into a PrimaryAssetId"), *ItemAssetId)
-		return;
+		return nullptr;
 	}
 
 	const FSoftObjectPath ItemPath = UAssetManager::Get().GetPrimaryAssetPath(PrimaryAssetId);
@@ -96,7 +206,7 @@ void UItemizationCheatManagerExtension::GiveItem(const FString& ItemAssetId, int
 	if (!ItemPath.IsValid())
 	{
 		UE_LOG(LogConsoleResponse, Error, TEXT("Unable to find item path for item %s"), *PrimaryAssetId.ToString())
-		return;
+		return nullptr;
 	}
 
 	UItemDefinitionBase* ItemDef = Cast<UItemDefinitionBase>(StaticLoadObject(
@@ -109,9 +219,5 @@ void UItemizationCheatManagerExtension::GiveItem(const FString& ItemAssetId, int
 		UE_LOG(LogConsoleResponse, Error, TEXT("Failed to load item %s."), *ItemPathStr)
 	}
 
-	UE_LOG(LogConsoleResponse, Log, TEXT("Giving Item %s (count: %d) to %s"), *PrimaryAssetId.ToString(), Count, *PC->GetName())
-
-	int32 Excess;
-	InventoryComp->TryGiveItem(ItemDef, Count, PC, Itemization::Tags::TAG_InventoryGroup_Inventory, Excess);
-#endif
+	return ItemDef;
 }

@@ -2,15 +2,15 @@
 
 #pragma once
 
-#include "InventorySlotHandle.generated.h"
+#include "InventorySlotId.generated.h"
 
 USTRUCT(BlueprintType)
-struct alignas(8) FInventorySlotHandle
+struct alignas(8) FInventorySlotId
 {
 	GENERATED_BODY()
 
-	FInventorySlotHandle() = default;
-	FInventorySlotHandle(uint32 InRowIndex, uint32 InColumnIndex)
+	FInventorySlotId() = default;
+	FInventorySlotId(uint32 InRowIndex, uint32 InColumnIndex)
 		: RowIndex(InRowIndex)
 		, ColumnIndex(InColumnIndex)
 	{
@@ -19,7 +19,7 @@ struct alignas(8) FInventorySlotHandle
 public:
 	enum : uint32
 	{
-		INVALID_SLOT = UINT32_MAX,
+		INVALID_SLOT = 0,
 	};
 
 	/** Returns this handles row index. */
@@ -55,27 +55,27 @@ public:
 
 public:
 	/** Compared this handle with another handle. */
-	bool operator==(const FInventorySlotHandle& Other) const
+	bool operator==(const FInventorySlotId& Other) const
 	{
 		return GetRowIndex() == Other.GetRowIndex() && GetColumnIndex() == Other.GetColumnIndex();
 	}
-	bool operator!=(const FInventorySlotHandle& Other) const
+	bool operator!=(const FInventorySlotId& Other) const
 	{
 		return !operator!=(Other);
 	}
 
 	/** For sorting purposes. */
-	bool operator<(const FInventorySlotHandle& Other) const
+	bool operator<(const FInventorySlotId& Other) const
 	{
 		return GetRowIndex() < Other.GetRowIndex() && GetColumnIndex() < Other.GetColumnIndex();
 	}
-	bool operator>(const FInventorySlotHandle& Other) const
+	bool operator>(const FInventorySlotId& Other) const
 	{
 		return !operator<(Other);
 	}
 
 	/** Archive operator for serialization. */
-	friend FArchive& operator<<(FArchive& Ar, FInventorySlotHandle& Slot)
+	friend FArchive& operator<<(FArchive& Ar, FInventorySlotId& Slot)
 	{
 		Ar << Slot.RowIndex;
 		Ar << Slot.ColumnIndex;
@@ -83,7 +83,7 @@ public:
 	}
 
 	/** Returns a has value for this handle. */
-	friend uint32 GetTypeHash(const FInventorySlotHandle& Slot)
+	friend uint32 GetTypeHash(const FInventorySlotId& Slot)
 	{
 		return HashCombine(::GetTypeHash(Slot.RowIndex), ::GetTypeHash(Slot.ColumnIndex));
 	}
@@ -107,5 +107,5 @@ private:
 	uint32 ColumnIndex = INVALID_SLOT;
 };
 
-static_assert(sizeof(FInventorySlotHandle) == sizeof(uint64), "Expected FInventorySlotHandle to be 8 bytes.");
-static_assert(alignof(FInventorySlotHandle) == sizeof(uint64), "Expected FInventorySlotHandle to be aligned to 8 bytes.");
+static_assert(sizeof(FInventorySlotId) == sizeof(uint64), "Expected FInventorySlotId to be 8 bytes.");
+static_assert(alignof(FInventorySlotId) == sizeof(uint64), "Expected FInventorySlotId to be aligned to 8 bytes.");

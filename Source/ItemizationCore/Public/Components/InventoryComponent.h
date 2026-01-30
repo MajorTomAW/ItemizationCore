@@ -10,6 +10,7 @@
 #include "Components/GameFrameworkComponent.h"
 #include "Inventory/IInventoryOwnerInterface.h"
 #include "Inventory/InventorySlotGroup.h"
+#include "Items/ItemDefinitionBase.h"
 #include "InventoryComponent.generated.h"
 
 #define MY_API ITEMIZATIONCORE_API
@@ -53,16 +54,16 @@ public:
 
 public:
 	UFUNCTION(BlueprintCallable, Category=Inventory)
-	TScriptInterface<IInventoryItemInstanceInterface> FindItemInstanceByHandle(const FInventoryItemHandle& ItemHandle) const;
+	TScriptInterface<IInventoryItemInstanceInterface> FindItemInstanceById(const FInventoryItemId& ItemId) const;
 
 	UFUNCTION(BlueprintCallable, Category=Inventory)
 	TArray<TScriptInterface<IInventoryItemInstanceInterface>> GetInventoryItems() const;
 
-	UFUNCTION(BlueprintCallable, Category=Inventory, meta=(Categories="Inventory.Group"))
-	TArray<TScriptInterface<IInventoryItemInstanceInterface>> GetInventoryItemsInGroup(FGameplayTag Group) const;
+	/*UFUNCTION(BlueprintCallable, Category=Inventory, meta=(Categories="Inventory.Group"))
+	TArray<TScriptInterface<IInventoryItemInstanceInterface>> GetInventoryItemsInGroup(FGameplayTag Group) const;*/
 
-	UFUNCTION(BlueprintCallable, Category=Inventory, meta=(Categories="Inventory.Group"))
-	TArray<TScriptInterface<IInventoryItemInstanceInterface>> GetInventoryItemsInGroups(TArray<FGameplayTag> Groups) const;
+	/*UFUNCTION(BlueprintCallable, Category=Inventory, meta=(Categories="Inventory.Group"))
+	TArray<TScriptInterface<IInventoryItemInstanceInterface>> GetInventoryItemsInGroups(TArray<FGameplayTag> Groups) const;*/
 
 	/**
 	 * Attempts to give an item to the inventory.
@@ -76,7 +77,16 @@ public:
 	 * @returns The handle to the item that was added, or an invalid handle if the item could not be added.
 	 */
 	UFUNCTION(BlueprintCallable, Category=Inventory, BlueprintAuthorityOnly, meta=(Categories="Inventory.Group"))
-	FInventoryItemHandle TryGiveItem(UItemDefinitionBase* ItemDefinition, int32 StackCount, UObject* SourceObject, FGameplayTag GroupTag, int32& OutNumCouldNotAdd);
+	FInventoryItemId TryGiveItem(UItemDefinitionBase* ItemDefinition, int32 StackCount, UObject* SourceObject, FGameplayTag GroupTag, int32& OutNumCouldNotAdd);
+
+	UFUNCTION(BlueprintCallable, Category=Inventory, BlueprintAuthorityOnly, meta=(Categories="Inventory.Group"))
+	int32 TryRemoveItemByDefinition(const UItemDefinitionBase* ItemDefinition, int32 NumRemove, FGameplayTag GroupTag);
+
+	UFUNCTION(BlueprintCallable, Category=Inventory, BlueprintAuthorityOnly, meta=(Categories="Inventory.Group"))
+	int32 TryRemoveItemById(const FInventoryItemId& ItemId, int32 NumRemove, FGameplayTag GroupTag);
+
+	UFUNCTION(BlueprintCallable, Category=Inventory, BlueprintAuthorityOnly, meta=(Categories="Inventory.Group"))
+	int32 TryRemoveItem(TScriptInterface<IInventoryItemInstanceInterface> ItemInstance, int32 NumRemove, FGameplayTag GroupTag);
 
 protected:
 	/** Creates the actual inventory actor storing it in the handle. */
@@ -120,7 +130,7 @@ public:
 	TMap<FGameplayTag, FInventoryItemSlotGroup> ItemSlotGroups;
 
 	UPROPERTY(Replicated)
-	FInventorySlotContainer ItemSlotContainer;*/
+	FInventorySlotList ItemSlotContainer;*/
 };
 
 #undef MY_API

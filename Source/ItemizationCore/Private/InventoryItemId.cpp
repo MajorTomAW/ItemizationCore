@@ -1,11 +1,11 @@
 ﻿// Author: Tom Werner (MajorT), 2025
 
 
-#include "InventoryItemHandle.h"
+#include "InventoryItemId.h"
 
-FInventoryItemHandle FInventoryItemHandle::InvalidHandle;
+FInventoryItemId FInventoryItemId::InvalidId;
 
-void FInventoryItemHandle::GenerateNewUID()
+void FInventoryItemId::GenerateNewId()
 {
 	// Must be in C++ to avoid duplicate statics across execution units
 	static uint32 GHandle = 1;

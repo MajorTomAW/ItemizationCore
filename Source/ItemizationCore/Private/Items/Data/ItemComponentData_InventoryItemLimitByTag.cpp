@@ -10,9 +10,9 @@ FItemComponentData_InventoryItemLimitByTag::FItemComponentData_InventoryItemLimi
 {
 }
 
-void FItemComponentData_InventoryItemLimitByTag::EvaluateItemEntry(FInventoryOp_GiveAction::FParams& Params) const
+void FItemComponentData_InventoryItemLimitByTag::PostItemEntryCreated(FInventoryItemEntry& ItemEntry) const
 {
-	FItemComponentData::EvaluateItemEntry(Params);
+	Super::PostItemEntryCreated(ItemEntry);
 }
 
 #if WITH_EDITOR
@@ -24,6 +24,6 @@ FText FItemComponentData_InventoryItemLimitByTag::GetDescription() const
 
 EDataValidationResult FItemComponentData_InventoryItemLimitByTag::IsDataValid(FDataValidationContext& Context) const
 {
-	return FItemComponentData::IsDataValid(Context);
+	return Super::IsDataValid(Context);
 }
 #endif

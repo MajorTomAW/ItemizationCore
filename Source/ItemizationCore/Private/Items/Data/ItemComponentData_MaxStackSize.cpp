@@ -14,11 +14,6 @@ int32 FItemComponentData_MaxStackSize::GetMaxStackSize() const
 	return MaxStackSize.AsInteger();
 }
 
-void FItemComponentData_MaxStackSize::EvaluateItemEntry(FInventoryOp_GiveAction::FParams& Params) const
-{
-	Params.ItemEntry->SetStatValue(Itemization::Tags::TAG_ItemStat_MaxStackSize, GetMaxStackSize());
-}
-
 #if WITH_EDITOR
 FText FItemComponentData_MaxStackSize::GetDescription() const
 {
