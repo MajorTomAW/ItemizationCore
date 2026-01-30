@@ -53,17 +53,13 @@ public:
 	//~ End UObject Interface
 
 public:
+	/** Returns the item instance associated to the given item id. */
 	UFUNCTION(BlueprintCallable, Category=Inventory)
 	TScriptInterface<IInventoryItemInstanceInterface> FindItemInstanceById(const FInventoryItemId& ItemId) const;
 
+	/** Returns a list of all inventory item instances. */
 	UFUNCTION(BlueprintCallable, Category=Inventory)
 	TArray<TScriptInterface<IInventoryItemInstanceInterface>> GetInventoryItems() const;
-
-	/*UFUNCTION(BlueprintCallable, Category=Inventory, meta=(Categories="Inventory.Group"))
-	TArray<TScriptInterface<IInventoryItemInstanceInterface>> GetInventoryItemsInGroup(FGameplayTag Group) const;*/
-
-	/*UFUNCTION(BlueprintCallable, Category=Inventory, meta=(Categories="Inventory.Group"))
-	TArray<TScriptInterface<IInventoryItemInstanceInterface>> GetInventoryItemsInGroups(TArray<FGameplayTag> Groups) const;*/
 
 	/**
 	 * Attempts to give an item to the inventory.
@@ -79,12 +75,39 @@ public:
 	UFUNCTION(BlueprintCallable, Category=Inventory, BlueprintAuthorityOnly, meta=(Categories="Inventory.Group"))
 	FInventoryItemId TryGiveItem(UItemDefinitionBase* ItemDefinition, int32 StackCount, UObject* SourceObject, FGameplayTag GroupTag, int32& OutNumCouldNotAdd);
 
+	/**
+	 * Attempts to remove an item from the inventory.
+	 * Will be ignored if the actor is not authoritative.
+	 * 
+	 * @param ItemDefinition	The item definition to remove. 
+	 * @param NumRemove			The number of items to remove.
+	 * @param GroupTag			Tag of the group to remove the item from.
+	 * @return The number of items that got removed.
+	 */
 	UFUNCTION(BlueprintCallable, Category=Inventory, BlueprintAuthorityOnly, meta=(Categories="Inventory.Group"))
 	int32 TryRemoveItemByDefinition(const UItemDefinitionBase* ItemDefinition, int32 NumRemove, FGameplayTag GroupTag);
 
+	/**
+	 * Attempts to remove an item from the inventory.
+	 * Will be ignored if the actor is not authoritative.
+	 * 
+	 * @param ItemId			The unique item id of the item to be removed. 
+	 * @param NumRemove			The number of items to remove.
+	 * @param GroupTag			Tag of the group to remove the item from.
+	 * @return The number of items that got removed.
+	 */
 	UFUNCTION(BlueprintCallable, Category=Inventory, BlueprintAuthorityOnly, meta=(Categories="Inventory.Group"))
 	int32 TryRemoveItemById(const FInventoryItemId& ItemId, int32 NumRemove, FGameplayTag GroupTag);
 
+	/**
+	 * Attempts to remove an item from the inventory.
+	 * Will be ignored if the actor is not authoritative.
+	 * 
+	 * @param ItemInstance		The instance to be removed. 
+	 * @param NumRemove			The number of items to remove.
+	 * @param GroupTag			Tag of the group to remove the item from.
+	 * @return The number of items that got removed.
+	 */
 	UFUNCTION(BlueprintCallable, Category=Inventory, BlueprintAuthorityOnly, meta=(Categories="Inventory.Group"))
 	int32 TryRemoveItem(TScriptInterface<IInventoryItemInstanceInterface> ItemInstance, int32 NumRemove, FGameplayTag GroupTag);
 
@@ -125,12 +148,6 @@ public:
 
 	UFUNCTION()
 	MY_API virtual void OnRep_InventoryHandle();
-
-	/*UPROPERTY()
-	TMap<FGameplayTag, FInventoryItemSlotGroup> ItemSlotGroups;
-
-	UPROPERTY(Replicated)
-	FInventorySlotList ItemSlotContainer;*/
 };
 
 #undef MY_API
