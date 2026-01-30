@@ -108,8 +108,7 @@ TInventoryOpPtr<FInventoryOp_GiveItem> AInventoryBase::GiveItem(FInventoryOp_Giv
 		*GetName())
 
 	// Create the operation & process the operation
-	TInventoryOpRef<FInventoryOp_GiveItem> NewOp =
-		OpCache.MakeSharedOp<FInventoryOp_GiveItem>(MoveTemp(Params));
+	TInventoryOpRef<FInventoryOp_GiveItem> NewOp = MakeSharedOp<FInventoryOp_GiveItem>(Params);
 	ProcessGiveItemOperation(NewOp);
 
 	return NewOp;
@@ -137,8 +136,7 @@ TInventoryOpPtr<FInventoryOp_RemoveItem> AInventoryBase::RemoveItem(FInventoryOp
 		*GetName())
 
 	// Create the operation & process the operation
-	TInventoryOpRef<FInventoryOp_RemoveItem> NewOp =
-		OpCache.MakeSharedOp<FInventoryOp_RemoveItem>(MoveTemp(Params));
+	TInventoryOpRef<FInventoryOp_RemoveItem> NewOp = MakeSharedOp<FInventoryOp_RemoveItem>(Params);
 	ProcessRemoveItemOperation(NewOp);
 
 	return NewOp;

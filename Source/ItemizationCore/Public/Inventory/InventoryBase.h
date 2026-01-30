@@ -149,6 +149,13 @@ protected:
 	UE_API virtual void PostInitializeComponents() override;
 	//~ End AActor Interface
 
+	/** Constructs a new shared operation. */
+	template <typename OpType, typename ParamsType>
+	TInventoryOpRef<OpType> MakeSharedOp(ParamsType& Params)
+	{
+		return OpCache.MakeSharedOp<OpType>(MoveTemp(Params));
+	}
+
 	/**
 	 * Marks an item entry dirty for replication.
 	 * bWasAddOrChange is an important flag to determine whether the entire array needs to be replicated,
