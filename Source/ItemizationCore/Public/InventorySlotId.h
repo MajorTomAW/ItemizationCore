@@ -19,7 +19,7 @@ struct alignas(8) FInventorySlotId
 public:
 	enum : uint32
 	{
-		INVALID_SLOT = 0,
+		INVALID_SLOT = UINT32_MAX,
 	};
 
 	/** Returns this handles row index. */
@@ -52,6 +52,8 @@ public:
 	{
 		return (RowIndex != INVALID_SLOT) && (ColumnIndex != INVALID_SLOT);
 	}
+
+	static FInventorySlotId InvalidId;
 
 public:
 	/** Compared this handle with another handle. */

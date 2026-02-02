@@ -13,8 +13,9 @@
 #include "Items/ItemDefinitionBase.h"
 #include "InventoryComponent.generated.h"
 
-#define MY_API ITEMIZATIONCORE_API
+#define UE_API ITEMIZATIONCORE_API
 
+struct FInventorySlotId;
 class IInventoryItemInstanceInterface;
 class UItemDefinitionBase;
 class UInventoryItemInstance;
@@ -29,26 +30,26 @@ class UInventoryComponent
 	GENERATED_BODY()
 
 public:
-	MY_API UInventoryComponent(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
+	UE_API UInventoryComponent(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 	//~ Begin IGameplayTagAssetInterface Implementation
-	MY_API virtual void GetOwnedGameplayTags(FGameplayTagContainer& TagContainer) const override;
+	UE_API virtual void GetOwnedGameplayTags(FGameplayTagContainer& TagContainer) const override;
 	//~ End IGameplayTagAssetInterface Implementation
 
 	//~ Begin IInventoryOwnerInterface Implementation
-	MY_API virtual AInventoryBase* GetInventory() const override;
+	UE_API virtual AInventoryBase* GetInventory() const override;
 	//~ End IInventoryOwnerInterface Implementation
 
 	//~ Begin UObject Interface
-	MY_API virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
-	MY_API virtual void PostInitProperties() override;
-	MY_API virtual void InitializeComponent() override;
-	MY_API virtual void PostNetReceive() override;
-	MY_API virtual void OnRegister() override;
-	MY_API virtual void BeginPlay() override;
+	UE_API virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+	UE_API virtual void PostInitProperties() override;
+	UE_API virtual void InitializeComponent() override;
+	UE_API virtual void PostNetReceive() override;
+	UE_API virtual void OnRegister() override;
+	UE_API virtual void BeginPlay() override;
 
 #if WITH_EDITOR
-	MY_API virtual EDataValidationResult IsDataValid(FDataValidationContext& Context) const override;
+	UE_API virtual EDataValidationResult IsDataValid(FDataValidationContext& Context) const override;
 #endif
 	//~ End UObject Interface
 
@@ -66,15 +67,16 @@ public:
 	 * Will be ignored if the actor is not authoritative.
 	 *
 	 * @param ItemDefinition	The item definition to give.
-	 * @param StackCount		The number of items to give.
+	 * @param StackSize		The number of items to give.
 	 * @param SourceObject		Optional source object giving the item.
 	 * @param GroupTag			Tag of the group to add the item to.
 	 * @param OutNumCouldNotAdd [OUT] The amount of items that could not be added to the inventory due to stack size limits or other restrictions.
-	 * @returns The handle to the item that was added, or an invalid handle if the item could not be added.
+	 * @returns The id to the item that was added, or an invalid id if the item could not be added.
 	 */
 	UFUNCTION(BlueprintCallable, Category=Inventory, BlueprintAuthorityOnly, meta=(Categories="Inventory.Group"))
-	FInventoryItemId TryGiveItem(UItemDefinitionBase* ItemDefinition, int32 StackCount, UObject* SourceObject, FGameplayTag GroupTag, int32& OutNumCouldNotAdd);
-
+	FInventoryItemId GiveItem(const UItemDefinitionBase* ItemDefinition, int32 StackSize, UObject* SourceObject, FGameplayTag GroupTag, int32& OutNumCouldNotAdd);
+	
+	
 	/**
 	 * Attempts to remove an item from the inventory.
 	 * Will be ignored if the actor is not authoritative.
@@ -85,7 +87,7 @@ public:
 	 * @return The number of items that got removed.
 	 */
 	UFUNCTION(BlueprintCallable, Category=Inventory, BlueprintAuthorityOnly, meta=(Categories="Inventory.Group"))
-	int32 TryRemoveItemByDefinition(const UItemDefinitionBase* ItemDefinition, int32 NumRemove, FGameplayTag GroupTag);
+	int32 RemoveItemByDefinition(const UItemDefinitionBase* ItemDefinition, int32 NumRemove, FGameplayTag GroupTag);
 
 	/**
 	 * Attempts to remove an item from the inventory.
@@ -97,7 +99,7 @@ public:
 	 * @return The number of items that got removed.
 	 */
 	UFUNCTION(BlueprintCallable, Category=Inventory, BlueprintAuthorityOnly, meta=(Categories="Inventory.Group"))
-	int32 TryRemoveItemById(const FInventoryItemId& ItemId, int32 NumRemove, FGameplayTag GroupTag);
+	int32 RemoveItemById(const FInventoryItemId& ItemId, int32 NumRemove, FGameplayTag GroupTag);
 
 	/**
 	 * Attempts to remove an item from the inventory.
@@ -109,17 +111,15 @@ public:
 	 * @return The number of items that got removed.
 	 */
 	UFUNCTION(BlueprintCallable, Category=Inventory, BlueprintAuthorityOnly, meta=(Categories="Inventory.Group"))
-	int32 TryRemoveItem(TScriptInterface<IInventoryItemInstanceInterface> ItemInstance, int32 NumRemove, FGameplayTag GroupTag);
+	int32 RemoveItem(TScriptInterface<IInventoryItemInstanceInterface> ItemInstance, int32 NumRemove, FGameplayTag GroupTag);
 
 protected:
 	/** Creates the actual inventory actor storing it in the handle. */
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category=Inventory)
-	MY_API virtual void CreateInventory();
+	UE_API virtual void CreateInventory();
 
 	/** Called right after the inventory was spawned or set by replication. */
-	MY_API virtual void OnInventoryCreated(AInventoryBase* Inventory);
-
-	MY_API virtual void InitInventoryGroups(AInventoryBase* Inventory);
+	UE_API virtual void OnInventoryCreated(AInventoryBase* Inventory);
 
 public:
 	/** The inventory class to use for this inventory manager. */
@@ -134,10 +134,6 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = InventoryConfig)
 	uint8 bAttachInventoryToOwner:1;
 
-	/** Config data for this inventory manager. This should only be set through the editor as we currently don't support runtime changes. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = InventoryConfig)
-	TObjectPtr<class UInventoryConfigAsset> InventoryConfig;
-
 	/** Handle that points to the inventory this manager is associated with. */
 	UPROPERTY(BlueprintReadOnly, ReplicatedUsing=OnRep_InventoryHandle, Category = Inventory)
 	FInventoryHandle InventoryHandle;
@@ -147,7 +143,7 @@ public:
 	TObjectPtr<AInventoryBase> AuthorityInventory;
 
 	UFUNCTION()
-	MY_API virtual void OnRep_InventoryHandle();
+	UE_API virtual void OnRep_InventoryHandle();
 };
 
-#undef MY_API
+#undef UE_API

@@ -30,17 +30,19 @@ protected:
 	 * Gives a specified item and count to the owning player.
 	 * @param ItemAssetId PrimaryAssetId and Name of the item.
 	 * @param Count The number of items to give. Default is 1.
+	 * @param GroupName	String that will be resolved into a gameplay tag, representing the group to add the item to.
 	 */
 	UFUNCTION(Exec)
-	void GiveItem(const FString& ItemAssetId, int32 Count = 1) const;
+	void GiveItem(const FString& ItemAssetId, int32 Count = 1, const FName& GroupName = NAME_None) const;
 
 	/**
 	 * Removes the specified amount of the specified item from the owning player's inventory.
 	 * @param ItemAssetId PrimaryAssetId and Name of the item,
 	 * @param Count The number of items to remove. Default is 1.
+	 * @param GroupName	String that will be resolved into a gameplay tag, representing the group to add the item to.
 	 */
 	UFUNCTION(Exec)
-	void RemoveItem(const FString& ItemAssetId, int32 Count = 1) const;
+	void RemoveItem(const FString& ItemAssetId, int32 Count = 1, const FName& GroupName = NAME_None) const;
 
 	/**
 	 * Removes the specified amount of the specified item from the owning player's inventory.

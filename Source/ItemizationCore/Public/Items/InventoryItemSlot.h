@@ -13,9 +13,10 @@
 
 
 class ASlottableInventory;
-struct FInventoryItemEntry;
-struct FInventoryItemSlotGroup;
 class AInventoryBase;
+class UObject;
+struct FInventoryItemEntry;
+
 
 #define UE_API ITEMIZATIONCORE_API
 
@@ -94,7 +95,17 @@ public:
 	}
 
 	/** Places an item in this slot. */
-	void AssignItemToSlot(const FInventoryItemEntry& ItemEntry);
+	void OccupySlot(const FInventoryItemEntry& ItemEntry);
+
+	/** Clears an item from this slot. */
+	void UnoccupySlot();
+
+	/** Returns the item instance in this slot. */
+	UObject* GetItemInSlot() const;
+
+	/** Returns the item entry in this slot. */
+	const FInventoryItemEntry* GetItemEntryInSlot() const;
+	FInventoryItemEntry* GetItemEntryInSlot();
 
 	/** Sets the group tag. */
 	void SetGroupTag(const FGameplayTag& NewGroupTag)
@@ -198,30 +209,28 @@ USTRUCT(BlueprintType, MinimalAPI)
 struct FInventorySlotList : public FFastArraySerializer
 {
 	GENERATED_BODY()
+	friend class ASlottableInventory;
 
 public:
-	FInventorySlotList() = delete; // We always need an associated inventory
+	UE_API FInventorySlotList();
 	UE_API FInventorySlotList(ASlottableInventory* InOwningInventory);
 
 	/** Adds an item slot to this list. */
 	UE_API FInventoryItemSlot& AddSlotToList(FInventoryItemSlot ItemSlot);
-	UE_API FInventoryItemSlot& AddSlotToList_Defaulted();
+	UE_API FInventoryItemSlot& AddSlotToList_Defaulted(const FGameplayTag& SlotGroup);
 
 	/** Removes an item slot from this list. */
 	UE_API bool RemoveSlotFromList(FInventorySlotId SlotId);
 
 	/** Tries to find an FInventoryItemSlot by its Id. */
-	UE_API FInventoryItemSlot* FindItemSlotBySlotId(const FInventorySlotId& SlotId) const;
+	UE_API FInventoryItemSlot* FindItemSlotBySlotId(const FInventorySlotId& SlotId, const FGameplayTag& GroupTag) const;
 
 	/** Tries to find an FInventoryItemSlot by an item Id. */
-	UE_API FInventoryItemSlot* FindItemSlotByItemId(const FInventoryItemId& ItemId) const;
-
-	/** Tries to find an item slot group. */
-	UE_API FInventoryItemSlotGroup* FindItemSlotGroup(const FGameplayTag& GroupTag);
-	UE_API const FInventoryItemSlotGroup* FindItemSlotGroup(const FGameplayTag& GroupTag) const;
+	UE_API FInventoryItemSlot* FindItemSlotByItemId(const FInventoryItemId& ItemId, const FGameplayTag& GroupTag) const;
 
 	/** Returns all item slots in the given group. */
-	UE_API TArray<FInventoryItemSlot*> FindSlotsInGroup(const FGameplayTag& InGroupTag) const;
+	UE_API TArray<FInventoryItemSlot*> GetItemSlotsInGroup(const FGameplayTag& GroupTag);
+	UE_API TArray<const FInventoryItemSlot*> GetItemSlotsInGroup(const FGameplayTag& GroupTag) const;
 
 	/** Returns all item Ids in the given group. */
 	UE_API TArray<FInventoryItemId> GetItemIdsInGroup(const FGameplayTag& InGroupTag) const;
@@ -236,7 +245,7 @@ public:
 	UE_API FInventorySlotId GetNextUnoccupiedSlotIdInGroup(const FGameplayTag& InGroupTag) const;
 
 	/** Finds all slot groups. */
-	UE_API TArray<FGameplayTag> GetAllItemGroups() const;
+	UE_API TArray<FGameplayTag> GetAllItemGroupTags() const;
 
 	//~ Begin FFastArraySerializer Interface
 	UE_API void PreReplicatedRemove(const TArrayView<int32> RemovedIndices, int32 FinalSize);
@@ -260,9 +269,6 @@ private:
 	/** The Inventory class that owns this list. */
 	UPROPERTY(NotReplicated)
 	TObjectPtr<ASlottableInventory> OwningInventory;
-	
-	/** Faster lookup of item slots per inventory group. */
-	TMap<FGameplayTag, FInventoryItemSlotGroup> ItemSlotGroups;
 };
 
 template<>

@@ -285,9 +285,6 @@ protected:
 	UPROPERTY(NotReplicated)
 	TObjectPtr<AInventoryBase> OwningInventory;
 
-	/** Fast lookup for item entries by Id. */
-	TMap<FInventoryItemId, FInventoryItemEntry*> ItemEntryMap;
-
 	/** Fast lookup for item instances by Id. */
 	TMap<FInventoryItemId, TObjectPtr<UObject>> ItemInstanceMap;
 };

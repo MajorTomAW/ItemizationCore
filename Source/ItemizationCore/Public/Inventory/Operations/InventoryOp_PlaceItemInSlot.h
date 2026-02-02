@@ -2,76 +2,74 @@
 
 #pragma once
 
+#include "InventoryOp_AdditiveBase.h"
+
 #include "GameplayTagContainer.h"
 #include "InventorySlotId.h"
-#include "InventoryTrackableOp.h"
 #include "ItemizationCoreTags.h"
 
 class ASlottableInventory;
 struct FInventoryItemEntry;
 
-struct FInventoryOp_PlaceItemInSlot : public FInventoryTrackableOp
+/** Operation for giving an placing an item into a slot. */
+struct FInventoryOp_PlaceItemInSlot : public FInventoryOp_AdditiveBase
 {
 	static constexpr TCHAR Name[] = TEXT("PlaceItemInSlot");
 
 public:
-	struct FParams
+	struct FParams : public FAdditiveParamsBase
 	{
-		/** The item handle to be placed in the specified slot. */
-		FInventoryItemEntry* ItemEntry = nullptr;
-
-		/** The slot group to add the item to. */
-		FGameplayTag GroupTag = Itemization::Tags::TAG_InventoryGroup_Inventory;
-
 		/** The specific slot this item wants to be placed in. DON'T READ, JUST WRITE! USE ResolveItemSlot() instead. */
 		FInventorySlotId TargetSlotId;
-
-		/** The raw item slot. DON'T READ, JUST WRITE! USE ResolveItemSlot() instead.*/
-		FInventoryItemSlot* TargetSlot = nullptr;
-
-		FInventoryItemSlot* ResolveItemSlot(ASlottableInventory* TargetInventory) const;
 
 		/** Makes a debug string. */
 		FString GetDebugString() const
 		{
 			return FString::Printf(TEXT("(item: %s) -> (slot: %s)"),
-				*ItemEntry->GetItemName().ToString(),
-				*TargetSlot->GetDebugString());
+				*GetItemNameString(),
+				*TargetSlotId.ToString());
 		}
 
 		/** Checks whether these parameters count as valid. */
 		bool AreParamsValid() const
 		{
-			return ItemEntry != nullptr && (TargetSlotId.IsValid() || TargetSlot != nullptr) && GroupTag.IsValid();
+			return (ItemEntry != nullptr || ItemDefinition.IsValid() || ItemInstance.IsValid()) &&
+				(TargetSlotId.IsValid()) &&
+					NumItems > 0;
 		}
+
+		FString GetItemNameString() const
+		{
+			if (ItemEntry)
+			{
+				return ItemEntry->GetItemName().ToString();
+			}
+
+			if (ItemDefinition.IsValid())
+			{
+				return ItemDefinition->GetItemName().ToString();
+			}
+			
+			if (ItemInstance.IsValid())
+			{
+				return GetNameSafe(ItemInstance.Get());
+			}
+
+			return TEXT("Invalid");
+		}
+
+		virtual FName GetParamsType() const override { return Name; }
 	};
 
 	struct FResult
 	{
 		/** Determines whether this op was successful (item could be placed in slot). */
 		bool bSuccess = false;
+
+		/** The number of items that could not be added/moved/removed due to stack size limits or other restrictions. */
+		int32 Excess = 0;
+
+		/** Handle to the item that was moved or acted upon. */
+		FInventoryItemId ItemId = FInventoryItemId::InvalidId;
 	};
 };
-
-inline FInventoryItemSlot* FInventoryOp_PlaceItemInSlot::FParams::ResolveItemSlot(ASlottableInventory* TargetInventory) const
-{
-	//@TODO: Uncomment
-	unimplemented()
-	return nullptr;
-	/*if (!IsValid(TargetInventory))
-	{
-		return nullptr;
-	}
-
-	if (TargetSlot != nullptr)
-	{
-		return TargetSlot;
-	}
-
-	if (!TargetSlotHandle.IsValid())
-	{
-		return nullptr;
-	}
-
-	return TargetInventory->FindItemSlotByHandle(TargetSlotHandle);*/
-}

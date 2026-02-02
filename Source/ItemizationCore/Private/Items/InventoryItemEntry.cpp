@@ -238,6 +238,8 @@ void FInventoryItemEntry::PostReplicatedChange(const FInventoryItemList& InArray
 FInventoryItemList::FInventoryItemList()
 	: OwningInventory(nullptr)
 {
+	ITEMIZATION_WARN("An inventory item list was constructed without a default owning inventory actor. "
+				  "This will result in undefined behavior.")
 }
 
 FInventoryItemList::FInventoryItemList(AInventoryBase* InOwningInventory)
@@ -247,7 +249,15 @@ FInventoryItemList::FInventoryItemList(AInventoryBase* InOwningInventory)
 
 FInventoryItemEntry* FInventoryItemList::FindItemEntryById(const FInventoryItemId& ItemId) const
 {
-	return *ItemEntryMap.Find(ItemId);
+	for (const FInventoryItemEntry& ItemEntry : Items)
+	{
+		if (ItemEntry.GetItemId() == ItemId)
+		{
+			return const_cast<FInventoryItemEntry*>(&ItemEntry);
+		}
+	}
+
+	return nullptr;
 }
 
 FInventoryItemEntry* FInventoryItemList::FindFirstItemEntryByDefinition(const UItemDefinitionBase* ItemDefinition) const
@@ -266,7 +276,12 @@ FInventoryItemEntry* FInventoryItemList::FindFirstItemEntryByDefinition(const UI
 UObject* FInventoryItemList::FindItemInstanceById(
 	const FInventoryItemId& ItemId) const
 {
-	return *ItemInstanceMap.Find(ItemId);
+	if (const TObjectPtr<UObject>* Instance = ItemInstanceMap.Find(ItemId))
+	{
+		return *Instance;
+	}
+	
+	return nullptr;
 }
 
 FInventoryItemEntry& FInventoryItemList::AddItemToList(FInventoryItemEntry ItemEntry)
@@ -293,21 +308,21 @@ FInventoryItemEntry& FInventoryItemList::AddItemToList(FInventoryItemEntry ItemE
 	}
 
 	// Also notify the item data
-	for (const FItemComponentData* ItemData : ItemEntry.GetItemDefinition()->GetDataList())
+	/*for (const FItemComponentData* ItemData : ItemEntry.GetItemDefinition()->GetDataList())
 	{
 		if (ItemData != nullptr)
 		{
 			ItemData->OnItemGiven(ItemEntry, OwningInventory->InventoryHandle);
 		}
-	}
+	}*/
 
 	// Add it to the lookup maps
-	ItemEntryMap.Add(NewEntry.GetItemId(), &NewEntry);
 	ItemInstanceMap.Add(NewEntry.GetItemId(), NewEntry.GetItemInstance().GetObject());
 
 	MarkItemDirty(NewEntry);
 
 	// Notify the inventory
+	OwningInventory->OnGiveItem(NewEntry);
 	OwningInventory->NotifyItemAdded(ItemEntry, ItemEntry.GetLastObservedStackSize(), ItemEntry.GetStackSize());
 	
 	return NewEntry;
@@ -325,31 +340,11 @@ bool FInventoryItemList::RemoveItemFromList(FInventoryItemId ItemId)
 		FInventoryItemEntry& ItemEntry = *It;
 		if (ItemEntry.GetItemId() == ItemId)
 		{
-			// Also notify the item data
-			for (const FItemComponentData* ItemData : ItemEntry.GetItemDefinition()->GetDataList())
-			{
-				if (ItemData != nullptr)
-				{
-					ItemData->OnItemRemoved(ItemEntry, OwningInventory->InventoryHandle);
-				}
-			}
-
-			// Also remove the item instance
-			if (ItemEntry.GetItemInstance() != nullptr)
-			{
-				// Notify the item instance bout it being removed from the inventory
-				ItemEntry.GetItemInstance()->OnRemovedFromInventory(ItemEntry, OwningInventory->InventoryHandle);
-
-				// Actually remove it
-				OwningInventory->RemoveReplicatedItemInstance(ItemEntry.GetItemInstance());
-			}
-
-			It.RemoveCurrent();
-			ItemEntryMap.Remove(ItemId);
-			ItemInstanceMap.Remove(ItemId);
-
 			// Notify the inventory
-			OwningInventory->NotifyItemRemoved(ItemEntry, ItemEntry.GetLastObservedStackSize(), 0);
+			OwningInventory->OnRemoveItem(ItemEntry);
+			
+			It.RemoveCurrent();
+			ItemInstanceMap.Remove(ItemId);
 
 			MarkArrayDirty();
 			return true;
@@ -382,7 +377,6 @@ void FInventoryItemList::PreReplicatedRemove(const TArrayView<int32> RemovedIndi
 		Entry.LastObservedStackSize = 0;
 
 		// Remove from maps
-		ItemEntryMap.Remove(Entry.GetItemId());
 		ItemInstanceMap.Remove(Entry.GetItemId());
 	}
 }
@@ -396,7 +390,6 @@ void FInventoryItemList::PostReplicatedAdd(const TArrayView<int32> AddedIndices,
 		Entry.LastObservedStackSize = Entry.StackSize;
 
 		// Add to maps
-		ItemEntryMap.Add(Entry.GetItemId(), &Entry);
 		ItemInstanceMap.Add(Entry.GetItemId(), Entry.GetItemInstance().GetObject());
 	}
 }
@@ -410,7 +403,6 @@ void FInventoryItemList::PostReplicatedChange(const TArrayView<int32> ChangedInd
 		Entry.LastObservedStackSize = Entry.StackSize;
 
 		// Update maps
-		ItemEntryMap[Entry.GetItemId()] = &Entry;
 		ItemInstanceMap[Entry.GetItemId()] = Entry.GetItemInstance().GetObject();
 	}
 }

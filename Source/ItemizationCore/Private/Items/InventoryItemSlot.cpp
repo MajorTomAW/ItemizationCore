@@ -3,6 +3,7 @@
 
 #include "Items/InventoryItemSlot.h"
 
+#include "ItemizationCoreLogChannels.h"
 #include "Inventory/InventorySlotGroup.h"
 #include "Inventory/SlottableInventory.h"
 #include "Items/IInventoryItemInstanceInterface.h"
@@ -13,7 +14,7 @@ FString FInventoryItemSlot::GetDebugString() const
 	return FString::Printf(TEXT("r: %u, c: %u"), GetRowIndex(), GetColumnIndex());
 }
 
-void FInventoryItemSlot::AssignItemToSlot(const FInventoryItemEntry& ItemEntry)
+void FInventoryItemSlot::OccupySlot(const FInventoryItemEntry& ItemEntry)
 {
 	if (ItemId == ItemEntry.GetItemId())
 	{
@@ -24,6 +25,29 @@ void FInventoryItemSlot::AssignItemToSlot(const FInventoryItemEntry& ItemEntry)
 	ItemInstance = ItemEntry.GetItemInstance().GetObject();
 
 	MarkSlotDirty();
+}
+
+void FInventoryItemSlot::UnoccupySlot()
+{
+	ItemId.Reset();
+	ItemInstance.Reset();
+
+	MarkSlotDirty();
+}
+
+UObject* FInventoryItemSlot::GetItemInSlot() const
+{
+	return ItemInstance.Get();
+}
+
+const FInventoryItemEntry* FInventoryItemSlot::GetItemEntryInSlot() const
+{
+	return OwningInventory.IsValid() ? OwningInventory->FindItemEntryById(GetItemId()) : nullptr;
+}
+
+FInventoryItemEntry* FInventoryItemSlot::GetItemEntryInSlot()
+{
+	return OwningInventory.IsValid() ? OwningInventory->FindItemEntryById(GetItemId()) : nullptr;
 }
 
 void FInventoryItemSlot::MarkSlotDirty()
@@ -90,6 +114,13 @@ void FInventoryItemSlot::PostReplicatedChange(const FInventorySlotList& InArrayS
 }
 
 
+FInventorySlotList::FInventorySlotList()
+	: OwningInventory(nullptr)
+{
+	ITEMIZATION_WARN("An inventory slot list was constructed without a default owning inventory actor. "
+				  "This will result in undefined behavior.")
+}
+
 FInventorySlotList::FInventorySlotList(ASlottableInventory* InOwningInventory)
 	: OwningInventory(InOwningInventory)
 {
@@ -99,13 +130,16 @@ FInventoryItemSlot& FInventorySlotList::AddSlotToList(FInventoryItemSlot ItemSlo
 {
 	FInventoryItemSlot& NewSlot = ItemSlots.Emplace_GetRef(ItemSlot);
 	NewSlot.SetOwningInventory(OwningInventory);
+	
 	return NewSlot;
 }
 
-FInventoryItemSlot& FInventorySlotList::AddSlotToList_Defaulted()
+FInventoryItemSlot& FInventorySlotList::AddSlotToList_Defaulted(const FGameplayTag& SlotGroup)
 {
 	FInventoryItemSlot& NewSlot = ItemSlots.AddDefaulted_GetRef();
 	NewSlot.SetOwningInventory(OwningInventory);
+	NewSlot.SetGroupTag(SlotGroup);
+	
 	return NewSlot;
 }
 
@@ -130,7 +164,9 @@ bool FInventorySlotList::RemoveSlotFromList(FInventorySlotId SlotId)
 	return false;
 }
 
-FInventoryItemSlot* FInventorySlotList::FindItemSlotBySlotId(const FInventorySlotId& SlotId) const
+FInventoryItemSlot* FInventorySlotList::FindItemSlotBySlotId(
+	const FInventorySlotId& SlotId,
+	const FGameplayTag& GroupTag) const
 {
 	for (auto& Slot : ItemSlots)
 	{
@@ -139,17 +175,7 @@ FInventoryItemSlot* FInventorySlotList::FindItemSlotBySlotId(const FInventorySlo
 			continue;
 		}
 
-		return const_cast<FInventoryItemSlot*>(&Slot);
-	}
-
-	return nullptr;
-}
-
-FInventoryItemSlot* FInventorySlotList::FindItemSlotByItemId(const FInventoryItemId& ItemId) const
-{
-	for (auto& Slot : ItemSlots)
-	{
-		if (Slot != ItemId)
+		if (GroupTag.IsValid() && !Slot.GetGroupTag().MatchesTagExact(GroupTag))
 		{
 			continue;
 		}
@@ -160,31 +186,59 @@ FInventoryItemSlot* FInventorySlotList::FindItemSlotByItemId(const FInventoryIte
 	return nullptr;
 }
 
-FInventoryItemSlotGroup* FInventorySlotList::FindItemSlotGroup(const FGameplayTag& GroupTag)
+FInventoryItemSlot* FInventorySlotList::FindItemSlotByItemId(
+	const FInventoryItemId& ItemId,
+	const FGameplayTag& GroupTag) const
 {
-	return ItemSlotGroups.Find(GroupTag);
-}
-
-const FInventoryItemSlotGroup* FInventorySlotList::FindItemSlotGroup(const FGameplayTag& GroupTag) const
-{
-	return ItemSlotGroups.Find(GroupTag);
-}
-
-TArray<FInventoryItemSlot*> FInventorySlotList::FindSlotsInGroup(const FGameplayTag& InGroupTag) const
-{
-	if (const FInventoryItemSlotGroup* SlotGroup = ItemSlotGroups.Find(InGroupTag))
+	for (auto& Slot : ItemSlots)
 	{
-		return SlotGroup->SlotList;
+		if (Slot != ItemId)
+		{
+			continue;
+		}
+
+		if (GroupTag.IsValid() && !Slot.GetGroupTag().MatchesTagExact(GroupTag))
+		{
+			continue;
+		}
+
+		return const_cast<FInventoryItemSlot*>(&Slot);
 	}
 
-	return {};
+	return nullptr;
+}
+
+TArray<FInventoryItemSlot*> FInventorySlotList::GetItemSlotsInGroup(const FGameplayTag& GroupTag)
+{
+	TArray<FInventoryItemSlot*> Result;
+	for (FInventoryItemSlot& Slot : ItemSlots)
+	{
+		if (Slot.GetGroupTag() == GroupTag)
+		{
+			Result.Add(&Slot);
+		}
+	}
+	return Result;
+}
+
+TArray<const FInventoryItemSlot*> FInventorySlotList::GetItemSlotsInGroup(const FGameplayTag& GroupTag) const
+{
+	TArray<const FInventoryItemSlot*> Result;
+	for (const FInventoryItemSlot& Slot : ItemSlots)
+	{
+		if (Slot.GetGroupTag() == GroupTag)
+		{
+			Result.Add(&Slot);
+		}
+	}
+	return Result;
 }
 
 TArray<FInventoryItemId> FInventorySlotList::GetItemIdsInGroup(const FGameplayTag& InGroupTag) const
 {
 	TArray<FInventoryItemId> ItemIds;
 
-	for (FInventoryItemSlot* Slot : FindSlotsInGroup(InGroupTag))
+	for (const FInventoryItemSlot* Slot : GetItemSlotsInGroup(InGroupTag))
 	{
 		ItemIds.Add(Slot->GetItemId());
 	}
@@ -255,7 +309,7 @@ FInventorySlotId FInventorySlotList::GetNextUnoccupiedSlotIdInGroup(const FGamep
 	return FInventorySlotId();
 }
 
-TArray<FGameplayTag> FInventorySlotList::GetAllItemGroups() const
+TArray<FGameplayTag> FInventorySlotList::GetAllItemGroupTags() const
 {
 	TArray<FGameplayTag> GroupTags;
 	for (auto& Slot : ItemSlots)
@@ -281,12 +335,6 @@ void FInventorySlotList::PreReplicatedRemove(const TArrayView<int32> RemovedIndi
 	for (const int32 Index : RemovedIndices)
 	{
 		FInventoryItemSlot& Slot = ItemSlots[Index];
-
-		// Remove a single slot from the lookup map
-		if (FInventoryItemSlotGroup* SlotGroup = ItemSlotGroups.Find(Slot.GetGroupTag()))
-		{
-			SlotGroup->SlotList.RemoveSingle(&Slot);
-		}
 	}
 }
 
@@ -295,13 +343,6 @@ void FInventorySlotList::PostReplicatedAdd(const TArrayView<int32> AddedIndices,
 	for (const int32 Index : AddedIndices)
 	{
 		FInventoryItemSlot& Slot = ItemSlots[Index];
-		FInventoryItemSlotGroup& SlotGroup = ItemSlotGroups.FindOrAdd(Slot.GetGroupTag());
-		if (!SlotGroup.GroupTag.IsValid())
-		{
-			SlotGroup.GroupTag = Slot.GetGroupTag();
-		}
-		
-		SlotGroup.SlotList.Add(&Slot);
 	}
 }
 
@@ -310,11 +351,5 @@ void FInventorySlotList::PostReplicatedChange(const TArrayView<int32> ChangedInd
 	for (const int32 Index : ChangedIndices)
 	{
 		FInventoryItemSlot& Slot = ItemSlots[Index];
-		if (FInventoryItemSlotGroup* SlotGroup = ItemSlotGroups.Find(Slot.GetGroupTag()))
-		{
-			// This only works if the indices are synced
-			// And idk if that's the case yet
-			SlotGroup->SlotList[Index] = &Slot;
-		}
 	}
 }

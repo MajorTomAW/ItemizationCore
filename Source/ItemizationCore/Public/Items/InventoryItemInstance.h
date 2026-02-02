@@ -98,7 +98,8 @@ protected:
 	FAbilityItemGrantedHandlesContainer GrantedHandlesContainer;
 
 	/** Item entry that this instance is associated with. */
-	FInventoryItemEntry* ItemEntry;
+	UPROPERTY(Transient)
+	FInventoryItemId OwningItemId;
 };
 
 #undef UE_API

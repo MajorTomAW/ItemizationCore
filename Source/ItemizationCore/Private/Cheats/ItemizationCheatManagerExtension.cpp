@@ -62,7 +62,7 @@ void UItemizationCheatManagerExtension::PopulateAutoCompleteEntries(TArray<FAuto
 		{
 			FAutoCompleteCommand AutoCompleteCmd;
 			AutoCompleteCmd.Command = FString::Printf(TEXT("GiveItem %s"), *AssetData.GetPrimaryAssetId().ToString());
-			AutoCompleteCmd.Desc = FString::Printf(TEXT("Gives %s to the owning player."), *AssetData.GetPrimaryAssetId().PrimaryAssetName.ToString());
+			AutoCompleteCmd.Desc = FString::Printf(TEXT("ItemAssetId[FString] Count[int32] GroupName[FName]"));
 			AutoCompleteCmd.Color = ConsoleSettings->InputColor;
 			AutoCompleteCommands.Add(AutoCompleteCmd);
 		}
@@ -71,7 +71,7 @@ void UItemizationCheatManagerExtension::PopulateAutoCompleteEntries(TArray<FAuto
 		{
 			FAutoCompleteCommand AutoCompleteCmd;
 			AutoCompleteCmd.Command = FString::Printf(TEXT("RemoveItem %s"), *AssetData.GetPrimaryAssetId().ToString());
-			AutoCompleteCmd.Desc = FString::Printf(TEXT("Removes %s from the owning player."), *AssetData.GetPrimaryAssetId().PrimaryAssetName.ToString());
+			AutoCompleteCmd.Desc = FString::Printf(TEXT("ItemAssetId[FString] Count[int32] GroupName[FName]"));
 			AutoCompleteCmd.Color = ConsoleSettings->InputColor;
 			AutoCompleteCommands.Add(AutoCompleteCmd);
 		}
@@ -79,7 +79,10 @@ void UItemizationCheatManagerExtension::PopulateAutoCompleteEntries(TArray<FAuto
 #endif
 }
 
-void UItemizationCheatManagerExtension::GiveItem(const FString& ItemAssetId, int32 Count) const
+void UItemizationCheatManagerExtension::GiveItem(
+	const FString& ItemAssetId,
+	int32 Count,
+	const FName& GroupName) const
 {
 #if UE_WITH_CHEAT_MANAGER
 	APlayerController* PC = GetPlayerController();
@@ -98,12 +101,21 @@ void UItemizationCheatManagerExtension::GiveItem(const FString& ItemAssetId, int
 
 	UE_LOG(LogConsoleResponse, Log, TEXT("Giving Item %s (count: %d) to %s"), *ItemAssetId, Count, *PC->GetName())
 
+	FGameplayTag GroupTag;
+	if (!GroupName.IsNone())
+	{
+		 GroupTag = FGameplayTag::RequestGameplayTag(GroupName);
+	}
+	
 	int32 Excess;
-	InventoryComp->TryGiveItem(ItemDef, Count, PC, Itemization::Tags::TAG_InventoryGroup_Inventory, Excess);
+	InventoryComp->GiveItem(ItemDef, Count, PC, GroupTag, Excess);
 #endif
 }
 
-void UItemizationCheatManagerExtension::RemoveItem(const FString& ItemAssetId, int32 Count) const
+void UItemizationCheatManagerExtension::RemoveItem(
+	const FString& ItemAssetId,
+	int32 Count,
+	const FName& GroupName) const
 {
 #if UE_WITH_CHEAT_MANAGER
 	APlayerController* PC = GetPlayerController();
@@ -122,7 +134,13 @@ void UItemizationCheatManagerExtension::RemoveItem(const FString& ItemAssetId, i
 
 	UE_LOG(LogConsoleResponse, Log, TEXT("Removing Item %s (count: %d) from %s"), *ItemAssetId, Count, *PC->GetName())
 
-	InventoryComp->TryRemoveItemByDefinition(ItemDef, Count, FGameplayTag());
+	FGameplayTag GroupTag;
+	if (!GroupName.IsNone())
+	{
+		GroupTag = FGameplayTag::RequestGameplayTag(GroupName);
+	}
+	
+	InventoryComp->RemoveItemByDefinition(ItemDef, Count, GroupTag);
 #endif
 }
 
@@ -139,7 +157,7 @@ void UItemizationCheatManagerExtension::RemoveItemById(uint32 ItemId, int32 Coun
 
 	UE_LOG(LogConsoleResponse, Log, TEXT("Removing Item %u (count: %d) from %s"), ItemId, Count, *PC->GetName())
 
-	InventoryComp->TryRemoveItemById(FInventoryItemId(ItemId), Count, FGameplayTag());
+	InventoryComp->RemoveItemById(FInventoryItemId(ItemId), Count, FGameplayTag());
 #endif
 }
 

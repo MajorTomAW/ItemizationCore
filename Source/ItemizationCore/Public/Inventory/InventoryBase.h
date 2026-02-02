@@ -20,7 +20,6 @@
 #include "InventoryBase.generated.h"
 
 struct FPickupCreationData;
-struct FInventoryOp_PlaceItemInSlot;
 class UInventoryConfigAsset;
 class IInventoryItemInstanceInterface;
 struct FInventoryOp_GiveItem;
@@ -72,12 +71,6 @@ public:
 	UE_API virtual AActor* DropItem(TScriptInterface<IInventoryItemInstanceInterface> ItemInstance, int32 NumToDrop = INDEX_NONE);
 	UE_API virtual AActor* DropItem(const FInventoryItemId& ItemId, int32 NumToDrop = INDEX_NONE);
 	UE_API virtual AActor* DropItem(const UItemDefinitionBase* ItemDefinition, int32 NumToDrop = INDEX_NONE);
-
-	/** Attempts to drop multiple items to the floor at once. */
-	UE_API virtual AActor* DropItems(const TArray<FInventoryItemEntry*>& ItemEntries);
-	UE_API virtual AActor* DropItems(const TArray<TScriptInterface<IInventoryItemInstanceInterface>>& ItemInstances);
-	UE_API virtual AActor* DropItems(const TArray<const FInventoryItemEntry&>& ItemIds);
-	UE_API virtual AActor* DropItems(const TArray<const UItemDefinitionBase*>& ItemDefinitions);
 
 public:
 	/** Checks whether an item can be combined with an existing stack to fill larger stacks first. */
@@ -185,7 +178,7 @@ protected:
 	UE_API virtual void CombineItems(FInventoryItemEntry& This, FInventoryItemEntry& Other, int32& OutCouldNotCombine);
 
 	/** Attempts to create a new item stack in this inventory. */
-	UE_API virtual bool AttemptCreateNewStack(const FInventoryItemEntry& ItemEntry, FInventoryItemId& OutItemId, const int32& RemainingStacks, int32& OutCreatedStackSize);
+	UE_API virtual bool AttemptCreateNewStack(FInventoryItemEntry& ItemEntry, FInventoryItemId& OutItemId, const int32& RemainingStacks, int32& OutCreatedStackSize, FInventoryOp_AdditiveBase::FAdditiveParamsBase* Params);
 
 	/** Adds a new item instance to the replicated sub object list. */
 	UE_API void AddReplicatedItemInstance(const TScriptInterface<IInventoryItemInstanceInterface>& ItemInstance);

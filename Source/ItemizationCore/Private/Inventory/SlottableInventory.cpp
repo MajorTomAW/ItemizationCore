@@ -5,12 +5,65 @@
 
 #include "ItemizationCoreLogChannels.h"
 #include "ItemizationCoreStats.h"
+#include "Items/Data/ItemComponentData_DisallowInventorySlot.h"
 #include "Net/UnrealNetwork.h"
 
 ASlottableInventory::ASlottableInventory(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 	, InventorySlotList(this)
 {
+}
+
+void ASlottableInventory::InitializeInventorySlots(const UInventoryConfigAsset* InConfig)
+{
+	if (!ensure(IsValid(InConfig)))
+	{
+		return;
+	}
+
+	// Clients can't create slots
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	ITEMIZATION_DISPLAY("Initializing inventory slots using '%s'", *InConfig->GetName())
+
+	for (const FInventoryGroupConfig& GroupConfig : InConfig->InventoryGroupConfigs)
+	{
+		if (!ensureMsgf(GroupConfig.GroupType.IsValid(), TEXT("Attempted to initialize an inventory with an inventory config asset that has an group config with an invalid group tag!!")))
+		{
+			continue;
+		}
+
+		uint32 SlotIndex = 0;
+		for (uint32 RowIdx = 0; RowIdx < GroupConfig.NumItemRows; ++RowIdx)
+		{
+			for (uint32 ColIdx = 0; ColIdx < GroupConfig.NumItemColumns; ++ColIdx)
+			{
+				FInventorySlotId SlotId(RowIdx, ColIdx);
+
+				// Create the default item slot
+				FInventoryItemSlot& NewSlot = InventorySlotList.AddSlotToList_Defaulted(GroupConfig.GroupType);
+				NewSlot.SetGroupTag(GroupConfig.GroupType);
+				NewSlot.SetSlotId(SlotId);
+
+				ITEMIZATION_LOG("Added item slot [%s]", *SlotId.ToString())
+
+				// See if we have slot tags
+				if (const FGameplayTagContainer* SlotTags = GroupConfig.SlotTagMap.Find(SlotIndex))
+				{
+					NewSlot.SetSlotTags(*SlotTags);
+
+					ITEMIZATION_LOG("Found slot tags for slot [%s: %s]: %s", *GroupConfig.GroupType.ToString(), *SlotId.ToString(), *SlotTags->ToString())
+				}
+
+				// Mark the slot dirty for replication
+				InventorySlotList.MarkItemDirty(NewSlot);
+				SlotIndex++;
+			}
+		}
+	}
 }
 
 TInventoryOpPtr<FInventoryOp_PlaceItemInSlot> ASlottableInventory::PlaceItemInSlot(
@@ -30,15 +83,31 @@ TInventoryOpPtr<FInventoryOp_PlaceItemInSlot> ASlottableInventory::PlaceItemInSl
 		return nullptr;
 	}
 
+	/*
 	if (Params.ResolveItemSlot(this) == nullptr)
 	{
 		ITEMIZATION_WARN("Unable to resolve item slot")
 		return nullptr;
+	}*/
+
+	// Create the item entry and notify the item data about it
+	if (!Params.ItemEntry)
+	{
+		if (!Params.ItemDefinition.IsValid())
+		{
+			return nullptr;
+		}
+
+		// Create a new item entry and store it in the params
+		FInventoryItemEntry NewItemEntry = CreateItemEntry(Params.ItemDefinition.Get(), Params.NumItems, Params.SourceObject.Get());
+		Params.ItemEntry = &NewItemEntry;
 	}
 
-	ITEMIZATION_LOG("Placing item (%s) in slot (%s) in inventory (%s)",
+	ITEMIZATION_LOG("Placing item (%s) in slot (%s) with count (%d) and source (%s) in inventory (%s)",
 		*GetNameSafe(Params.ItemEntry->GetItemDefinition()),
-		*Params.ResolveItemSlot(this)->GetSlotId().ToString(),
+		*Params.TargetSlotId.ToString(),
+		Params.NumItems,
+		*GetNameSafe(Params.SourceObject.Get()),
 		*GetName())
 
 	// Create the operation & process the operation
@@ -59,6 +128,47 @@ FInventoryItemSlot* ASlottableInventory::GetNextUnoccupiedSlotInGroup(const FGam
 	return InventorySlotList.GetNextUnoccupiedSlotInGroup(GroupTag);
 }
 
+FInventoryItemSlot* ASlottableInventory::GetNextAvailableItemSlot(
+	const FInventoryItemEntry& ItemEntry,
+	const FGameplayTag& GroupTag) const
+{
+	for (const FInventoryItemSlot& Slot : InventorySlotList)
+	{
+		// Check for matching group, but only if the group tag is valid.
+		// Otherwise we'll search all groups
+		if (!Slot.GetGroupTag().MatchesTagExact(GroupTag) && GroupTag.IsValid())
+		{
+			continue;
+		}
+
+		// Valid means its occupied
+		if (Slot.IsOccupied())
+		{
+			continue;
+		}
+
+		// Make sure the item can be placed there
+		if (!CanPlaceItemInSlot(ItemEntry, Slot))
+		{
+			continue;
+		}
+
+		return const_cast<FInventoryItemSlot*>(&Slot);
+	}
+
+	return nullptr;
+}
+
+FInventoryItemSlot* ASlottableInventory::FindItemSlotBySlotId(const FInventorySlotId& SlotId, const FGameplayTag& GroupTag) const
+{
+	return InventorySlotList.FindItemSlotBySlotId(SlotId, GroupTag);
+}
+
+FInventoryItemSlot* ASlottableInventory::FindItemSlotByItemId(const FInventoryItemId& ItemId, const FGameplayTag& GroupTag) const
+{
+	return InventorySlotList.FindItemSlotByItemId(ItemId, GroupTag);
+}
+
 void ASlottableInventory::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -67,6 +177,121 @@ void ASlottableInventory::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 	SharedParams.Condition = COND_ReplayOrOwner;
 
 	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, InventorySlotList, SharedParams)
+}
+
+void ASlottableInventory::OnRemoveItem(FInventoryItemEntry& ItemEntry)
+{
+	if (HasAuthority())
+	{
+		// If the item being removed is inside a slot, unoccpy the slot now
+		if (FInventoryItemSlot* Slot = FindItemSlotByItemId(ItemEntry.GetItemId(), FGameplayTag()))
+		{
+			Slot->UnoccupySlot();
+		}
+	}
+	
+	Super::OnRemoveItem(ItemEntry);
+}
+
+bool ASlottableInventory::MatchesRemoveFilter(
+	const FInventoryItemEntry& ItemEntry,
+	FInventoryOp_RemoveItem::FParams& Params) const
+{
+	if (!Super::MatchesRemoveFilter(ItemEntry, Params))
+	{
+		return false;
+	}
+
+	// If we can't find the item slot the item is placed in, in the specified group, we cant remove !!
+	if (!FindItemSlotByItemId(ItemEntry.GetItemId(), Params.GroupTag))
+	{
+		return false;
+	}
+
+	return true;
+}
+
+bool ASlottableInventory::AttemptCreateNewStack(
+	FInventoryItemEntry& ItemEntry,
+	FInventoryItemId& OutItemId,
+	const int32& RemainingStacks,
+	int32& OutCreatedStackSize,
+	FInventoryOp_AdditiveBase::FAdditiveParamsBase* Params)
+{
+	FInventoryItemSlot* ItemSlot = nullptr;
+	if (Params->GetParamsType() == FInventoryOp_PlaceItemInSlot::Name)
+	{
+		if (FInventoryOp_PlaceItemInSlot::FParams* SlotParams = static_cast<FInventoryOp_PlaceItemInSlot::FParams*>(Params))
+		{
+			// Use slot id from params
+			ItemSlot = FindItemSlotBySlotId(SlotParams->TargetSlotId, SlotParams->GroupTag);
+
+			ITEMIZATION_DISPLAY("using slot from op '%s'", ItemSlot ? *ItemSlot->GetDebugString() : TEXT("Invalid"))
+		}
+	}
+	else if (Params->GetParamsType() == FInventoryOp_GiveItem::Name)
+	{
+		if (FInventoryOp_GiveItem::FParams* GiveParams = static_cast<FInventoryOp_GiveItem::FParams*>(Params))
+		{
+			// Try to find the next one
+			ItemSlot = GetNextAvailableItemSlot(ItemEntry, GiveParams->GroupTag);
+
+			ITEMIZATION_DISPLAY("no slot specified, will use next free one '%s'", ItemSlot ? *ItemSlot->GetDebugString() : TEXT("Invalid"))
+		}
+	}
+	else
+	{
+		ITEMIZATION_WARN("Params of undefined type %s", *Params->GetParamsType().ToString())
+	}
+
+	// Make sure we have a valid slot.
+	if (ItemSlot == nullptr)
+	{
+		ITEMIZATION_WARN("Couldn't find a valid item slot")
+		return false;
+	}
+
+	// Sometimes we may not be able to create a new stack.
+	// E.g., if the item is restricted to a single stack and we already have one
+	if (!CanCreateNewStack(ItemEntry))
+	{
+		return false;
+	}
+
+	// Check if the item can be placed in the specified slot
+	if (!CanPlaceItemInSlot(ItemEntry, *ItemSlot))
+	{
+		return false;
+	}
+
+	// If the slot is already occupied, but passed CanPlaceItemInSlot() we now combine them
+	if (ItemSlot->IsOccupied())
+	{
+		int32 NumCouldNotCombine;
+		CombineItems(ItemEntry, *ItemSlot->GetItemEntryInSlot(), NumCouldNotCombine);
+	}
+	else
+	{
+		// Subtract the new stack size from the excess
+		const int32 NewStackSize = FMath::Min(RemainingStacks, ItemEntry.GetItemDefinition()->GetMaxStackSize());
+		OutCreatedStackSize = NewStackSize;
+
+		// Create a copy of the item entry and update its stack size
+		FInventoryItemEntry EntryCopy = ItemEntry;
+		EntryCopy.SetStackSize(NewStackSize);
+
+		// Add the item to the inventory and generate a new uid
+		FInventoryItemEntry& NewItemEntry = InventoryList.AddItemToList(MoveTemp(EntryCopy));
+		OutItemId = NewItemEntry.GetItemId();
+
+		// Also assign the item to the given slot
+		ItemSlot->OccupySlot(NewItemEntry);
+
+		ITEMIZATION_DISPLAY("Created new stack for '%s' count %d.",
+			*GetNameSafe(ItemEntry.GetItemDefinition()), OutCreatedStackSize)	
+	}
+	
+	return true;
 }
 
 void ASlottableInventory::MarkItemSlotDirty(
@@ -97,17 +322,68 @@ void ASlottableInventory::ProcessPlaceItemInSlotOperation(
 {
 	FInventoryOp_PlaceItemInSlot::FParams& Params = PlaceItemInSlotOp->Params;
 	FInventoryOp_PlaceItemInSlot::FResult& Result = PlaceItemInSlotOp->Result;
+	FInventoryItemEntry& ThisItem = *Params.ItemEntry;
 
 	// Default to false, in case we early-out
 	Result.bSuccess = false;
+	Result.Excess = Params.NumItems;
 
-	// Resolve the item slot
-	FInventoryItemSlot* ItemSlot = Params.ResolveItemSlot(this);
-	check(ItemSlot)
+	FInventoryItemId LastRelevantId = FInventoryItemId::InvalidId;
 
-	//@TODO: Swap slots? Idk what to do here right now, will decide in future
-	ItemSlot->IsOccupied();
+	// Attempt to place the item into the slot
+	int32 CreatedStackSize = 0;
+	if (AttemptCreateNewStack(ThisItem, LastRelevantId, Result.Excess, CreatedStackSize, &Params))
+	{
+		// Subtract the stack size from the excess
+		Result.Excess -= CreatedStackSize;
+	}
 
-	// Assign the slot
-	ItemSlot->AssignItemToSlot(*Params.ItemEntry);
+	// Clamp excess to 0
+	Result.Excess = FMath::Max(0, Result.Excess);
+	Result.ItemId = LastRelevantId;
+	Result.bSuccess = true;
+}
+
+bool ASlottableInventory::CanPlaceItemInSlot(
+	const FInventoryItemEntry& ItemEntry,
+	const FInventoryItemSlot& ItemSlot) const
+{
+	if (!IsValid(ItemEntry.GetItemDefinition()))
+	{
+		return false;
+	}
+	
+	//@TODO: Swap logic ?
+	if (ItemSlot.IsOccupied())
+	{
+		if (const FInventoryItemEntry* ItemEntryInSlot = ItemSlot.GetItemEntryInSlot())
+		{
+			if (!CanCombineItems(ItemEntry, *ItemEntryInSlot))
+			{
+				ITEMIZATION_WARN("Can't place item '%s' in slot '%s' as the slot is already occupied by '%s'",
+					*ItemEntry.GetDebugString(),
+					*ItemSlot.GetDebugString(),
+					*ItemSlot.GetItemId().ToString())
+			
+				return false;
+			}
+		}
+	}
+
+	// Check for disallowed item slot data
+	if (const FItemComponentData_DisallowInventorySlot* DisallowSlotData =
+		ItemEntry.GetItemDefinition()->GetItemData<FItemComponentData_DisallowInventorySlot>())
+	{
+		if (ItemSlot.GetSlotTags().HasAnyExact(DisallowSlotData->DisallowedSlotTags) ||
+			ItemSlot.GetGroupTag().MatchesAnyExact(DisallowSlotData->DisallowedSlotTags))
+		{
+			ITEMIZATION_WARN("Can't place item '%s' in slot '%s' as it has disallowed slot tags (%s)",
+				*ItemEntry.GetDebugString(),
+				*ItemSlot.GetDebugString(),
+				*DisallowSlotData->DisallowedSlotTags.ToStringSimple())
+			return false;
+		}
+	}
+
+	return true;
 }

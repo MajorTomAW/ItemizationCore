@@ -6,6 +6,8 @@
 #include "ItemizationCoreLogChannels.h"
 #include "Inventory/InventoryBase.h"
 #include "Inventory/InventoryConfigAsset.h"
+#include "Inventory/SlottableInventory.h"
+#include "Inventory/Operations/InventoryOp_PlaceItemInSlot.h"
 #include "Items/InventoryItemInstance.h"
 #include "Items/ItemDefinitionBase.h"
 
@@ -31,7 +33,6 @@ UInventoryComponent::UInventoryComponent(const FObjectInitializer& ObjectInitial
 
 void UInventoryComponent::GetOwnedGameplayTags(FGameplayTagContainer& TagContainer) const
 {
-	TagContainer.AddTag(InventoryConfig->InventoryTag);
 }
 
 AInventoryBase* UInventoryComponent::GetInventory() const
@@ -178,9 +179,9 @@ TArray<TScriptInterface<IInventoryItemInstanceInterface>> UInventoryComponent::G
 	return Result;
 }*/
 
-FInventoryItemId UInventoryComponent::TryGiveItem(
-	UItemDefinitionBase* ItemDefinition,
-	int32 StackCount,
+FInventoryItemId UInventoryComponent::GiveItem(
+	const UItemDefinitionBase* ItemDefinition,
+	int32 StackSize,
 	UObject* SourceObject,
 	FGameplayTag GroupTag,
 	int32& OutNumCouldNotAdd)
@@ -198,7 +199,7 @@ FInventoryItemId UInventoryComponent::TryGiveItem(
 	// Build our give item operation parameters
 	FInventoryOp_GiveItem::FParams Params;
 	Params.ItemDefinition = ItemDefinition;
-	Params.NumGive = StackCount;
+	Params.NumItems = StackSize;
 	Params.GroupTag = GroupTag;
 	Params.SourceObject = SourceObject;
 
@@ -214,7 +215,7 @@ FInventoryItemId UInventoryComponent::TryGiveItem(
 	return Result;
 }
 
-int32 UInventoryComponent::TryRemoveItemByDefinition(
+int32 UInventoryComponent::RemoveItemByDefinition(
 	const UItemDefinitionBase* ItemDefinition,
 	int32 NumRemove,
 	FGameplayTag GroupTag)
@@ -243,7 +244,7 @@ int32 UInventoryComponent::TryRemoveItemByDefinition(
 	return Result;
 }
 
-int32 UInventoryComponent::TryRemoveItemById(
+int32 UInventoryComponent::RemoveItemById(
 	const FInventoryItemId& ItemId,
 	int32 NumRemove,
 	FGameplayTag GroupTag)
@@ -272,7 +273,7 @@ int32 UInventoryComponent::TryRemoveItemById(
 	return Result;
 }
 
-int32 UInventoryComponent::TryRemoveItem(
+int32 UInventoryComponent::RemoveItem(
 	TScriptInterface<IInventoryItemInstanceInterface> ItemInstance,
 	int32 NumRemove,
 	FGameplayTag GroupTag)
@@ -337,11 +338,6 @@ void UInventoryComponent::OnInventoryCreated(AInventoryBase* Inventory)
 {
 	Inventory->InventoryHandle = InventoryHandle;
 
-	if (HasAuthority())
-	{
-		InitInventoryGroups(Inventory);
-	}
-
 	ITEMIZATION_DISPLAY_NET("Inventory [%s] created for %s.",
 		*GetNameSafe(Inventory), *GetNameSafe(GetOwner()));
 
@@ -359,16 +355,6 @@ void UInventoryComponent::OnInventoryCreated(AInventoryBase* Inventory)
 			}
 		}
 	}
-}
-
-void UInventoryComponent::InitInventoryGroups(AInventoryBase* Inventory)
-{
-	if (!IsValid(InventoryConfig))
-	{
-		return;
-	}
-
-	//Inventory->InitializeInventorySlots(InventoryConfig);
 }
 
 

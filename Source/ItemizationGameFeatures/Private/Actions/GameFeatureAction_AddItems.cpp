@@ -55,7 +55,7 @@ void UGameFeatureAction_AddItems::OnInitItemizationData(
 	{
 		FInventoryOp_GiveItem::FParams Params;
 		Params.ItemDefinition = ItemGrant.ItemDefinition;
-		Params.NumGive = ItemGrant.StackSize;
+		Params.NumItems = ItemGrant.StackSize;
 
 		Inventory->GiveItem(MoveTemp(Params));
 	}

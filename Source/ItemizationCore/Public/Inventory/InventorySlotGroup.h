@@ -3,9 +3,10 @@
 #pragma once
 
 #include "GameplayTagContainer.h"
-#include "Items/InventoryItemSlot.h"
 
 #include "InventorySlotGroup.generated.h"
+
+struct FInventoryItemSlot;
 
 USTRUCT()
 struct FInventoryItemSlotGroup
@@ -17,5 +18,6 @@ public:
 	FGameplayTag GroupTag;
 
 	/** List of slot pointers. */
-	TArray<FInventoryItemSlot*> SlotList;
+	UPROPERTY()
+	TArray<FInventoryItemSlot> SlotList;
 };

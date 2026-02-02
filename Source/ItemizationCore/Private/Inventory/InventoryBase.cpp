@@ -96,14 +96,14 @@ TInventoryOpPtr<FInventoryOp_GiveItem> AInventoryBase::GiveItem(FInventoryOp_Giv
 		}
 
 		// Create a new item entry and store it in the params
-		FInventoryItemEntry NewItemEntry = CreateItemEntry(Params.ItemDefinition.Get(), Params.NumGive, Params.SourceObject.Get());
+		FInventoryItemEntry NewItemEntry = CreateItemEntry(Params.ItemDefinition.Get(), Params.NumItems, Params.SourceObject.Get());
 		Params.ItemEntry = &NewItemEntry;
 	}
 
 
 	ITEMIZATION_LOG("Giving item (%s) with count (%d) and source (%s) to inventory (%s)",
 		*GetNameSafe(Params.ItemEntry->ItemDefinition),
-		Params.NumGive,
+		Params.NumItems,
 		*GetNameSafe(Params.SourceObject.Get()),
 		*GetName())
 
@@ -237,30 +237,6 @@ AActor* AInventoryBase::DropItem(const UItemDefinitionBase* ItemDefinition, int3
 	Params.NumRemove = NumToDrop;
 
 	return DropItemImpl(Params, *FindFirstItemEntryByDefinition(ItemDefinition));
-}
-
-AActor* AInventoryBase::DropItems(const TArray<FInventoryItemEntry*>& ItemEntries)
-{
-	unimplemented()
-	return nullptr;
-}
-
-AActor* AInventoryBase::DropItems(const TArray<TScriptInterface<IInventoryItemInstanceInterface>>& ItemInstances)
-{
-	unimplemented()
-	return nullptr;
-}
-
-AActor* AInventoryBase::DropItems(const TArray<const FInventoryItemEntry&>& ItemIds)
-{
-	unimplemented()
-	return nullptr;
-}
-
-AActor* AInventoryBase::DropItems(const TArray<const UItemDefinitionBase*>& ItemDefinitions)
-{
-	unimplemented()
-	return nullptr;
 }
 
 bool AInventoryBase::CanAutoCombineStacks(const UItemDefinitionBase* ItemDefinition) const
@@ -462,7 +438,7 @@ void AInventoryBase::OnRemoveItem(FInventoryItemEntry& ItemEntry)
 
 	// Notify the item instance about its removal
 	TScriptInterface<IInventoryItemInstanceInterface> Instance = ItemEntry.GetItemInstance();
-	if (Instance != nullptr) // Authority already called this in inventory list
+	if (Instance != nullptr)
 	{
 		Instance->OnRemovedFromInventory(ItemEntry, InventoryHandle);
 	}
@@ -616,7 +592,7 @@ void AInventoryBase::ProcessGiveItemOperation(const TInventoryOpRef<FInventoryOp
 	const UItemDefinitionBase* ItemDefinition = Params.ItemEntry->GetItemDefinition();
 
 	// We assume that we couldn't add anything yet
-	Result.Excess = Params.NumGive;
+	Result.Excess = Params.NumItems;
 
 
 	FInventoryItemId LastRelevantId = FInventoryItemId::InvalidId;
@@ -667,7 +643,7 @@ void AInventoryBase::ProcessGiveItemOperation(const TInventoryOpRef<FInventoryOp
 	while (Result.Excess > 0)
 	{
 		int32 CreatedStackSize;
-		if (!AttemptCreateNewStack(ThisItem, LastRelevantId, Result.Excess, CreatedStackSize))
+		if (!AttemptCreateNewStack(ThisItem, LastRelevantId, Result.Excess, CreatedStackSize, &Params))
 		{
 			break;
 		}
@@ -828,10 +804,11 @@ void AInventoryBase::CombineItems(
 }
 
 bool AInventoryBase::AttemptCreateNewStack(
-	const FInventoryItemEntry& ItemEntry,
+	FInventoryItemEntry& ItemEntry,
 	FInventoryItemId& OutItemId,
 	const int32& RemainingStacks,
-	int32& OutCreatedStackSize)
+	int32& OutCreatedStackSize,
+	FInventoryOp_AdditiveBase::FAdditiveParamsBase* Params)
 {
 	// Make sure we have at least one remaining stack
 	if (RemainingStacks <= 0)
@@ -855,7 +832,8 @@ bool AInventoryBase::AttemptCreateNewStack(
 	EntryCopy.SetStackSize(NewStackSize);
 
 	// Add the item to the inventory and generate a new uid
-	InventoryList.AddItemToList(MoveTemp(EntryCopy));
+	FInventoryItemEntry& NewItemEntry = InventoryList.AddItemToList(MoveTemp(EntryCopy));
+	OutItemId = NewItemEntry.GetItemId();
 
 	ITEMIZATION_DISPLAY("Created new stack for '%s' count %d.",
 		*GetNameSafe(ItemEntry.GetItemDefinition()), OutCreatedStackSize)
@@ -962,7 +940,7 @@ void AInventoryBase::FetchOpValidness()
 
 		RemoveIndices.AddUnique(OpPtr->OpIndex);
 
-		ITEMIZATION_LOG("Adding operation %s [%u] to removal list, it has been alive for approx. %.2f seconds.",
+		ITEMIZATION_VERBOSE("Adding operation %s [%u] to removal list, it has been alive for approx. %.2f seconds.",
 			*OpPtr->OpName, OpPtr->OpIndex, InventoryCVars::MaxInventoryOpLifetime);
 	}
 

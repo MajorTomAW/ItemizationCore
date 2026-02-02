@@ -6,6 +6,7 @@
 #include "Engine/Canvas.h"
 #include "Inventory/IInventoryOwnerInterface.h"
 #include "Inventory/InventoryBase.h"
+#include "Inventory/SlottableInventory.h"
 #include "Items/InventoryItemInstance.h"
 #include "Items/ItemDefinitionBase.h"
 
@@ -182,29 +183,40 @@ void FGameplayDebuggerCategory_Itemization::CollectData(APlayerController* Owner
 		}
 
 		// Find slots data
-		//@TODO: Uncomment
-		/*for (const auto& GroupTag : Inventory->GetSlotList().GetAllItemGroups())
+		if (const ASlottableInventory* SlottableInventory = Cast<ASlottableInventory>(Inventory))
 		{
-			TArray<FInventoryItemSlot*> Slots = Inventory->GetSlotList().FindSlotsInGroup(GroupTag);
-			for (const FInventoryItemSlot* Slot : Slots)
+			for (const FInventoryItemSlot& ItemSlot : SlottableInventory->GetSlotList())
 			{
-				FRepData::FSlotDebug SlotData;
-				SlotData.GroupName = GroupTag.ToString();
-				SlotData.RowIndex = Slot->GetRowIndex();
-				SlotData.ColumnIndex = Slot->GetColumnIndex();
+				FRepData::FSlotDebug& SlotData = DataPack.Slots.AddDefaulted_GetRef();
+				SlotData.GroupName = ItemSlot.GetGroupTag().ToString();
+				SlotData.RowIndex = ItemSlot.GetRowIndex();
+				SlotData.ColumnIndex = ItemSlot.GetColumnIndex();
 				SlotData.ItemName = TEXT("Empty");
 
-				if (const FInventoryItemEntry* ItemInSlot = ItemContainer.FindItemEntryById(Slot->GetItemHandle()))
+				if (const FInventoryItemEntry* ItemInSlot = ItemSlot.GetItemEntryInSlot())
 				{
-					if (const UItemDefinitionBase* ItemDefinition = ItemInSlot->GetItemDefinition())
+					SlotData.ItemName = ItemInSlot->GetItemName().ToString();
+				}
+			}
+			
+			/*for (const FGameplayTag& GroupTag : SlottableInventory->GetAllItemSlotGroupTags())
+			{
+				TArray<FInventoryItemSlot*> Slots = SlottableInventory->GetSlotList().GetItemSlotsInGroup(GroupTag);
+				for (const FInventoryItemSlot* Slot : Slots)
+				{
+					FRepData::FSlotDebug& SlotData = DataPack.Slots.AddDefaulted_GetRef();
+					SlotData.GroupName = GroupTag.ToString();
+					SlotData.RowIndex = Slot->GetRowIndex();
+					SlotData.ColumnIndex = Slot->GetColumnIndex();
+					SlotData.ItemName = TEXT("Empty");
+
+					if (const FInventoryItemEntry* ItemInSlot = Slot->GetItemEntryInSlot())
 					{
-						SlotData.ItemName = ItemDefinition->GetItemName().ToString();
+						SlotData.ItemName = ItemInSlot->GetItemName().ToString();
 					}
 				}
-
-				DataPack.Slots.Add(SlotData);
-			}
-		}*/
+			}*/
+		}
 	}
 }
 
@@ -451,30 +463,31 @@ void FGameplayDebuggerCategory_Itemization::DrawInventorySlots(
 
 	CanvasContext.Printf(TEXT("Item Slots [%u]"), DataPack.Slots.Num());
 	CanvasContext.MoveToNewLine();
+	
 
 	float IndexHeight, IndexWidth;
 	CanvasContext.MeasureString("VeryVeryLongItemName", IndexWidth, IndexHeight);
 
-	TMap<FString, TArray<FRepData::FSlotDebug>> SlotGroupMap;
+	TMap<FString, TArray<FRepData::FSlotDebug>> SlotGroupMap = {};
 
 	struct FGridInfo
 	{
 		uint32 NumRows = 0;
 		uint32 NumColumns = 0;
 	};
-	TMap<FString, FGridInfo> GridInfoMap;
+	TMap<FString, FGridInfo> GridInfoMap = {};
 	for (const auto& SlotData : DataPack.Slots)
 	{
 		TArray<FRepData::FSlotDebug>& SlotList = SlotGroupMap.FindOrAdd(SlotData.GroupName);
 		SlotList.Add(SlotData);
 	}
-
+	
 	for (const auto& Pair : SlotGroupMap)
 	{
 		// Find the grid dimensions
 		uint32 NumRows = 0;
 		uint32 NumColumns = 0;
-		for (const auto& Slot : Pair.Value)
+		for (const FRepData::FSlotDebug& Slot : Pair.Value)
 		{
 			NumRows = FMath::Max(NumRows, Slot.RowIndex);
 			NumColumns = FMath::Max(NumColumns, Slot.ColumnIndex);
@@ -482,6 +495,7 @@ void FGameplayDebuggerCategory_Itemization::DrawInventorySlots(
 
 		GridInfoMap.Add(Pair.Key, FGridInfo(NumRows, NumColumns));
 	}
+	
 
 	// Draw each group
 	for (const auto& Pair : SlotGroupMap)
