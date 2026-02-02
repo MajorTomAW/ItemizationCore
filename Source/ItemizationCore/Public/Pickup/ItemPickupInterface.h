@@ -7,9 +7,11 @@
 
 #include "ItemPickupInterface.generated.h"
 
+struct FInventoryItemEntry;
+class IInventoryOwnerInterface;
 struct FPickupCreationData;
 
-DECLARE_DYNAMIC_DELEGATE_TwoParams(FPickupPickedUpEvent, TScriptInterface<IItemPickupInterface>, SelfActor, APawn*, InteractingPawn);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FPickupPickedUpEvent, TScriptInterface<IItemPickupInterface>, SelfActor, APawn*, InteractingPawn);
 
 /**
  * Pickupable interface used for actors that can have an item associated for picking up into an inventory.
@@ -28,4 +30,25 @@ class IItemPickupInterface
 public:
 	/** Initializes the pickup actor with the given creation data. */
 	virtual void SetupPickupWithCreationData(const FPickupCreationData& CreationData) = 0;
+
+	/** Called when this pickup has been given to a target inventory. */
+	virtual void OnPickupGivenTo(TScriptInterface<IInventoryOwnerInterface> InventoryOwner) {};
+
+	/** Returns the delegate to the picked-up event. */
+	virtual FPickupPickedUpEvent* GetOnPickedUpDelegate() = 0;
+
+	/** Checks whether the pickup can by picked up by the associated pawn. */
+	UFUNCTION(BlueprintCallable, Category=Pickup)
+	virtual bool CanBePickedUpBy(const APawn* InteractingPawn) const { return true; };
+
+	/** Makes this pickup despawn. */
+	UFUNCTION(BlueprintCallable, Category=Pickup)
+	virtual void DespawnPickup() = 0;
+
+	/** Returns the primary item entry stored in this pickupable actor.
+	 * Note that the FInventoryItemEntry is just a copy of the original item that was dropped.
+	 * Therefore, by modifying this item entry, you only modify the one inside the pickup and not inside the inventory.
+	 */
+	UFUNCTION(BlueprintCallable, Category=Pickup)
+	virtual const FInventoryItemEntry& GetPrimaryPickupItemEntry() const = 0;
 };

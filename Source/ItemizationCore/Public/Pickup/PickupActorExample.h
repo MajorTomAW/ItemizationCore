@@ -20,6 +20,9 @@ public:
 
 	//~ Begin IItemPickupInterface
 	virtual void SetupPickupWithCreationData(const FPickupCreationData& CreationData) override;
+	virtual FPickupPickedUpEvent* GetOnPickedUpDelegate() override { return &OnPickedUpEvent; }
+	virtual void DespawnPickup() override;
+	virtual const FInventoryItemEntry& GetPrimaryPickupItemEntry() const override;
 	//~ End IItemPickupInterface
 
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
@@ -27,4 +30,7 @@ public:
 protected:
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = PickupActorExample, Replicated)
 	FInventoryItemEntry PickupItem;
+
+	UPROPERTY()
+	FPickupPickedUpEvent OnPickedUpEvent;
 };
