@@ -29,10 +29,10 @@ struct FInventoryItemSlot : public FFastArraySerializerItem
 	friend class AInventoryBase;
 
 public:
-	FInventoryItemSlot() = default;
+	UE_API FInventoryItemSlot() = default;
 
 	/** Returns this item slot as a debug string. */
-	FString GetDebugString() const;
+	UE_API FString GetDebugString() const;
 
 	/** Returns the slot group tag. */
 	const FGameplayTag& GetGroupTag() const
@@ -95,17 +95,17 @@ public:
 	}
 
 	/** Places an item in this slot. */
-	void OccupySlot(const FInventoryItemEntry& ItemEntry);
+	UE_API void OccupySlot(const FInventoryItemEntry& ItemEntry);
 
 	/** Clears an item from this slot. */
-	void UnoccupySlot();
+	UE_API void UnoccupySlot();
 
 	/** Returns the item instance in this slot. */
-	UObject* GetItemInSlot() const;
+	UE_API UObject* GetItemInSlot() const;
 
 	/** Returns the item entry in this slot. */
-	const FInventoryItemEntry* GetItemEntryInSlot() const;
-	FInventoryItemEntry* GetItemEntryInSlot();
+	UE_API const FInventoryItemEntry* GetItemEntryInSlot() const;
+	UE_API FInventoryItemEntry* GetItemEntryInSlot();
 
 	/** Sets the group tag. */
 	void SetGroupTag(const FGameplayTag& NewGroupTag)
@@ -126,16 +126,16 @@ public:
 	}
 
 	/** Marks this slot dirty. */
-	void MarkSlotDirty();
+	UE_API void MarkSlotDirty();
 
 	/** Attempts to resolve the item instance. */
-	void TryResolveItemInstance();
+	UE_API void TryResolveItemInstance();
 
 	/** Returns the owning inventory of this item. */
 	ASlottableInventory* GetOwningInventory() const { return OwningInventory.Get(); }
 
 	/** Sets the owning inventory of this item. */
-	void SetOwningInventory(ASlottableInventory* InOwningInventory);
+	UE_API void SetOwningInventory(ASlottableInventory* InOwningInventory);
 
 	//~ Begin FFastArraySerializerItem Interface
 	void PreReplicatedRemove(const FInventorySlotList& InArraySerializer);
@@ -251,7 +251,7 @@ public:
 	UE_API void PreReplicatedRemove(const TArrayView<int32> RemovedIndices, int32 FinalSize);
 	UE_API void PostReplicatedAdd(const TArrayView<int32> AddedIndices, int32 FinalSize);
 	UE_API void PostReplicatedChange(const TArrayView<int32> ChangedIndices, int32 FinalSize);
-	
+
 	bool NetDeltaSerialize(FNetDeltaSerializeInfo& DeltaParms)
 	{
 		return FFastArraySerializer::FastArrayDeltaSerialize<FInventoryItemSlot, FInventorySlotList>(ItemSlots, DeltaParms, *this);

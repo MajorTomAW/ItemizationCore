@@ -33,36 +33,36 @@ struct FInventoryItemEntry : public FFastArraySerializerItem
 	friend class AInventoryBase;
 
 public:
-	FInventoryItemEntry();
-	FInventoryItemEntry(const FInventoryItemEntry& Other);
-	explicit FInventoryItemEntry(const UItemDefinitionBase* InItemDefinition, int32 InCount, UObject* InSourceObject = nullptr);
-	explicit FInventoryItemEntry(const FItemAndCount& ItemAndCount, UObject* InSourceObject = nullptr);
+	UE_API FInventoryItemEntry();
+	UE_API FInventoryItemEntry(const FInventoryItemEntry& Other);
+	UE_API explicit FInventoryItemEntry(const UItemDefinitionBase* InItemDefinition, int32 InCount, UObject* InSourceObject = nullptr);
+	UE_API explicit FInventoryItemEntry(const FItemAndCount& ItemAndCount, UObject* InSourceObject = nullptr);
 
 	/** Returns this item entry as a debug string. */
-	FString GetDebugString() const;
+	UE_API FString GetDebugString() const;
 
 	/** Returns this item entry's item definitions' name. */
-	FText GetItemName(bool bUsePlural = false) const;
+	UE_API FText GetItemName(bool bUsePlural = false) const;
 
 	/** Prints out all stats associated with this item entry. */
-	void DebugPrintStats() const;
+	UE_API void DebugPrintStats() const;
 
 	/** Resets this item entry to an invalid state. */
-	void Reset();
+	UE_API void Reset();
 
 	/** Returns true if this item entry has a valid item definition and handle. */
-	bool IsValid() const;
+	UE_API bool IsValid() const;
 
 	/** Returns the item instance associated with this entry. */
-	TScriptInterface<IInventoryItemInstanceInterface> GetItemInstance() const;
-	void SetReplicatedItemInstance(const TScriptInterface<IInventoryItemInstanceInterface>& InInstance);
-	void SetNonReplicatedItemInstance(const TScriptInterface<IInventoryItemInstanceInterface>& InInstance);
+	UE_API TScriptInterface<IInventoryItemInstanceInterface> GetItemInstance() const;
+	UE_API void SetReplicatedItemInstance(const TScriptInterface<IInventoryItemInstanceInterface>& InInstance);
+	UE_API void SetNonReplicatedItemInstance(const TScriptInterface<IInventoryItemInstanceInterface>& InInstance);
 
 	/** Returns the owning inventory of this item. */
 	AInventoryBase* GetOwningInventory() const { return OwningInventory.Get(); }
 
 	/** Sets the owning inventory of this item. */
-	void SetOwningInventory(AInventoryBase* InOwningInventory);
+	UE_API void SetOwningInventory(AInventoryBase* InOwningInventory);
 
 	/*/** Returns a stat integer associated with the given tag. #1#
 	int32 GetStatValue(const FGameplayTag& Tag) const;
@@ -90,10 +90,10 @@ public:
 	int32 GetStackSize() const { return StackSize; }
 
 	/** Sets the stack size to the given value and marks it dirty in the owning inventory. */
-	void SetStackSize(int32 NewStackSize);
+	UE_API void SetStackSize(int32 NewStackSize);
 
 	/** Sets the stack size to the given value without marking it dirty. */
-	void SetStackSizeNoDirty(int32 NewStackSize);
+	UE_API void SetStackSizeNoDirty(int32 NewStackSize);
 
 	/** Returns the last stack size that was locally observed. */
 	int32 GetLastObservedStackSize() const { return LastObservedStackSize; }
@@ -102,7 +102,7 @@ public:
 	void SetLastObservedStackSize(int32 NewLastObservedStackSize) { LastObservedStackSize = NewLastObservedStackSize; }
 
 	/** Marks this item dirty. */
-	void MarkItemDirty();
+	UE_API void MarkItemDirty();
 
 	//~ Begin FFastArraySerializerItem Interface
 	void PreReplicatedRemove(const FInventoryItemList& InArraySerializer);
@@ -160,7 +160,7 @@ protected:
 public:
 	FInventoryItemEntry& operator=(const FInventoryItemEntry& Other);
 	FInventoryItemEntry& operator=(FInventoryItemEntry& Other);
-	
+
 	bool operator==(const FInventoryItemEntry& Other) const
 	{
 		return (ItemId.Get() == Other.ItemId.Get()) &&
