@@ -158,8 +158,8 @@ protected:
 	/**@TODO: Authority-only list of stat tags mapped to stat integer value.*/
 
 public:
-	FInventoryItemEntry& operator=(const FInventoryItemEntry& Other);
-	FInventoryItemEntry& operator=(FInventoryItemEntry& Other);
+	UE_API FInventoryItemEntry& operator=(const FInventoryItemEntry& Other);
+	UE_API FInventoryItemEntry& operator=(FInventoryItemEntry& Other);
 
 	bool operator==(const FInventoryItemEntry& Other) const
 	{
