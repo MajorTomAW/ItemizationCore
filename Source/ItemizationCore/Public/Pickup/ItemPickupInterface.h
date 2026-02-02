@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Items/InventoryItemEntry.h"
 #include "UObject/Interface.h"
 
 #include "ItemPickupInterface.generated.h"
@@ -51,4 +52,8 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category=Pickup)
 	virtual const FInventoryItemEntry& GetPrimaryPickupItemEntry() const = 0;
+
+	/** Returns the primary item definition stored in this pickupable actor. */
+	UFUNCTION(BlueprintCallable, Category=Pickup)
+	virtual const UItemDefinitionBase* GetPrimaryPickupItemDefinition() const { return GetPrimaryPickupItemEntry().GetItemDefinition(); }
 };
