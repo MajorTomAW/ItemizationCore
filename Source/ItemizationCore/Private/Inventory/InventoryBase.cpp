@@ -73,7 +73,7 @@ AInventoryBase::AInventoryBase(const FObjectInitializer& ObjectInitializer)
 TInventoryOpPtr<FInventoryOp_GiveItem> AInventoryBase::GiveItem(FInventoryOp_GiveItem::FParams&& Params)
 {
 	SCOPE_CYCLE_COUNTER(STAT_Itemization_GiveItem)
-	
+
 	if (!Params.AreParamsValid())
 	{
 		ITEMIZATION_WARN("Called with invalid Params [%s].", *Params.GetDebugString())
@@ -151,7 +151,7 @@ AActor* AInventoryBase::DropItem(FInventoryItemEntry* ItemEntry, int32 NumToDrop
 		ITEMIZATION_WARN("Was passed an invalid item entry.")
 		return nullptr;
 	}
-	
+
 	FInventoryOp_RemoveItem::FParams Params;
 	Params.ItemId = ItemEntry->GetItemId();
 	Params.NumRemove = NumToDrop;
@@ -165,7 +165,7 @@ AActor* AInventoryBase::DropItemImpl(
 	const FInventoryItemEntry& ItemEntry)
 {
 	auto RemoveOp = RemoveItem(MoveTemp(DropParams));
-	
+
 	if (!RemoveOp->Result.bRemovedAny)
 	{
 		ITEMIZATION_WARN("no stacks were removed for item %s", *ItemEntry.GetDebugString())
@@ -218,7 +218,7 @@ AActor* AInventoryBase::DropItem(const FInventoryItemId& ItemId, int32 NumToDrop
 	FInventoryOp_RemoveItem::FParams Params;
 	Params.ItemId = ItemId;
 	Params.NumRemove = NumToDrop;
-	
+
 	return DropItemImpl(Params, *FindItemEntryById(ItemId));
 }
 
@@ -360,7 +360,7 @@ TScriptInterface<IInventoryItemInstanceInterface> AInventoryBase::FindItemInstan
 TArray<TScriptInterface<IInventoryItemInstanceInterface>> AInventoryBase::GetAllItemInstances() const
 {
 	TArray<TScriptInterface<IInventoryItemInstanceInterface>> Result;
-	
+
 	// O(n)
 	for (const FInventoryItemEntry& ItemEntry : InventoryList)
 	{
@@ -456,6 +456,36 @@ void AInventoryBase::OnRemoveItem(FInventoryItemEntry& ItemEntry)
 	NotifyItemRemoved(ItemEntry, ItemEntry.GetLastObservedStackSize(), 0);
 }
 
+void AInventoryBase::NotifyItemChanged(
+	const FInventoryItemEntry& ItemThatChanged,
+	const int32& LastCount,
+	const int32& NewCount)
+{
+	OnItemChangedDelegate.Broadcast(ItemThatChanged, LastCount, NewCount);
+
+	ITEMIZATION_LOG("")
+}
+
+void AInventoryBase::NotifyItemAdded(
+	const FInventoryItemEntry& ItemThatWasAdded,
+	const int32& LastCount,
+	const int32& NewCount)
+{
+	OnItemAddedDelegate.Broadcast(ItemThatWasAdded, LastCount, NewCount);
+
+	ITEMIZATION_LOG("")
+}
+
+void AInventoryBase::NotifyItemRemoved(
+	const FInventoryItemEntry& ItemThatWasRemoved,
+	const int32& LastCount,
+	const int32& NewCount)
+{
+	OnItemRemovedDelegate.Broadcast(ItemThatWasRemoved, LastCount, NewCount);
+
+	ITEMIZATION_LOG("")
+}
+
 void AInventoryBase::BeginPlay()
 {
 	Super::BeginPlay();
@@ -545,7 +575,7 @@ bool AInventoryBase::CanCreateNewStack(const FInventoryItemEntry& ItemEntry) con
 	{
 		return false;
 	}
-	
+
 	// Check for the single stat trait tag
 	// Worst case O(n²)
 	if (ItemEntry.GetItemDefinition()->HasTrait(UItemizationCoreSettings::Get()->SingleStackTag))
@@ -588,7 +618,7 @@ void AInventoryBase::ProcessGiveItemOperation(const TInventoryOpRef<FInventoryOp
 	FInventoryOp_GiveItem::FResult& Result = GiveOp->Result;
 	FInventoryItemEntry& ThisItem = *Params.ItemEntry;
 
-	// We grab item definition from entry, as the direct item definition inside the params may not be valid 
+	// We grab item definition from entry, as the direct item definition inside the params may not be valid
 	const UItemDefinitionBase* ItemDefinition = Params.ItemEntry->GetItemDefinition();
 
 	// We assume that we couldn't add anything yet
@@ -612,7 +642,7 @@ void AInventoryBase::ProcessGiveItemOperation(const TInventoryOpRef<FInventoryOp
 			{
 				break;
 			}
-			
+
 			// Early out on items of a different type
 			if (OtherItem.GetItemDefinition() != ItemDefinition)
 			{
@@ -791,15 +821,15 @@ void AInventoryBase::CombineItems(
 		// Broadcast the change
 		NotifyItemChanged(This, ThisStackSize, ThisNewStackSize);
 	}
-	
+
 
 	// Broadcast the change
 	NotifyItemChanged(Other, OtherStackSize, OtherNewStackSize);
 
 	ITEMIZATION_LOG("CombineItems: Combined '%s' [old: %d -> new: %d] amd '%s' [old: %d -> new: %d]",
-		*This.GetDebugString(), ThisStackSize, ThisNewStackSize, 
+		*This.GetDebugString(), ThisStackSize, ThisNewStackSize,
 		*Other.GetDebugString(), OtherStackSize, OtherNewStackSize)
-	
+
 	OutCouldNotCombine = FMath::Max(0, ThisStackSize - StacksToBeAdded);
 }
 
@@ -815,7 +845,7 @@ bool AInventoryBase::AttemptCreateNewStack(
 	{
 		return false;
 	}
-	
+
 	// Sometimes we may not be able to create a new stack.
 	// E.g., if the item is restricted to a single stack and we already have one
 	if (!CanCreateNewStack(ItemEntry))
@@ -837,7 +867,7 @@ bool AInventoryBase::AttemptCreateNewStack(
 
 	ITEMIZATION_DISPLAY("Created new stack for '%s' count %d.",
 		*GetNameSafe(ItemEntry.GetItemDefinition()), OutCreatedStackSize)
-	
+
 	return true;
 }
 
@@ -910,7 +940,7 @@ AActor* AInventoryBase::SpawnPickupActor(const FPickupCreationData& PickupCreati
 
 	// Spawn the pickup
 	AActor* Spawned = World->SpawnActor(ClassToUse, &SpawnTransform, SpawnInfo);
-	
+
 	IItemPickupInterface* Pickup = Cast<IItemPickupInterface>(Spawned);
 	checkf(Pickup, TEXT("Pickup actor (%s) must inherit the IItemPickupInterface!"), *ClassToUse->GetName())
 	Pickup->SetupPickupWithCreationData(PickupCreationData);

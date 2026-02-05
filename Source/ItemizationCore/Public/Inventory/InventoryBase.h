@@ -9,7 +9,6 @@
 #include "ItemizationCoreTypes.h"
 #include "Items/InventoryItemEntry.h"
 #include "Items/InventoryItemSlot.h"
-#include "Items/ItemDefinitionBase.h"
 
 #include "Operations/InventoryOp.h"
 #include "Operations/InventoryOpCache.h"
@@ -21,7 +20,6 @@
 
 struct FPickupCreationData;
 class UInventoryConfigAsset;
-class IInventoryItemInstanceInterface;
 struct FInventoryOp_GiveItem;
 class UInventoryItemInstance;
 struct FInventoryItemEntry;
@@ -32,7 +30,7 @@ struct FInventoryItemEntry;
  * Inventory class that manages an inventory list.
  * Purely acts as a container for adding, removing and replicating an item array.
  * Additionally, items can be dropped on the floor using a pickup actor.
- * But besides that, this inventory doesn't have any other functionality but being an item container. 
+ * But besides that, this inventory doesn't have any other functionality but being an item container.
  *
  * For more complex inventories see ASlottableInventory,
  * which supports things such as item groups and item slots.
@@ -50,7 +48,7 @@ public:
 	/**
 	 * Attempts to add an item to the inventory.
 	 * This is an advanced function, consider calling the wrappers on UInventoryComponent instead.
-	 * 
+	 *
 	 * @param Params Cached params about the give item action.
 	 * @returns A pointer to the inventory operation. Can be used to get data such as how many items couldn't be added.
 	 */
@@ -59,7 +57,7 @@ public:
 	/**
 	 * Attempts to remove an item from the inventory.
 	 * This is an advanced function, consider calling the wrappers on UInventoryComponent instead.
-	 * 
+	 *
 	 * @param Params Cached params about the remove item action. Has item definition / id / instance / custom filter func,
 	 * to find the item we want to remove.
 	 * @return A pointer to the inventory operation. Can be used to get data such as how many items could/couldn't be removed.
@@ -119,15 +117,19 @@ public:
 	/** Called when an item is about to be removed from the inventory. */
 	UE_API virtual void OnRemoveItem(FInventoryItemEntry& ItemEntry);
 
+	DECLARE_MULTICAST_DELEGATE_ThreeParams(FGenericItemChangeEvent, const FInventoryItemEntry& /*Item*/, const int32& /*LastCount*/, const int32& /*NewCount*/);
 
 	/** Notify that gets called whenever an item has changed, called by the inventory itself or due to replication. */
-	UE_API virtual void NotifyItemChanged(const FInventoryItemEntry& ItemThatChanged, const int32& LastCount, const int32& NewCount) {}
+	UE_API virtual void NotifyItemChanged(const FInventoryItemEntry& ItemThatChanged, const int32& LastCount, const int32& NewCount);
+	FGenericItemChangeEvent OnItemChangedDelegate;
 
 	/** Notify that gets called whenever an item got added to the inventory, called by the inventory itself or due to replication. */
-	UE_API virtual void NotifyItemAdded(const FInventoryItemEntry& ItemThatWasAdded, const int32& LastCount, const int32& NewCount) {}
+	UE_API virtual void NotifyItemAdded(const FInventoryItemEntry& ItemThatWasAdded, const int32& LastCount, const int32& NewCount);
+	FGenericItemChangeEvent OnItemAddedDelegate;
 
 	/** Notify that gets called whenever an item got removed to the inventory, called by the inventory itself or due to replication. */
-	UE_API virtual void NotifyItemRemoved(const FInventoryItemEntry& ItemThatWasRemoved, const int32& LastCount, const int32& NewCount) {}
+	UE_API virtual void NotifyItemRemoved(const FInventoryItemEntry& ItemThatWasRemoved, const int32& LastCount, const int32& NewCount);
+	FGenericItemChangeEvent OnItemRemovedDelegate;
 
 protected:
 	//~ Begin UObject Interface
@@ -157,8 +159,8 @@ protected:
 	UE_API void MarkItemEntryDirty(FInventoryItemEntry& ItemEntry, bool bWasAddOrChange = false, bool bForceMarkItemDirty = false);
 
 	/** Checks whether we can create a new item stack for the given item entry. */
-	UE_API virtual bool CanCreateNewStack(const FInventoryItemEntry& ItemEntry) const; 
-	
+	UE_API virtual bool CanCreateNewStack(const FInventoryItemEntry& ItemEntry) const;
+
 	/** Constructs a new item entry but doesn't add to the inventory list. */
 	UE_API FInventoryItemEntry CreateItemEntry(const UItemDefinitionBase* ItemDefinition, int32 StackCount, UObject* SourceObject) const;
 
@@ -188,7 +190,7 @@ protected:
 
 	/** Creates the pickup creation data to use for spawning a pickup actor. */
 	UE_API FPickupCreationData MakePickupCreationData(const FInventoryItemEntry& ItemEntry) const;
-	
+
 	/** Spawns a pickup actor using the given pickup creation data. */
 	UE_API AActor* SpawnPickupActor(const FPickupCreationData& PickupCreationData) const;
 
@@ -197,7 +199,7 @@ protected:
 
 	/** Returns the list of all item instances. */
 	TArray<TObjectPtr<UObject>>& GetReplicatedItemInstances_Mutable() { return AllReplicatedItemInstances; }
-	
+
 public:
 	/** Handle for outside inventory access. Gets set by the inventory component. */
 	UPROPERTY()
@@ -215,7 +217,7 @@ protected:
 	/** The pickup actor class to use when spawning pickups. Must implement the IItemPickupInterface. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=Pickup, meta=(MustImplement="/Script/ItemizationCore.ItemPickupInterface"))
 	TSubclassOf<AActor> PickupActorClass;
-	
+
 	/** Replicated list of inventory item entries. */
 	UPROPERTY(BlueprintReadOnly, Transient, ReplicatedUsing=OnRep_InventoryList, Category=Inventory)
 	FInventoryItemList InventoryList;
@@ -228,7 +230,7 @@ private:
 	/** Full list of all replicated item instances that were added via an FInventoryItemEntry. */
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<UObject>> AllReplicatedItemInstances;
-	
+
 	/** Timer handle for delayed removal of operations. */
 	UFUNCTION()
 	void FetchOpValidness();

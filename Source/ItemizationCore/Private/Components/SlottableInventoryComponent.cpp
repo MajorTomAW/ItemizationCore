@@ -65,6 +65,33 @@ FInventoryItemId USlottableInventoryComponent::PlaceItemInSlot_Definition(
 	return Result;
 }
 
+
+
+void USlottableInventoryComponent::SwapItemSlots(
+	const FInventorySlotId& SlotA, FGameplayTag SlotGroupA,
+	const FInventorySlotId& SlotB, FGameplayTag SlotGroupB)
+{
+	ASlottableInventory* Inventory = GetSlottableInventory();
+	if (!IsValid(Inventory))
+	{
+		ITEMIZATION_ERROR_CONTEXT("Cannot swap SlotA [%s] with SlotB [%s] in inventory [%s] for %s. Inventory is invalid.",
+			*SlotA.ToString(), *SlotB.ToString(), *GetNameSafe(Inventory), *GetNameSafe(GetOwner()));
+		return;
+	}
+
+	// Build the swap item slot operation parameters
+	FInventoryOp_SwapItemSlots::FParams Params;
+	Params.SourceInventory = Inventory;
+	Params.SourceSlotId = SlotA;
+	Params.SourceGroupTag = SlotGroupA;
+	Params.TargetInventory = Inventory;
+	Params.TargetSlotId = SlotB;
+	Params.TargetGroupTag = SlotGroupB;
+
+	// Actually swap the item slots
+	Inventory->SwapItemSlots(MoveTemp(Params));
+}
+
 #if WITH_EDITOR
 EDataValidationResult USlottableInventoryComponent::IsDataValid(FDataValidationContext& Context) const
 {

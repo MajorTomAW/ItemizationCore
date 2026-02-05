@@ -63,7 +63,7 @@ public:
 	}
 	bool operator!=(const FInventorySlotId& Other) const
 	{
-		return !operator!=(Other);
+		return !operator==(Other);
 	}
 
 	/** For sorting purposes. */

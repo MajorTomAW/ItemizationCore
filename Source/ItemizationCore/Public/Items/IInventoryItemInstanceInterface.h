@@ -6,6 +6,7 @@
 
 #include "IInventoryItemInstanceInterface.generated.h"
 
+class UItemDefinitionBase;
 struct FInventoryHandle;
 struct FInventoryItemEntry;
 
@@ -32,6 +33,7 @@ public:
 	virtual bool CanCombineWith(const FInventoryItemEntry& ItemEntry) const { return true; }
 
 	/** Returns the source object that created this item instance, if any. */
+	UFUNCTION(BlueprintCallable, Category=ItemInstance)
 	virtual UObject* GetSourceObject() const = 0;
 
 	/** Template function to cast the source object to a specific type. */
@@ -44,6 +46,11 @@ public:
 	/** Returns the item entry of this instance. */
 	virtual FInventoryItemEntry* GetItemEntry() const = 0;
 
+	/** Returns the item definition of this instance. */
+	UFUNCTION(BlueprintCallable, Category=ItemInstance)
+	ITEMIZATIONCORE_API virtual const UItemDefinitionBase* GetItemDefinition() const;
+
 	/** Returns if this item instance wants to be replicated. */
+	UFUNCTION(BlueprintCallable, Category=ItemInstance)
 	virtual bool GetIsReplicated() const { return false; };
 };

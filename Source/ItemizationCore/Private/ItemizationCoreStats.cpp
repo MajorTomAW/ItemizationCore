@@ -9,4 +9,5 @@ DEFINE_STAT(STAT_Itemization_FindItemSlotByHandle);
 DEFINE_STAT(STAT_Itemization_GiveItem);
 DEFINE_STAT(STAT_Itemization_RemoveItem);
 DEFINE_STAT(STAT_Itemization_PlaceItemInSlot);
+DEFINE_STAT(STAT_Itemization_SwapItemSlots);
 DEFINE_STAT(STAT_Itemization_DropItem);

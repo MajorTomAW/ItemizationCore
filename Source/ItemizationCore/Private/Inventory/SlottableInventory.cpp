@@ -29,6 +29,8 @@ void ASlottableInventory::InitializeInventorySlots(const UInventoryConfigAsset* 
 
 	ITEMIZATION_DISPLAY("Initializing inventory slots using '%s'", *InConfig->GetName())
 
+	InventoryConfigAsset = InConfig;
+
 	for (const FInventoryGroupConfig& GroupConfig : InConfig->InventoryGroupConfigs)
 	{
 		if (!ensureMsgf(GroupConfig.GroupType.IsValid(), TEXT("Attempted to initialize an inventory with an inventory config asset that has an group config with an invalid group tag!!")))
@@ -118,6 +120,37 @@ TInventoryOpPtr<FInventoryOp_PlaceItemInSlot> ASlottableInventory::PlaceItemInSl
 	return NewOp;
 }
 
+TInventoryOpPtr<FInventoryOp_SwapItemSlots> ASlottableInventory::SwapItemSlots(
+	FInventoryOp_SwapItemSlots::FParams&& Params)
+{
+	SCOPE_CYCLE_COUNTER(STAT_Itemization_SwapItemSlots)
+
+	if (!Params.AreParamsValid())
+	{
+		ITEMIZATION_WARN("Called with invalid params [%s].", *Params.GetDebugString())
+		return nullptr;
+	}
+
+	if (!HasAuthority())
+	{
+		ITEMIZATION_WARN("Called on an actor with no authority. Not allowed!")
+		return nullptr;
+	}
+
+	ITEMIZATION_LOG("Swapping item slots content from '%s' [%s] with '%s' [%s]",
+		*Params.SourceSlotId.ToString(),
+		*GetNameSafe(Params.SourceInventory.Get()),
+		*Params.TargetSlotId.ToString(),
+		*GetNameSafe(Params.TargetInventory.Get()))
+
+	// Create the operation and process it
+	TInventoryOpRef<FInventoryOp_SwapItemSlots> NewOp =
+		MakeSharedOp<FInventoryOp_SwapItemSlots>(Params);
+	ProcessSwapItemSlotsOperation(NewOp);
+
+	return NewOp;
+}
+
 FInventorySlotId ASlottableInventory::GetNextUnoccupiedSlotIdInGroup(FGameplayTag GroupTag) const
 {
 	return InventorySlotList.GetNextUnoccupiedSlotIdInGroup(GroupTag);
@@ -126,6 +159,38 @@ FInventorySlotId ASlottableInventory::GetNextUnoccupiedSlotIdInGroup(FGameplayTa
 FInventoryItemSlot* ASlottableInventory::GetNextUnoccupiedSlotInGroup(const FGameplayTag& GroupTag) const
 {
 	return InventorySlotList.GetNextUnoccupiedSlotInGroup(GroupTag);
+}
+
+int32 ASlottableInventory::GetNumRowsInGroup(FGameplayTag GroupTag) const
+{
+	if (IsValid(InventoryConfigAsset))
+	{
+		for (const auto& Config : InventoryConfigAsset->InventoryGroupConfigs)
+		{
+			if (Config.GroupType.MatchesTagExact(GroupTag))
+			{
+				return Config.NumItemRows;
+			}
+		}
+	}
+
+	return 0;
+}
+
+int32 ASlottableInventory::GetNumColumnsInGroup(FGameplayTag GroupTag) const
+{
+	if (IsValid(InventoryConfigAsset))
+	{
+		for (const auto& Config : InventoryConfigAsset->InventoryGroupConfigs)
+		{
+			if (Config.GroupType.MatchesTagExact(GroupTag))
+			{
+				return Config.NumItemColumns;
+			}
+		}
+	}
+
+	return 0;
 }
 
 FInventoryItemSlot* ASlottableInventory::GetNextAvailableItemSlot(
@@ -141,13 +206,9 @@ FInventoryItemSlot* ASlottableInventory::GetNextAvailableItemSlot(
 			continue;
 		}
 
-		// Valid means its occupied
-		if (Slot.IsOccupied())
-		{
-			continue;
-		}
-
-		// Make sure the item can be placed there
+		// If it's occupied, check if we can combine them
+		// Maybe in this slot, there is ItemA, but we want to add another ItemA,
+		// so we could have 2x ItemA in this slot!
 		if (!CanPlaceItemInSlot(ItemEntry, Slot))
 		{
 			continue;
@@ -177,6 +238,10 @@ void ASlottableInventory::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 	SharedParams.Condition = COND_ReplayOrOwner;
 
 	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, InventorySlotList, SharedParams)
+
+	SharedParams.Condition = COND_InitialOnly;
+
+	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, InventoryConfigAsset, SharedParams)
 }
 
 void ASlottableInventory::OnRemoveItem(FInventoryItemEntry& ItemEntry)
@@ -189,7 +254,7 @@ void ASlottableInventory::OnRemoveItem(FInventoryItemEntry& ItemEntry)
 			Slot->UnoccupySlot();
 		}
 	}
-	
+
 	Super::OnRemoveItem(ItemEntry);
 }
 
@@ -288,10 +353,20 @@ bool ASlottableInventory::AttemptCreateNewStack(
 		ItemSlot->OccupySlot(NewItemEntry);
 
 		ITEMIZATION_DISPLAY("Created new stack for '%s' count %d.",
-			*GetNameSafe(ItemEntry.GetItemDefinition()), OutCreatedStackSize)	
+			*GetNameSafe(ItemEntry.GetItemDefinition()), OutCreatedStackSize)
 	}
-	
+
 	return true;
+}
+
+void ASlottableInventory::OnItemSlotChanged(const FInventoryItemSlot& ItemSlot)
+{
+	NotifyItemSlotChanged(ItemSlot);
+}
+
+void ASlottableInventory::NotifyItemSlotChanged(const FInventoryItemSlot& ItemSlot)
+{
+	OnItemSlotChangedDelegate.Broadcast(ItemSlot);
 }
 
 void ASlottableInventory::MarkItemSlotDirty(
@@ -331,6 +406,12 @@ void ASlottableInventory::ProcessPlaceItemInSlotOperation(
 	FInventoryItemId LastRelevantId = FInventoryItemId::InvalidId;
 
 	// Attempt to place the item into the slot
+	//@TODO: Design question ??
+	//@TODO: Say we want to place 4x ItemA in slot (row: 0, col: 0) but ItemA has a max stack size of 5x and
+	//@TODO: in that slot there already is 2x of ItemA
+	//@TODO: Meaning we can only place 3x ItemA and would have 1x ItemA excess.
+	//@TODO: So should we just go to the next slot to place the remaining 1x ItemA excess, or should we just say 1x ItemA
+	//@TODO: couldn't be added and call it a day?
 	int32 CreatedStackSize = 0;
 	if (AttemptCreateNewStack(ThisItem, LastRelevantId, Result.Excess, CreatedStackSize, &Params))
 	{
@@ -352,7 +433,7 @@ bool ASlottableInventory::CanPlaceItemInSlot(
 	{
 		return false;
 	}
-	
+
 	//@TODO: Swap logic ?
 	if (ItemSlot.IsOccupied())
 	{
@@ -364,7 +445,7 @@ bool ASlottableInventory::CanPlaceItemInSlot(
 					*ItemEntry.GetDebugString(),
 					*ItemSlot.GetDebugString(),
 					*ItemSlot.GetItemId().ToString())
-			
+
 				return false;
 			}
 		}
@@ -386,4 +467,18 @@ bool ASlottableInventory::CanPlaceItemInSlot(
 	}
 
 	return true;
+}
+
+void ASlottableInventory::ProcessSwapItemSlotsOperation(
+	const TInventoryOpRef<FInventoryOp_SwapItemSlots>& SwapItemSlotsOp)
+{
+	FInventoryOp_SwapItemSlots::FParams& Params = SwapItemSlotsOp->Params;
+	FInventoryOp_SwapItemSlots::FResult& Result = SwapItemSlotsOp->Result;
+
+	// First, check if target and source inventory are this inventory
+	// If they are, we can simplify things by a lot
+	if (Params.IsSameInventory() && Params.SourceInventory == this)
+	{
+		InventorySlotList.SwapSlotsContent(Params.SourceSlotId, Params.SourceGroupTag, Params.TargetSlotId, Params.TargetGroupTag);
+	}
 }

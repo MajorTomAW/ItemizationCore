@@ -7,6 +7,7 @@
 #include "Inventory/InventoryBase.h"
 #include "Items/InventoryItemInstance.h"
 #include "Items/ItemAndCount.h"
+#include "Items/ItemDefinitionBase.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// FInventoryItemEntry
@@ -88,7 +89,7 @@ FText FInventoryItemEntry::GetItemName(bool bUsePlural) const
 	{
 		return ItemDefinition->GetItemName(bUsePlural);
 	}
-	
+
 	return FText::GetEmpty();
 }
 
@@ -97,7 +98,7 @@ void FInventoryItemEntry::DebugPrintStats() const
 #if ENABLE_DRAW_DEBUG
 	FStringBuilderBase StringBuilder;
 	StringBuilder.Append(TEXT("Stack Count: %d"), StackSize);
-	
+
 	/*for (const FGameplayTagStack& Stack : GetAllStats())
 	{
 		ITEMIZATION_LOG("\t%s",*Stack.ToString());
@@ -119,7 +120,7 @@ void FInventoryItemEntry::Reset()
 
 bool FInventoryItemEntry::IsValid() const
 {
-	return ::IsValid(ItemDefinition) && ItemId.IsValid(); 
+	return ::IsValid(ItemDefinition) && ItemId.IsValid();
 }
 
 TScriptInterface<IInventoryItemInstanceInterface> FInventoryItemEntry::GetItemInstance() const
@@ -206,7 +207,7 @@ void FInventoryItemEntry::MarkItemDirty()
 {
 	if (OwningInventory.IsValid())
 	{
-		OwningInventory->MarkItemEntryDirty(*this);
+		OwningInventory->MarkItemEntryDirty(*this, true);
 	}
 
 	bIsDirty = true;
@@ -238,8 +239,6 @@ void FInventoryItemEntry::PostReplicatedChange(const FInventoryItemList& InArray
 FInventoryItemList::FInventoryItemList()
 	: OwningInventory(nullptr)
 {
-	ITEMIZATION_WARN("An inventory item list was constructed without a default owning inventory actor. "
-				  "This will result in undefined behavior.")
 }
 
 FInventoryItemList::FInventoryItemList(AInventoryBase* InOwningInventory)
@@ -280,7 +279,7 @@ UObject* FInventoryItemList::FindItemInstanceById(
 	{
 		return *Instance;
 	}
-	
+
 	return nullptr;
 }
 
@@ -323,8 +322,7 @@ FInventoryItemEntry& FInventoryItemList::AddItemToList(FInventoryItemEntry ItemE
 
 	// Notify the inventory
 	OwningInventory->OnGiveItem(NewEntry);
-	OwningInventory->NotifyItemAdded(ItemEntry, ItemEntry.GetLastObservedStackSize(), ItemEntry.GetStackSize());
-	
+
 	return NewEntry;
 }
 
@@ -334,7 +332,7 @@ bool FInventoryItemList::RemoveItemFromList(FInventoryItemId ItemId)
 	{
 		return false;
 	}
-	
+
 	for (auto It = Items.CreateIterator(); It; ++It)
 	{
 		FInventoryItemEntry& ItemEntry = *It;
@@ -342,7 +340,7 @@ bool FInventoryItemList::RemoveItemFromList(FInventoryItemId ItemId)
 		{
 			// Notify the inventory
 			OwningInventory->OnRemoveItem(ItemEntry);
-			
+
 			It.RemoveCurrent();
 			ItemInstanceMap.Remove(ItemId);
 
@@ -360,7 +358,7 @@ bool FInventoryItemList::RemoveItemFromList(TScriptInterface<IInventoryItemInsta
 	{
 		return false;
 	}
-	
+
 	return RemoveItemFromList(ItemInstance->GetItemEntry()->GetItemId());
 }
 

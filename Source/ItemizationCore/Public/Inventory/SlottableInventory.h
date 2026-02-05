@@ -7,9 +7,12 @@
 #include "InventoryConfigAsset.h"
 
 #include "Operations/InventoryOp_PlaceItemInSlot.h"
+#include "Operations/InventoryOp_SwapItemSlots.h"
+
 
 #include "SlottableInventory.generated.h"
 
+struct FInventoryOp_SwapItemSlots;
 struct FInventoryOp_PlaceItemInSlot;
 
 #define UE_API ITEMIZATIONCORE_API
@@ -37,34 +40,60 @@ public:
 	/**
 	 * Attempts to place an item into an inventory slot.
 	 * This is an advanced function, consider calling the wrappers on UInventoryComponent instead.
-	 * 
+	 *
 	 * @param Params Cached params about the place item in slot action,
 	 * @returns A pointer to the inventory operation. Can be used to get return data.
 	 */
 	UE_API virtual TInventoryOpPtr<FInventoryOp_PlaceItemInSlot> PlaceItemInSlot(FInventoryOp_PlaceItemInSlot::FParams&& Params);
 
+	/**
+	 * Attempts to swap the contents of the two specified item slots.
+	 * Whereas the source and target inventory can differ.
+	 *
+	 * @param Params Cached params about the swap item slots action.
+	 * @return A pointer to the inventory operation. Can be used to get return data.
+	 */
+	UE_API virtual TInventoryOpPtr<FInventoryOp_SwapItemSlots> SwapItemSlots(FInventoryOp_SwapItemSlots::FParams&& Params);
+
 	/** Returns the next unoccupied item slot in the given inventory group. If no group tag is set, will search every single group. */
 	UFUNCTION(BlueprintPure, Category=Inventory, meta=(Categories="Inventory.Group"))
-	FInventorySlotId GetNextUnoccupiedSlotIdInGroup(FGameplayTag GroupTag) const;
-	FInventoryItemSlot* GetNextUnoccupiedSlotInGroup(const FGameplayTag& GroupTag) const;
+	UE_API FInventorySlotId GetNextUnoccupiedSlotIdInGroup(FGameplayTag GroupTag) const;
+	UE_API FInventoryItemSlot* GetNextUnoccupiedSlotInGroup(const FGameplayTag& GroupTag) const;
+
+	/** Returns the number of rows in the given inventory group. */
+	UFUNCTION(BlueprintPure, Category=Inventory, meta=(Categories="Inventory.Group"))
+	UE_API int32 GetNumRowsInGroup(FGameplayTag GroupTag) const;
+
+	/** Returns the number of columns in the given inventory group. */
+	UFUNCTION(BlueprintPure, Category=Inventory, meta=(Categories="Inventory.Group"))
+	UE_API int32 GetNumColumnsInGroup(FGameplayTag GroupTag) const;
 
 	/** Returns the next available item slot for the specified item, checking restrictions etc. */
-	FInventoryItemSlot* GetNextAvailableItemSlot(const FInventoryItemEntry& ItemEntry, const FGameplayTag& GroupTag) const;
+	UE_API FInventoryItemSlot* GetNextAvailableItemSlot(const FInventoryItemEntry& ItemEntry, const FGameplayTag& GroupTag) const;
 
 	/** Returns the full list of all item slots in the inventory. */
 	const FInventorySlotList& GetSlotList() const { return InventorySlotList; }
 
 	/** Returns an item slot associated by its slot id. */
-	FInventoryItemSlot* FindItemSlotBySlotId(const FInventorySlotId& SlotId, const FGameplayTag& GroupTag = FGameplayTag()) const;
+	UE_API FInventoryItemSlot* FindItemSlotBySlotId(const FInventorySlotId& SlotId, const FGameplayTag& GroupTag = FGameplayTag()) const;
 
 	/** Returns an item slot associated by its occupying item id. */
-	FInventoryItemSlot* FindItemSlotByItemId(const FInventoryItemId& ItemId, const FGameplayTag& GroupTag = FGameplayTag()) const;
+	UE_API FInventoryItemSlot* FindItemSlotByItemId(const FInventoryItemId& ItemId, const FGameplayTag& GroupTag = FGameplayTag()) const;
 
 	/** Returns a list of all group tags. */
 	TArray<FGameplayTag> GetAllItemSlotGroupTags() const { return InventorySlotList.GetAllItemGroupTags(); }
 
 	/** Returns a list of all item slots in the specified group. */
 	TArray<const FInventoryItemSlot*> GetItemSlotsInGroup(const FGameplayTag& GroupTag) const { return InventorySlotList.GetItemSlotsInGroup(GroupTag); }
+
+	/** Called whenever an item slot was altered. */
+	UE_API virtual void OnItemSlotChanged(const FInventoryItemSlot& ItemSlot);
+
+	DECLARE_MULTICAST_DELEGATE_OneParam(FGenericItemSlotChangeEvent, const FInventoryItemSlot& /*Slot*/);
+
+	/** Notify that gets called whenever an item slot was altered, called by the inventory itself or due to replication. */
+	UE_API virtual void NotifyItemSlotChanged(const FInventoryItemSlot& ItemSlot);
+	FGenericItemSlotChangeEvent OnItemSlotChangedDelegate;
 
 protected:
 	//~ Begin UObject Interface
@@ -90,11 +119,18 @@ protected:
 
 	/** Checks whether the given item entry can be placed inside the specified item slot. */
 	UE_API virtual bool CanPlaceItemInSlot(const FInventoryItemEntry& ItemEntry, const FInventoryItemSlot& ItemSlot) const;
-	
+
+	/** Processes a swap item slots operation which is ensured to be valid. */
+	UE_API virtual void ProcessSwapItemSlotsOperation(const TInventoryOpRef<FInventoryOp_SwapItemSlots>& SwapItemSlotsOp);
+
 protected:
 	/** Replicated list of inventory slots. */
 	UPROPERTY(BlueprintReadOnly, Transient, Replicated, Category=Inventory)
 	FInventorySlotList InventorySlotList;
+
+	/** Replicated inventory config asset. */
+	UPROPERTY(BlueprintReadOnly, Transient, Replicated)
+	TObjectPtr<const UInventoryConfigAsset> InventoryConfigAsset;
 };
 
 #undef UE_API

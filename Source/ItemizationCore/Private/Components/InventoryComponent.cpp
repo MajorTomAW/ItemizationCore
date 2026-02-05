@@ -42,12 +42,6 @@ AInventoryBase* UInventoryComponent::GetInventory() const
 		return InventoryHandle.GetInventory();
 	}
 
-	// Try to grab inventory from the owner
-	if (const IInventoryOwnerInterface* InventoryAgent = Cast<IInventoryOwnerInterface>(GetOwner()))
-	{
-		return InventoryAgent->GetInventory();
-	}
-
 	return nullptr;
 }
 

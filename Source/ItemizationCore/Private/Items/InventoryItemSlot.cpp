@@ -9,6 +9,10 @@
 #include "Items/IInventoryItemInstanceInterface.h"
 #include "Items/InventoryItemEntry.h"
 
+FInventoryItemSlot::FInventoryItemSlot()
+{
+}
+
 FString FInventoryItemSlot::GetDebugString() const
 {
 	return FString::Printf(TEXT("r: %u, c: %u"), GetRowIndex(), GetColumnIndex());
@@ -21,10 +25,14 @@ void FInventoryItemSlot::OccupySlot(const FInventoryItemEntry& ItemEntry)
 		return;
 	}
 
+	// Fill in the data
 	ItemId = ItemEntry.GetItemId();
 	ItemInstance = ItemEntry.GetItemInstance().GetObject();
 
 	MarkSlotDirty();
+
+	// Notify the inventory
+	OwningInventory->OnItemSlotChanged(*this);
 }
 
 void FInventoryItemSlot::UnoccupySlot()
@@ -33,6 +41,9 @@ void FInventoryItemSlot::UnoccupySlot()
 	ItemInstance.Reset();
 
 	MarkSlotDirty();
+
+	// Notify the inventory
+	OwningInventory->OnItemSlotChanged(*this);
 }
 
 UObject* FInventoryItemSlot::GetItemInSlot() const
@@ -54,7 +65,7 @@ void FInventoryItemSlot::MarkSlotDirty()
 {
 	if (OwningInventory.IsValid())
 	{
-		OwningInventory->MarkItemSlotDirty(*this);
+		OwningInventory->MarkItemSlotDirty(*this, true);
 	}
 }
 
@@ -80,7 +91,7 @@ void FInventoryItemSlot::TryResolveItemInstance()
 			bNeedsToRefreshInstance = true;
 		}
 
-		
+
 		if (bNeedsToRefreshInstance)
 		{
 			ItemInstance = OwningInventory->FindItemInstanceById(ItemId).GetObject();
@@ -89,6 +100,37 @@ void FInventoryItemSlot::TryResolveItemInstance()
 	else
 	{
 		ItemInstance = nullptr;
+	}
+}
+
+void FInventoryItemSlot::SwapContents(FInventoryItemSlot& Other)
+{
+	if (this == &Other)
+	{
+		return;
+	}
+
+	// Mark both dirty as we now alter them
+	MarkSlotDirty();
+	Other.MarkSlotDirty();
+
+	// Reset both item instances as we will resolve them after swapping again
+	ItemInstance.Reset();
+	Other.ItemInstance.Reset();
+
+	// Swap the item ids
+	Swap(ItemId, Other.ItemId);
+
+	// Resolve the item instances again
+	TryResolveItemInstance();
+	Other.TryResolveItemInstance();
+
+	//@TODO: Notify about the slot change?
+
+	if (OwningInventory.IsValid())
+	{
+		OwningInventory->NotifyItemSlotChanged(*this);
+		OwningInventory->NotifyItemSlotChanged(Other);
 	}
 }
 
@@ -103,22 +145,39 @@ void FInventoryItemSlot::PreReplicatedRemove(const FInventorySlotList& InArraySe
 
 void FInventoryItemSlot::PostReplicatedAdd(const FInventorySlotList& InArraySerializer)
 {
+	// OwningInventory isn't replicated.
+	// Therefore, we rely on the array serializer to provide a valid one
+	if (!OwningInventory.IsValid())
+	{
+		OwningInventory = InArraySerializer.OwningInventory;
+	}
+
 	// Attempt to resolve the item instance
 	TryResolveItemInstance();
 }
 
 void FInventoryItemSlot::PostReplicatedChange(const FInventorySlotList& InArraySerializer)
 {
+	// OwningInventory isn't replicated.
+	// Therefore, we rely on the array serializer to provide a valid one
+	if (!OwningInventory.IsValid())
+	{
+		OwningInventory = InArraySerializer.OwningInventory;
+	}
+
 	// Attempt to resolve the item instance
 	TryResolveItemInstance();
+
+	if (InArraySerializer.OwningInventory)
+	{
+		InArraySerializer.OwningInventory->OnItemSlotChanged(*this);
+	}
 }
 
 
 FInventorySlotList::FInventorySlotList()
 	: OwningInventory(nullptr)
 {
-	ITEMIZATION_WARN("An inventory slot list was constructed without a default owning inventory actor. "
-				  "This will result in undefined behavior.")
 }
 
 FInventorySlotList::FInventorySlotList(ASlottableInventory* InOwningInventory)
@@ -130,7 +189,7 @@ FInventoryItemSlot& FInventorySlotList::AddSlotToList(FInventoryItemSlot ItemSlo
 {
 	FInventoryItemSlot& NewSlot = ItemSlots.Emplace_GetRef(ItemSlot);
 	NewSlot.SetOwningInventory(OwningInventory);
-	
+
 	return NewSlot;
 }
 
@@ -139,7 +198,7 @@ FInventoryItemSlot& FInventorySlotList::AddSlotToList_Defaulted(const FGameplayT
 	FInventoryItemSlot& NewSlot = ItemSlots.AddDefaulted_GetRef();
 	NewSlot.SetOwningInventory(OwningInventory);
 	NewSlot.SetGroupTag(SlotGroup);
-	
+
 	return NewSlot;
 }
 
@@ -162,6 +221,28 @@ bool FInventorySlotList::RemoveSlotFromList(FInventorySlotId SlotId)
 	}
 
 	return false;
+}
+
+void FInventorySlotList::SwapSlotsContent(
+	const FInventorySlotId& SlotIdA, const FGameplayTag& SlotGroupA,
+	const FInventorySlotId& SlotIdB, const FGameplayTag& SlotGroupB) const
+{
+	FInventoryItemSlot* SlotA = FindItemSlotBySlotId(SlotIdA, SlotGroupA);
+	FInventoryItemSlot* SlotB = FindItemSlotBySlotId(SlotIdB, SlotGroupB);
+
+	// Make sure both slots are found
+	if (!(ensure(SlotA) && ensure(SlotB)))
+	{
+		return;
+	}
+
+	// If both slots are unoccupied, we can skip
+	if (SlotA->IsUnoccupied() && SlotB->IsUnoccupied())
+	{
+		return;
+	}
+
+	SlotA->SwapContents(*SlotB);
 }
 
 FInventoryItemSlot* FInventorySlotList::FindItemSlotBySlotId(

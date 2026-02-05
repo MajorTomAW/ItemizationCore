@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "InventoryComponent.h"
+#include "InventorySlotId.h"
 #include "SlottableInventoryComponent.generated.h"
 
 #define UE_API ITEMIZATIONCORE_API
@@ -36,7 +37,7 @@ public:
 	/**
 	 * Attempts to place (and give) an item into a specified item slot and group.
 	 * Will be ignored if the actor is not authoritative.
-	 * 
+	 *
 	 * @param ItemDefinition	The item definition to give/place.
 	 * @param SlotId			The id of the slot to place the item in.
 	 * @param StackSize		The number of items to give.
@@ -47,6 +48,9 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category=Inventory, BlueprintAuthorityOnly, meta=(Categories="Inventory.Group"), DisplayName="Place Item In Slot (Definition)")
 	FInventoryItemId PlaceItemInSlot_Definition(const UItemDefinitionBase* ItemDefinition, const FInventorySlotId& SlotId, int32 StackSize, UObject* SourceObject, FGameplayTag GroupTag, int32& OutNumCouldNotAdd);
+
+	UFUNCTION(BlueprintCallable, Category=Inventory, BlueprintAuthorityOnly, meta=(Categories="Inventory.Group"))
+	void SwapItemSlots(const FInventorySlotId& SlotA, FGameplayTag SlotGroupA, const FInventorySlotId& SlotB, FGameplayTag SlotGroupB);
 
 	//~ Begin UObject Interface
 #if WITH_EDITOR

@@ -5,6 +5,7 @@
 
 #include "ItemizationCoreSettings.h"
 #include "Components/InventoryComponent.h"
+#include "Components/SlottableInventoryComponent.h"
 #include "Engine/AssetManager.h"
 #include "Engine/Console.h"
 #include "Inventory/InventoryBase.h"
@@ -106,7 +107,7 @@ void UItemizationCheatManagerExtension::GiveItem(
 	{
 		 GroupTag = FGameplayTag::RequestGameplayTag(GroupName);
 	}
-	
+
 	int32 Excess;
 	InventoryComp->GiveItem(ItemDef, Count, PC, GroupTag, Excess);
 #endif
@@ -139,7 +140,7 @@ void UItemizationCheatManagerExtension::RemoveItem(
 	{
 		GroupTag = FGameplayTag::RequestGameplayTag(GroupName);
 	}
-	
+
 	InventoryComp->RemoveItemByDefinition(ItemDef, Count, GroupTag);
 #endif
 }
@@ -158,6 +159,40 @@ void UItemizationCheatManagerExtension::RemoveItemById(uint32 ItemId, int32 Coun
 	UE_LOG(LogConsoleResponse, Log, TEXT("Removing Item %u (count: %d) from %s"), ItemId, Count, *PC->GetName())
 
 	InventoryComp->RemoveItemById(FInventoryItemId(ItemId), Count, FGameplayTag());
+#endif
+}
+
+void UItemizationCheatManagerExtension::SwapItemSlots(
+	uint32 SlotRowA, uint32 SlotColA, const FName& GroupNameA,
+	uint32 SlotRowB, uint32 SlotColB, const FName& GroupNameB) const
+{
+#if UE_WITH_CHEAT_MANAGER
+	APlayerController* PC = GetPlayerController();
+	USlottableInventoryComponent* InventoryComp = PC ? PC->FindComponentByClass<USlottableInventoryComponent>() : nullptr;
+	if (!IsValid(InventoryComp))
+	{
+		UE_LOG(LogConsoleResponse, Warning, TEXT("%s does not have a Slottable Inventory Component."), *GetNameSafe(PC))
+		return;
+	}
+
+	FInventorySlotId SlotA(SlotRowA, SlotColA);
+	FInventorySlotId SlotB(SlotRowB, SlotColB);
+
+	FGameplayTag GroupTagA;
+	if (!GroupNameA.IsNone())
+	{
+		GroupTagA = FGameplayTag::RequestGameplayTag(GroupNameA);
+	}
+	FGameplayTag GroupTagB;
+	if (!GroupNameB.IsNone())
+	{
+		GroupTagB = FGameplayTag::RequestGameplayTag(GroupNameB);
+	}
+
+	UE_LOG(LogConsoleResponse, Log, TEXT("Swapping slot '%s' [%s] with '%s' [%s]"),
+		*SlotA.ToString(), *GroupTagA.ToString(), *SlotB.ToString(), *GroupTagB.ToString())
+
+	InventoryComp->SwapItemSlots(SlotA, GroupTagA, SlotB, GroupTagB);
 #endif
 }
 

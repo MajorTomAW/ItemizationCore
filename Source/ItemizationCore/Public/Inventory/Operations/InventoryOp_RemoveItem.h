@@ -4,6 +4,7 @@
 
 #include "InventoryTrackableOp.h"
 #include "InventoryItemId.h"
+#include "Items/ItemDefinitionBase.h"
 
 struct FInventoryItemEntry;
 class UItemDefinitionBase;

@@ -115,9 +115,6 @@ private:
 	UPROPERTY()
 	FInventoryItemId ItemId;
 
-	UPROPERTY(meta=(DeprecatedProperty="Dont use this please"))
-	FItemComponentDataList ItemData;
-
 	/** The item definition that this entry represents. */
 	UPROPERTY()
 	TObjectPtr<const UItemDefinitionBase> ItemDefinition;
@@ -145,6 +142,10 @@ private:
 	/** Reference to the owning inventory. */
 	UPROPERTY(NotReplicated)
 	TWeakObjectPtr<AInventoryBase> OwningInventory;
+
+	/** Fast lookup for tag stacks. */
+	UPROPERTY(NotReplicated)
+	TMap<FGameplayTag, int32> TagStackMap;
 
 protected:
 	/** Replicated item instance */

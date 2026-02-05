@@ -62,16 +62,16 @@ public:
 	UE_API virtual void OnRemovedFromInventory(FInventoryItemEntry& ItemEntry, const FInventoryHandle& InventoryHandle) override;
 	virtual inline bool GetIsReplicated() const override { return bReplicates; }
 	UE_API virtual FInventoryItemEntry* GetItemEntry() const override;
-	
+
 	UFUNCTION(BlueprintCallable, Category = Item)
 	UE_API virtual UObject* GetSourceObject() const override;
 	//~ End IInventoryItemInstanceInterface
 
 	//~ Begin IInventoryAbilityItemInstanceInterface
-	virtual FGameplayAbilitySpecHandle TryGiveAbility(TSubclassOf<UGameplayAbility> AbilityClass, int32 Level = 0, int32 InputId = INDEX_NONE, FName SourceItemId = NAME_None) override;
-	virtual void TryClearAbilities(FName SourceItemId) override;
+	UE_API virtual FGameplayAbilitySpecHandle TryGiveAbility(TSubclassOf<UGameplayAbility> AbilityClass, int32 Level = 0, int32 InputId = INDEX_NONE, FName SourceItemId = NAME_None) override;
+	UE_API virtual void TryClearAbilities(FName SourceItemId) override;
 
-	virtual FActiveGameplayEffectHandle TryApplyGameplayEffect(TSubclassOf<UGameplayEffect> EffectClass, float Level, FName SourceItemId = NAME_None) override;
+	UE_API virtual FActiveGameplayEffectHandle TryApplyGameplayEffect(TSubclassOf<UGameplayEffect> EffectClass, float Level, FName SourceItemId = NAME_None) override;
 	//~ End IInventoryAbilityItemInstanceInterface
 
 	/** Returns the local role of the item's owner. */

@@ -29,7 +29,7 @@ struct FInventoryItemSlot : public FFastArraySerializerItem
 	friend class AInventoryBase;
 
 public:
-	UE_API FInventoryItemSlot() = default;
+	UE_API FInventoryItemSlot();
 
 	/** Returns this item slot as a debug string. */
 	UE_API FString GetDebugString() const;
@@ -102,6 +102,11 @@ public:
 
 	/** Returns the item instance in this slot. */
 	UE_API UObject* GetItemInSlot() const;
+	template <class ItemType>
+	ItemType* GetItemInSlot() const
+	{
+		return CastChecked<ItemType>(GetItemInSlot());
+	}
 
 	/** Returns the item entry in this slot. */
 	UE_API const FInventoryItemEntry* GetItemEntryInSlot() const;
@@ -130,6 +135,11 @@ public:
 
 	/** Attempts to resolve the item instance. */
 	UE_API void TryResolveItemInstance();
+
+	/** Swaps this slots contents with the contents of the given slot.
+	 * Note that this will only swap the item id (and item instance), but not the slot id or its tags.
+	 */
+	void SwapContents(FInventoryItemSlot& Other);
 
 	/** Returns the owning inventory of this item. */
 	ASlottableInventory* GetOwningInventory() const { return OwningInventory.Get(); }
@@ -209,6 +219,7 @@ USTRUCT(BlueprintType, MinimalAPI)
 struct FInventorySlotList : public FFastArraySerializer
 {
 	GENERATED_BODY()
+	friend struct FInventoryItemSlot;
 	friend class ASlottableInventory;
 
 public:
@@ -222,11 +233,14 @@ public:
 	/** Removes an item slot from this list. */
 	UE_API bool RemoveSlotFromList(FInventorySlotId SlotId);
 
+	/** Swaps the contents of two item slots. */
+	UE_API void SwapSlotsContent(const FInventorySlotId& SlotIdA, const FGameplayTag& SlotGroupA, const FInventorySlotId& SlotIdB, const FGameplayTag& SlotGroupB) const;
+
 	/** Tries to find an FInventoryItemSlot by its Id. */
-	UE_API FInventoryItemSlot* FindItemSlotBySlotId(const FInventorySlotId& SlotId, const FGameplayTag& GroupTag) const;
+	UE_API FInventoryItemSlot* FindItemSlotBySlotId(const FInventorySlotId& SlotId, const FGameplayTag& GroupTag = FGameplayTag()) const;
 
 	/** Tries to find an FInventoryItemSlot by an item Id. */
-	UE_API FInventoryItemSlot* FindItemSlotByItemId(const FInventoryItemId& ItemId, const FGameplayTag& GroupTag) const;
+	UE_API FInventoryItemSlot* FindItemSlotByItemId(const FInventoryItemId& ItemId, const FGameplayTag& GroupTag = FGameplayTag()) const;
 
 	/** Returns all item slots in the given group. */
 	UE_API TArray<FInventoryItemSlot*> GetItemSlotsInGroup(const FGameplayTag& GroupTag);

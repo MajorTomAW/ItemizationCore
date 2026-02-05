@@ -53,6 +53,18 @@ protected:
 	void RemoveItemById(uint32 ItemId, int32 Count = 1) const;
 
 	/**
+	 * Swaps the contents of the two specified slots
+	 * @param SlotRowA The row of slot A
+	 * @param SlotColA The column of slot A
+	 * @param GroupNameA String that will be resoled into a gameplay tag, representing the group of slot A.
+	 * @param SlotRowB The row of slot B
+	 * @param SlotColB The column of slot B
+	 * @param GroupNameB String that will be resoled into a gameplay tag, representing the group of slot B.
+	 */
+	UFUNCTION(Exec)
+	void SwapItemSlots(uint32 SlotRowA, uint32 SlotColA, const FName& GroupNameA, uint32 SlotRowB, uint32 SlotColB, const FName& GroupNameB) const;
+
+	/**
 	 * Drops the specified amount of the specified item as a pickup into the world.
 	 * @param ItemAssetId
 	 * @param Count

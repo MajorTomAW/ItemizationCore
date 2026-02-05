@@ -16,5 +16,6 @@ DECLARE_ITEMIZATION_STAT("Find Item Slot By Handle", FindItemSlotByHandle);
 DECLARE_ITEMIZATION_STAT("Give Item", GiveItem);
 DECLARE_ITEMIZATION_STAT("Remove Item", RemoveItem);
 DECLARE_ITEMIZATION_STAT("Place Item In Slot", PlaceItemInSlot);
+DECLARE_ITEMIZATION_STAT("Swap Item Slots", SwapItemSlots);
 DECLARE_ITEMIZATION_STAT("Drop Item", DropItem);
 
