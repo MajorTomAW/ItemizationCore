@@ -283,6 +283,7 @@ bool ASlottableInventory::AttemptCreateNewStack(
 	int32& OutCreatedStackSize,
 	FInventoryOp_AdditiveBase::FAdditiveParamsBase* Params)
 {
+	int32 StackSize = RemainingStacks;
 	FInventoryItemSlot* ItemSlot = nullptr;
 	if (Params->GetParamsType() == FInventoryOp_PlaceItemInSlot::Name)
 	{
@@ -334,11 +335,12 @@ bool ASlottableInventory::AttemptCreateNewStack(
 	{
 		int32 NumCouldNotCombine;
 		CombineItems(ItemEntry, *ItemSlot->GetItemEntryInSlot(), NumCouldNotCombine);
+		OutCreatedStackSize = StackSize - NumCouldNotCombine;
 	}
 	else
 	{
 		// Subtract the new stack size from the excess
-		const int32 NewStackSize = FMath::Min(RemainingStacks, ItemEntry.GetItemDefinition()->GetMaxStackSize());
+		const int32 NewStackSize = FMath::Min(StackSize, ItemEntry.GetItemDefinition()->GetMaxStackSize());
 		OutCreatedStackSize = NewStackSize;
 
 		// Create a copy of the item entry and update its stack size

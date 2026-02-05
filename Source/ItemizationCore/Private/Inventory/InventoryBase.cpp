@@ -680,6 +680,7 @@ void AInventoryBase::ProcessGiveItemOperation(const TInventoryOpRef<FInventoryOp
 
 		// Subtract the stack size from  the excess
 		Result.Excess -= CreatedStackSize;
+		ITEMIZATION_LOG("We still have %d [just created %d] items left, continue to create new stacks.", Result.Excess, CreatedStackSize)
 	}
 
 	// Clamp excess to 0
