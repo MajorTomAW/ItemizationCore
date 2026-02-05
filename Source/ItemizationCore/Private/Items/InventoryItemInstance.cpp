@@ -192,6 +192,7 @@ EDataValidationResult UInventoryItemInstance::IsDataValid(FDataValidationContext
 void UInventoryItemInstance::OnAddedToInventory(FInventoryItemEntry& InItemEntry, const FInventoryHandle& InventoryHandle)
 {
 	OwningItemId = InItemEntry.GetItemId();
+	ItemDefinition = InItemEntry.GetItemDefinition();
 }
 
 void UInventoryItemInstance::OnRemovedFromInventory(FInventoryItemEntry& InItemEntry, const FInventoryHandle& InventoryHandle)
@@ -204,7 +205,7 @@ UObject* UInventoryItemInstance::GetSourceObject() const
 	{
 		return ItemEntry->GetSourceObject();
 	}
-	
+
 	return nullptr;
 }
 
@@ -293,6 +294,16 @@ bool UInventoryItemInstance::HasAuthority() const
 FInventoryItemEntry* UInventoryItemInstance::GetItemEntry() const
 {
 	return GetOwningInventory()->FindItemEntryById(OwningItemId);
+}
+
+const UItemDefinitionBase* UInventoryItemInstance::GetItemDefinition() const
+{
+	if (IsValid(ItemDefinition))
+	{
+		return ItemDefinition;
+	}
+
+	return IInventoryItemInstanceInterface::GetItemDefinition();
 }
 
 AInventoryBase* UInventoryItemInstance::GetOwningInventory() const

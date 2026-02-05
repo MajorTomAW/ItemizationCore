@@ -62,6 +62,7 @@ public:
 	UE_API virtual void OnRemovedFromInventory(FInventoryItemEntry& ItemEntry, const FInventoryHandle& InventoryHandle) override;
 	virtual inline bool GetIsReplicated() const override { return bReplicates; }
 	UE_API virtual FInventoryItemEntry* GetItemEntry() const override;
+	UE_API virtual const UItemDefinitionBase* GetItemDefinition() const override;
 
 	UFUNCTION(BlueprintCallable, Category = Item)
 	UE_API virtual UObject* GetSourceObject() const override;
@@ -100,6 +101,10 @@ protected:
 	/** Item entry that this instance is associated with. */
 	UPROPERTY(Transient)
 	FInventoryItemId OwningItemId;
+
+	/** Item Definition this item represents. Gets resolved when added to the inventory server- and client-side. */
+	UPROPERTY(Transient)
+	TObjectPtr<const UItemDefinitionBase> ItemDefinition;
 };
 
 #undef UE_API

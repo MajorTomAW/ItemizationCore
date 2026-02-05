@@ -13,3 +13,17 @@ const UItemDefinitionBase* IInventoryItemInstanceInterface::GetItemDefinition() 
 
 	return nullptr;
 }
+
+const UItemDefinitionBase* IInventoryItemInstanceInterface::GetItemDefinition_Typed(
+	TSubclassOf<UItemDefinitionBase> ItemType) const
+{
+	if (const UItemDefinitionBase* ItemDefinition = GetItemDefinition())
+	{
+		if (ItemDefinition->IsA(ItemType))
+		{
+			return ItemDefinition;
+		}
+	}
+
+	return nullptr;
+}

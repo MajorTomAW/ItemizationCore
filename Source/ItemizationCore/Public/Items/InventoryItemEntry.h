@@ -119,7 +119,7 @@ private:
 	UPROPERTY()
 	TObjectPtr<const UItemDefinitionBase> ItemDefinition;
 
-	/** */
+	/** Optional source object that granted this item */
 	UPROPERTY()
 	TWeakObjectPtr<UObject> SourceObject;
 
@@ -142,10 +142,6 @@ private:
 	/** Reference to the owning inventory. */
 	UPROPERTY(NotReplicated)
 	TWeakObjectPtr<AInventoryBase> OwningInventory;
-
-	/** Fast lookup for tag stacks. */
-	UPROPERTY(NotReplicated)
-	TMap<FGameplayTag, int32> TagStackMap;
 
 protected:
 	/** Replicated item instance */

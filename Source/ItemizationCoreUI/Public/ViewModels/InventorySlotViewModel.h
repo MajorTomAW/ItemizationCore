@@ -24,7 +24,10 @@ public:
 	UE_API void SetInventoryAndSlot(ASlottableInventory* NewInventory, const FInventorySlotId& NewSlot, const FGameplayTag& NewGroupTag);
 
 	UFUNCTION(BlueprintPure, FieldNotify)
-	UE_API int32 GetItemCount() const;
+	UE_API int32 GetItemStackSize() const;
+
+	UFUNCTION(BlueprintPure, FieldNotify)
+	UE_API int32 GetItemMaxStackSize() const;
 
 	UFUNCTION(BlueprintPure, FieldNotify)
 	UE_API FString GetSlotIdString() const;

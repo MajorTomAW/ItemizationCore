@@ -39,7 +39,8 @@ void UInventorySlotViewModel::SetInventoryAndSlot(ASlottableInventory* NewInvent
 
 		UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(OwningInventory);
 		UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(ItemSlotId);
-		UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(GetItemCount);
+		UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(GetItemStackSize);
+		UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(GetItemMaxStackSize);
 		UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(GetSlotIdString);
 		UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(IsSlotOccupied);
 		UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(GetItemDefinition);
@@ -49,13 +50,26 @@ void UInventorySlotViewModel::SetInventoryAndSlot(ASlottableInventory* NewInvent
 }
 
 
-int32 UInventorySlotViewModel::GetItemCount() const
+int32 UInventorySlotViewModel::GetItemStackSize() const
 {
 	if (ItemInstance)
 	{
 		if (const FInventoryItemEntry* ItemEntry = ItemInstance->GetItemEntry())
 		{
 			return ItemEntry->GetStackSize();
+		}
+	}
+
+	return 0;
+}
+
+int32 UInventorySlotViewModel::GetItemMaxStackSize() const
+{
+	if (ItemInstance)
+	{
+		if (const FInventoryItemEntry* ItemEntry = ItemInstance->GetItemEntry())
+		{
+			return ItemEntry->GetItemDefinition()->GetMaxStackSize();
 		}
 	}
 
@@ -112,7 +126,8 @@ void UInventorySlotViewModel::OnItemAdded(
 	const int32& NewCount)
 {
 	ResolveItem();
-	UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(GetItemCount);
+	UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(GetItemStackSize);
+	UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(GetItemMaxStackSize);
 }
 
 void UInventorySlotViewModel::OnItemRemoved(
@@ -121,7 +136,8 @@ void UInventorySlotViewModel::OnItemRemoved(
 	const int32& NewCount)
 {
 	ResolveItem();
-	UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(GetItemCount);
+	UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(GetItemStackSize);
+	UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(GetItemMaxStackSize);
 }
 
 void UInventorySlotViewModel::OnItemChanged(
@@ -130,7 +146,8 @@ void UInventorySlotViewModel::OnItemChanged(
 	const int32& NewCount)
 {
 	ResolveItem();
-	UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(GetItemCount);
+	UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(GetItemStackSize);
+	UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(GetItemMaxStackSize);
 }
 
 void UInventorySlotViewModel::OnItemSlotChanged(const FInventoryItemSlot& ItemSlot)
@@ -142,5 +159,6 @@ void UInventorySlotViewModel::OnItemSlotChanged(const FInventoryItemSlot& ItemSl
 	}
 
 	ResolveItem();
-	UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(GetItemCount);
+	UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(GetItemStackSize);
+	UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(GetItemMaxStackSize);
 }

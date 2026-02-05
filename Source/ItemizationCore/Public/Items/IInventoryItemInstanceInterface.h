@@ -10,6 +10,8 @@ class UItemDefinitionBase;
 struct FInventoryHandle;
 struct FInventoryItemEntry;
 
+#define UE_API ITEMIZATIONCORE_API
+
 /** Interface for an object that can act as an item instance for an item entry in the inventory. */
 UINTERFACE(meta=(CannotImplementInterfaceInBlueprint), MinimalAPI)
 class UInventoryItemInstanceInterface : public UInterface
@@ -48,9 +50,20 @@ public:
 
 	/** Returns the item definition of this instance. */
 	UFUNCTION(BlueprintCallable, Category=ItemInstance)
-	ITEMIZATIONCORE_API virtual const UItemDefinitionBase* GetItemDefinition() const;
+	UE_API virtual const UItemDefinitionBase* GetItemDefinition() const;
+
+	/** Returns the typed item definition of this instance. */
+	UFUNCTION(BlueprintCallable, Category=ItemInstance, meta=(DeterminesOutputType="ItemType"))
+	UE_API virtual const UItemDefinitionBase* GetItemDefinition_Typed(TSubclassOf<UItemDefinitionBase> ItemType) const;
+	template <class ItemType>
+	const ItemType* GetItemDefinition_Typed() const
+	{
+		return Cast<const ItemType>(GetItemDefinition());
+	}
 
 	/** Returns if this item instance wants to be replicated. */
 	UFUNCTION(BlueprintCallable, Category=ItemInstance)
 	virtual bool GetIsReplicated() const { return false; };
 };
+
+#undef UE_API
