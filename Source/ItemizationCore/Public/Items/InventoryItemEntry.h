@@ -55,6 +55,12 @@ public:
 
 	/** Returns the item instance associated with this entry. */
 	UE_API TScriptInterface<IInventoryItemInstanceInterface> GetItemInstance() const;
+	template <class InstanceType UE_REQUIRES(std::is_base_of_v<UObject, InstanceType>)>
+	InstanceType* GetItemInstance() const
+	{
+		return Cast<InstanceType>(GetItemInstance().GetObject());
+	}
+
 	UE_API void SetReplicatedItemInstance(const TScriptInterface<IInventoryItemInstanceInterface>& InInstance);
 	UE_API void SetNonReplicatedItemInstance(const TScriptInterface<IInventoryItemInstanceInterface>& InInstance);
 
@@ -82,6 +88,11 @@ public:
 
 	/** Returns the item definition. */
 	const UItemDefinitionBase* GetItemDefinition() const { return ItemDefinition; }
+	template <class ItemType>
+	const ItemType* GetItemDefinition() const
+	{
+		return Cast<const ItemType>(GetItemDefinition());
+	}
 
 	/** Returns the source object that gave us this item. */
 	UObject* GetSourceObject() const { return SourceObject.Get(); }
