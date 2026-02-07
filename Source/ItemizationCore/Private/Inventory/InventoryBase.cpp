@@ -164,6 +164,15 @@ AActor* AInventoryBase::DropItemImpl(
 	FInventoryOp_RemoveItem::FParams& DropParams,
 	const FInventoryItemEntry& ItemEntry)
 {
+
+	// Take a snapshot of the item entry
+	FInventoryItemEntry ItemEntryCopy = ItemEntry;
+	// We also copy the instance as we may need it in MakePickupCreationData()
+	// It's safe as the default copy assignment operator doesnt copy them with
+	ItemEntryCopy.NonReplicatedInstance = ItemEntry.NonReplicatedInstance;
+	ItemEntryCopy.ReplicatedInstance = ItemEntry.ReplicatedInstance;
+
+	// Now we can remove
 	auto RemoveOp = RemoveItem(MoveTemp(DropParams));
 
 	if (!RemoveOp->Result.bRemovedAny)
@@ -172,15 +181,13 @@ AActor* AInventoryBase::DropItemImpl(
 		return nullptr;
 	}
 
-	// Take a snapshot of the item entry and set it's stack count to the amount of items that got removed
-	FInventoryItemEntry ItemEntryCopy = ItemEntry;
+	// Construct the pickup data and set it's stack count to the amount of items that got removed
 	ItemEntryCopy.SetStackSizeNoDirty(RemoveOp->Result.NumRemoved);
 
-	// Construct the pickup data
 	FPickupCreationData CreationData = MakePickupCreationData(ItemEntryCopy);
 	if (!CreationData.IsValid())
 	{
-		ITEMIZATION_WARN("couldn't make the pickup creation data for item %s", *ItemEntry.GetDebugString())
+		ITEMIZATION_WARN("couldn't make the pickup creation data for item %s", *ItemEntryCopy.GetDebugString())
 		return nullptr;
 	}
 
