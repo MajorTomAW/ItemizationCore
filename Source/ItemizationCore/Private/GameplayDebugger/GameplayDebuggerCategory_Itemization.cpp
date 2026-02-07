@@ -93,6 +93,11 @@ TSharedRef<FGameplayDebuggerCategory> FGameplayDebuggerCategory_Itemization::Mak
 
 void FGameplayDebuggerCategory_Itemization::CollectData(APlayerController* OwnerPC, AActor* DebugActor)
 {
+	if (!IsValid(DebugActor))
+	{
+		return;
+	}
+
 	const UActorComponent* InventoryComponent =
 		DebugActor->FindComponentByInterface(UInventoryOwnerInterface::StaticClass());
 
@@ -198,7 +203,7 @@ void FGameplayDebuggerCategory_Itemization::CollectData(APlayerController* Owner
 					SlotData.ItemName = ItemInSlot->GetItemName().ToString();
 				}
 			}
-			
+
 			/*for (const FGameplayTag& GroupTag : SlottableInventory->GetAllItemSlotGroupTags())
 			{
 				TArray<FInventoryItemSlot*> Slots = SlottableInventory->GetSlotList().GetItemSlotsInGroup(GroupTag);
@@ -463,7 +468,7 @@ void FGameplayDebuggerCategory_Itemization::DrawInventorySlots(
 
 	CanvasContext.Printf(TEXT("Item Slots [%u]"), DataPack.Slots.Num());
 	CanvasContext.MoveToNewLine();
-	
+
 
 	float IndexHeight, IndexWidth;
 	CanvasContext.MeasureString("VeryVeryLongItemName", IndexWidth, IndexHeight);
@@ -481,7 +486,7 @@ void FGameplayDebuggerCategory_Itemization::DrawInventorySlots(
 		TArray<FRepData::FSlotDebug>& SlotList = SlotGroupMap.FindOrAdd(SlotData.GroupName);
 		SlotList.Add(SlotData);
 	}
-	
+
 	for (const auto& Pair : SlotGroupMap)
 	{
 		// Find the grid dimensions
@@ -495,7 +500,7 @@ void FGameplayDebuggerCategory_Itemization::DrawInventorySlots(
 
 		GridInfoMap.Add(Pair.Key, FGridInfo(NumRows, NumColumns));
 	}
-	
+
 
 	// Draw each group
 	for (const auto& Pair : SlotGroupMap)
