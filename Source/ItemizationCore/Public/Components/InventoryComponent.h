@@ -56,11 +56,11 @@ public:
 public:
 	/** Returns the item instance associated to the given item id. */
 	UFUNCTION(BlueprintCallable, Category=Inventory)
-	TScriptInterface<IInventoryItemInstanceInterface> FindItemInstanceById(const FInventoryItemId& ItemId) const;
+	UE_API TScriptInterface<IInventoryItemInstanceInterface> FindItemInstanceById(const FInventoryItemId& ItemId) const;
 
 	/** Returns a list of all inventory item instances. */
 	UFUNCTION(BlueprintCallable, Category=Inventory)
-	TArray<TScriptInterface<IInventoryItemInstanceInterface>> GetInventoryItems() const;
+	UE_API TArray<TScriptInterface<IInventoryItemInstanceInterface>> GetInventoryItems() const;
 
 	/**
 	 * Attempts to give an item to the inventory.
@@ -74,44 +74,44 @@ public:
 	 * @returns The id to the item that was added, or an invalid id if the item could not be added.
 	 */
 	UFUNCTION(BlueprintCallable, Category=Inventory, BlueprintAuthorityOnly, meta=(Categories="Inventory.Group"))
-	FInventoryItemId GiveItem(const UItemDefinitionBase* ItemDefinition, int32 StackSize, UObject* SourceObject, FGameplayTag GroupTag, int32& OutNumCouldNotAdd);
-	
-	
-	/**
-	 * Attempts to remove an item from the inventory.
-	 * Will be ignored if the actor is not authoritative.
-	 * 
-	 * @param ItemDefinition	The item definition to remove. 
-	 * @param NumRemove			The number of items to remove.
-	 * @param GroupTag			Tag of the group to remove the item from.
-	 * @return The number of items that got removed.
-	 */
-	UFUNCTION(BlueprintCallable, Category=Inventory, BlueprintAuthorityOnly, meta=(Categories="Inventory.Group"))
-	int32 RemoveItemByDefinition(const UItemDefinitionBase* ItemDefinition, int32 NumRemove, FGameplayTag GroupTag);
+	UE_API FInventoryItemId GiveItem(const UItemDefinitionBase* ItemDefinition, int32 StackSize, UObject* SourceObject, FGameplayTag GroupTag, int32& OutNumCouldNotAdd);
+
 
 	/**
 	 * Attempts to remove an item from the inventory.
 	 * Will be ignored if the actor is not authoritative.
-	 * 
-	 * @param ItemId			The unique item id of the item to be removed. 
+	 *
+	 * @param ItemDefinition	The item definition to remove.
 	 * @param NumRemove			The number of items to remove.
 	 * @param GroupTag			Tag of the group to remove the item from.
 	 * @return The number of items that got removed.
 	 */
 	UFUNCTION(BlueprintCallable, Category=Inventory, BlueprintAuthorityOnly, meta=(Categories="Inventory.Group"))
-	int32 RemoveItemById(const FInventoryItemId& ItemId, int32 NumRemove, FGameplayTag GroupTag);
+	UE_API int32 RemoveItemByDefinition(const UItemDefinitionBase* ItemDefinition, int32 NumRemove, FGameplayTag GroupTag);
 
 	/**
 	 * Attempts to remove an item from the inventory.
 	 * Will be ignored if the actor is not authoritative.
-	 * 
-	 * @param ItemInstance		The instance to be removed. 
+	 *
+	 * @param ItemId			The unique item id of the item to be removed.
 	 * @param NumRemove			The number of items to remove.
 	 * @param GroupTag			Tag of the group to remove the item from.
 	 * @return The number of items that got removed.
 	 */
 	UFUNCTION(BlueprintCallable, Category=Inventory, BlueprintAuthorityOnly, meta=(Categories="Inventory.Group"))
-	int32 RemoveItem(TScriptInterface<IInventoryItemInstanceInterface> ItemInstance, int32 NumRemove, FGameplayTag GroupTag);
+	UE_API int32 RemoveItemById(const FInventoryItemId& ItemId, int32 NumRemove, FGameplayTag GroupTag);
+
+	/**
+	 * Attempts to remove an item from the inventory.
+	 * Will be ignored if the actor is not authoritative.
+	 *
+	 * @param ItemInstance		The instance to be removed.
+	 * @param NumRemove			The number of items to remove.
+	 * @param GroupTag			Tag of the group to remove the item from.
+	 * @return The number of items that got removed.
+	 */
+	UFUNCTION(BlueprintCallable, Category=Inventory, BlueprintAuthorityOnly, meta=(Categories="Inventory.Group"))
+	UE_API int32 RemoveItem(TScriptInterface<IInventoryItemInstanceInterface> ItemInstance, int32 NumRemove, FGameplayTag GroupTag);
 
 protected:
 	/** Creates the actual inventory actor storing it in the handle. */
