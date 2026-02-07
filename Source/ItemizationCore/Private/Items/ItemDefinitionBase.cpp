@@ -189,7 +189,7 @@ const FItemComponentData* UItemDefinitionBase::GetItemData(const UScriptStruct* 
 {
 	for (auto& Instance : DataList)
 	{
-		if (Instance.IsOfType(PropertyType))
+		if (Instance.IsDerived(PropertyType))
 		{
 			return Instance.GetComponent<FItemComponentData>();
 		}

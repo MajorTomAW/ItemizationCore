@@ -121,6 +121,18 @@ struct ITEMIZATIONCORE_API FItemComponentDataInstance
 		return IsValid() && Component.GetScriptStruct() == Struct;
 	}
 
+	/** Checks whether this item component data is derived of a specified type. */
+	template <typename T>
+	requires std::is_base_of_v<FItemComponentData, std::decay_t<T>>
+	bool IsDerived() const
+	{
+		return IsValid() && Component.GetScriptStruct()->IsChildOf(TBaseStructure<T>::Get());
+	}
+	bool IsDerived(const UScriptStruct* Struct) const
+	{
+		return IsValid() && Component.GetScriptStruct()->IsChildOf(Struct);
+	}
+
 	/** Returns the item component data as a specific type. */
 	template <typename T>
 	requires std::is_base_of_v<FItemComponentData, std::decay_t<T>>
