@@ -18,7 +18,14 @@ With thanks to [namrog84](https://github.com/namrog84) who has helped me a lot i
 ## Editor Integration
 ### Asset Definitions
 ### Asset Thumbnail
+
+Renders a provided Texture2D as the asset's thumbnail.   
+
+
 <img width="222" height="314" alt="image" src="https://github.com/user-attachments/assets/90abe902-040a-4195-b16c-38869d94a0c1" />
+<img width="3837" height="970" alt="image" src="https://github.com/user-attachments/assets/f397cf74-00b2-4064-9977-d23456db205c" />
+<hr>
+
 
 ### Asset Context Actions
 ### Slate Style Set
