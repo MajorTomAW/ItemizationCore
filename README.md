@@ -9,7 +9,7 @@ With thanks to [namrog84](https://github.com/namrog84) who has helped me a lot i
 
 
 > [!CAUTION]
-> This is very early in development and my not work as expected.
+> This is very early in development and may not work as expected.
 
 > [!NOTE]
 > Documentation is WIP, I added a bunch of screenshots below.
