@@ -60,7 +60,8 @@ public:
 
 protected:
 	//~ Begin UInventoryComponent Interface
-	UE_API virtual void OnInventoryCreated(AInventoryBase* Inventory) override;
+	//UE_API virtual void OnInventoryCreated(AInventoryBase* Inventory) override;
+	UE_API virtual void SetupInventory(AInventoryBase* Inventory) override;
 	//~ End UInventoryComponent Interface
 
 	UE_API virtual void InitInventoryGroups(AInventoryBase* Inventory);

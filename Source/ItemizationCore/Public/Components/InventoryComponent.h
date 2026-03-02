@@ -9,6 +9,7 @@
 #include "Components/ActorComponent.h"
 #include "Components/GameFrameworkComponent.h"
 #include "Inventory/IInventoryOwnerInterface.h"
+#include "Inventory/InventoryBase.h"
 #include "Inventory/InventorySlotGroup.h"
 #include "Items/ItemDefinitionBase.h"
 #include "InventoryComponent.generated.h"
@@ -31,6 +32,7 @@ class UInventoryComponent
 
 public:
 	UE_API UInventoryComponent(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
+	DECLARE_MULTICAST_DELEGATE_OneParam(FOnInventoryInitialized, AInventoryBase* /**Inventory*/)
 
 	//~ Begin IGameplayTagAssetInterface Implementation
 	UE_API virtual void GetOwnedGameplayTags(FGameplayTagContainer& TagContainer) const override;
@@ -52,6 +54,8 @@ public:
 	UE_API virtual EDataValidationResult IsDataValid(FDataValidationContext& Context) const override;
 #endif
 	//~ End UObject Interface
+
+	UE_API void CallOrRegister_OnInventoryInitialized(FOnInventoryInitialized::FDelegate&& Delegate);
 
 public:
 	/** Returns the item instance associated to the given item id. */
@@ -121,6 +125,9 @@ protected:
 	/** Called right after the inventory was spawned or set by replication. */
 	UE_API virtual void OnInventoryCreated(AInventoryBase* Inventory);
 
+	/** Override this, if you want to setup your inventory before its readiness gets broadcasted. */
+	virtual void SetupInventory(AInventoryBase* Inventory) {}
+
 public:
 	/** The inventory class to use for this inventory manager. */
 	UPROPERTY(Config, EditDefaultsOnly, BlueprintReadOnly, Category = InventoryConfig)
@@ -144,6 +151,9 @@ public:
 
 	UFUNCTION()
 	UE_API virtual void OnRep_InventoryHandle();
+
+private:
+	FOnInventoryInitialized OnInventoryInitialized;
 };
 
 #undef UE_API

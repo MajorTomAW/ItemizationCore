@@ -252,6 +252,9 @@ public:
 	/** Returns all item Ids. */
 	UE_API TArray<FInventoryItemId> GetAllItemIds() const;
 
+	/** Returns the inventory group of the given Item id. */
+	UE_API FGameplayTag GetInventoryGroupForItemId(const FInventoryItemId& ItemId) const;
+
 	/** Tries to find the next free item slot in the given group. */
 	UE_API FInventoryItemSlot* GetNextUnoccupiedSlotInGroup(const FGameplayTag& InGroupTag) const;
 

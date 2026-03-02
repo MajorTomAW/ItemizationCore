@@ -80,6 +80,10 @@ public:
 	/** Returns an item slot associated by its occupying item id. */
 	UE_API FInventoryItemSlot* FindItemSlotByItemId(const FInventoryItemId& ItemId, const FGameplayTag& GroupTag = FGameplayTag()) const;
 
+	/** Returns the inventory group the specified item is in. */
+	UE_API FGameplayTag GetInventoryGroupTag(const FInventoryItemEntry& ItemEntry) const;
+	UE_API FGameplayTag GetInventoryGroupTag(const FInventoryItemId& ItemId) const;
+
 	/** Returns a list of all group tags. */
 	TArray<FGameplayTag> GetAllItemSlotGroupTags() const { return InventorySlotList.GetAllItemGroupTags(); }
 

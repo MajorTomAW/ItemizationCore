@@ -115,9 +115,9 @@ EDataValidationResult USlottableInventoryComponent::IsDataValid(FDataValidationC
 }
 #endif
 
-void USlottableInventoryComponent::OnInventoryCreated(AInventoryBase* Inventory)
+void USlottableInventoryComponent::SetupInventory(AInventoryBase* Inventory)
 {
-	Super::OnInventoryCreated(Inventory);
+	Super::SetupInventory(Inventory);
 
 	if (HasAuthority())
 	{

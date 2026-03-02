@@ -34,6 +34,9 @@ public:
 	/** Checks whether this item can be combined with the given one. */
 	virtual bool CanCombineWith(const FInventoryItemEntry& ItemEntry) const { return true; }
 
+	/** Gets the net condition for this instance as a replicated subobject. */
+	virtual ELifetimeCondition GetNetCondition() const { return COND_ReplayOrOwner; }
+
 	/** Returns the source object that created this item instance, if any. */
 	UFUNCTION(BlueprintCallable, Category=ItemInstance)
 	virtual UObject* GetSourceObject() const = 0;

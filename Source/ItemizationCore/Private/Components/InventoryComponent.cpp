@@ -110,8 +110,19 @@ EDataValidationResult UInventoryComponent::IsDataValid(FDataValidationContext& C
 {
 	return Super::IsDataValid(Context);
 }
-
 #endif
+
+void UInventoryComponent::CallOrRegister_OnInventoryInitialized(FOnInventoryInitialized::FDelegate&& Delegate)
+{
+	if (AInventoryBase* Inventory = GetInventory())
+	{
+		Delegate.ExecuteIfBound(Inventory);
+	}
+	else
+	{
+		OnInventoryInitialized.Add(MoveTemp(Delegate));
+	}
+}
 
 TScriptInterface<IInventoryItemInstanceInterface> UInventoryComponent::FindItemInstanceById(const FInventoryItemId& ItemId) const
 {
@@ -349,6 +360,11 @@ void UInventoryComponent::OnInventoryCreated(AInventoryBase* Inventory)
 			}
 		}
 	}
+
+	SetupInventory(Inventory);
+
+	OnInventoryInitialized.Broadcast(Inventory);
+	OnInventoryInitialized.Clear();
 }
 
 

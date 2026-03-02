@@ -239,11 +239,18 @@ AActor* AInventoryBase::DropItem(const UItemDefinitionBase* ItemDefinition, int3
 		return nullptr;
 	}
 
+	FInventoryItemEntry* ItemToDrop = FindFirstItemEntryByDefinition(ItemDefinition);
+	if (ItemToDrop == nullptr)
+	{
+		ITEMIZATION_WARN("Was passed a valid item definition, but doesn't have it in the inventory.")
+		return nullptr;
+	}
+
 	FInventoryOp_RemoveItem::FParams Params;
 	Params.ItemDefinition = ItemDefinition;
 	Params.NumRemove = NumToDrop;
 
-	return DropItemImpl(Params, *FindFirstItemEntryByDefinition(ItemDefinition));
+	return DropItemImpl(Params, *ItemToDrop);
 }
 
 bool AInventoryBase::CanAutoCombineStacks(const UItemDefinitionBase* ItemDefinition) const
@@ -569,8 +576,18 @@ void AInventoryBase::PostInitializeComponents()
 		{
 			if (IsValid(ItemInstance))
 			{
-				const ELifetimeCondition Condition = InventoryCVars::bReplicateItemsToSimulatedProxies ? COND_None : COND_ReplayOrOwner;
-				AddReplicatedSubObject(ItemInstance, Condition);
+				ELifetimeCondition NetCondition = COND_ReplayOrOwner;
+				if (const IInventoryItemInstanceInterface* InstanceInterface = Cast<IInventoryItemInstanceInterface>(ItemInstance))
+				{
+					NetCondition = InstanceInterface->GetNetCondition();
+				}
+
+				if (NetCondition != COND_None && InventoryCVars::bReplicateItemsToSimulatedProxies)
+				{
+					NetCondition = COND_None;
+				}
+
+				AddReplicatedSubObject(ItemInstance, NetCondition);
 			}
 		}
 	}
@@ -890,8 +907,13 @@ void AInventoryBase::AddReplicatedItemInstance(const TScriptInterface<IInventory
 		// Add it to the replicated sub-object list if we're replicating
 		if (IsUsingRegisteredSubObjectList())
 		{
-			const ELifetimeCondition Condition = InventoryCVars::bReplicateItemsToSimulatedProxies ? COND_None : COND_ReplayOrOwner;
-			AddReplicatedSubObject(ItemInstance.GetObject(), Condition);
+			ELifetimeCondition NetCondition = ItemInstance->GetNetCondition();
+			if (NetCondition != COND_None && InventoryCVars::bReplicateItemsToSimulatedProxies)
+			{
+				NetCondition = COND_None;
+			}
+
+			AddReplicatedSubObject(ItemInstance.GetObject(), NetCondition);
 		}
 	}
 }

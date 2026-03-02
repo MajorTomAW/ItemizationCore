@@ -230,6 +230,21 @@ FInventoryItemSlot* ASlottableInventory::FindItemSlotByItemId(const FInventoryIt
 	return InventorySlotList.FindItemSlotByItemId(ItemId, GroupTag);
 }
 
+FGameplayTag ASlottableInventory::GetInventoryGroupTag(const FInventoryItemEntry& ItemEntry) const
+{
+	return InventorySlotList.GetInventoryGroupForItemId(ItemEntry.GetItemId());
+}
+
+FGameplayTag ASlottableInventory::GetInventoryGroupTag(const FInventoryItemId& ItemId) const
+{
+	if (const FInventoryItemSlot* Slot = FindItemSlotByItemId(ItemId))
+	{
+		return InventorySlotList.GetInventoryGroupForItemId(Slot->GetItemId());
+	}
+
+	return FGameplayTag();
+}
+
 void ASlottableInventory::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);

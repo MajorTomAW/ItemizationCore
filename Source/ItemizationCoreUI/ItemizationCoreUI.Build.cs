@@ -12,6 +12,7 @@ public class ItemizationCoreUI : ModuleRules
 	        "ModelViewViewModel",
 	        "GameplayTags",
 	        "ItemizationCore",
+	        "UMG",
         });
 
         PrivateDependencyModuleNames.AddRange( new[]

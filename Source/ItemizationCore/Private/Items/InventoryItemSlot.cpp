@@ -344,6 +344,17 @@ TArray<FInventoryItemId> FInventorySlotList::GetAllItemIds() const
 	return ItemIds;
 }
 
+FGameplayTag FInventorySlotList::GetInventoryGroupForItemId(const FInventoryItemId& ItemId) const
+{
+	if (const FInventoryItemSlot* Slot = FindItemSlotByItemId(ItemId))
+	{
+		return Slot->GetGroupTag();
+	}
+
+	return FGameplayTag();
+}
+
+
 FInventoryItemSlot* FInventorySlotList::GetNextUnoccupiedSlotInGroup(const FGameplayTag& InGroupTag) const
 {
 	for (const FInventoryItemSlot& Slot : ItemSlots)
