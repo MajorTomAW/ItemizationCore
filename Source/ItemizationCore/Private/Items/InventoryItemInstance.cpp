@@ -27,7 +27,7 @@
 UInventoryItemInstance::UInventoryItemInstance(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
-	bReplicates = false;
+	bReplicates = true;
 }
 
 UWorld* UInventoryItemInstance::GetWorld() const
@@ -100,6 +100,9 @@ void UInventoryItemInstance::GetLifetimeReplicatedProps(TArray<FLifetimeProperty
 	{
 		BPClass->GetLifetimeBlueprintReplicationList(OutLifetimeProps);
 	}
+
+	DOREPLIFETIME(ThisClass, ItemDefinition)
+	DOREPLIFETIME(ThisClass, OwningItemId)
 
 	FDoRepLifetimeParams SharedParams;
 	SharedParams.bIsPushBased = true;

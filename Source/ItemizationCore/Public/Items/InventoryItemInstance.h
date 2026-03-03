@@ -99,11 +99,11 @@ protected:
 	FAbilityItemGrantedHandlesContainer GrantedHandlesContainer;
 
 	/** Item entry that this instance is associated with. */
-	UPROPERTY(Transient)
+	UPROPERTY(Replicated)
 	FInventoryItemId OwningItemId;
 
 	/** Item Definition this item represents. Gets resolved when added to the inventory server- and client-side. */
-	UPROPERTY(Transient)
+	UPROPERTY(Replicated)
 	TObjectPtr<const UItemDefinitionBase> ItemDefinition;
 };
 

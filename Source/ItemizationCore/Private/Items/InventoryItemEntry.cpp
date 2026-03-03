@@ -231,6 +231,13 @@ void FInventoryItemEntry::PostReplicatedAdd(const FInventoryItemList& InArraySer
 
 void FInventoryItemEntry::PostReplicatedChange(const FInventoryItemList& InArraySerializer)
 {
+	if (InArraySerializer.OwningInventory)
+	{
+		// call the notify change directly
+		// I don't want to go through the same process as OnGiveItem/OnRemoveItem to make a
+		// OnItemChanged which I would have to call server-side each time i make modifications to a single item entry.
+		InArraySerializer.OwningInventory->NotifyItemChanged(*this, LastObservedStackSize, StackSize);
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

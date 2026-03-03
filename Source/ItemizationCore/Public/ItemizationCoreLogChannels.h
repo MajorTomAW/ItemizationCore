@@ -14,7 +14,7 @@ ITEMIZATIONCORE_API DECLARE_LOG_CATEGORY_EXTERN(LogItemization, Log, All);
 
 namespace UE::ItemizationCore
 {
-	FString GetNetContextString(const UObject* Obj);
+	ITEMIZATIONCORE_API FString GetNetContextString(const UObject* Obj);
 }
 
 #define EXEC_INFO_FORMAT "%s: "

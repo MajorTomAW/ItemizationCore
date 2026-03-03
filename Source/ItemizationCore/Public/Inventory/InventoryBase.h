@@ -219,7 +219,7 @@ protected:
 	TSubclassOf<AActor> PickupActorClass;
 
 	/** Replicated list of inventory item entries. */
-	UPROPERTY(BlueprintReadOnly, Transient, ReplicatedUsing=OnRep_InventoryList, Category=Inventory)
+	UPROPERTY(BlueprintReadOnly, VisibleInstanceOnly, Transient, ReplicatedUsing=OnRep_InventoryList, Category=Inventory)
 	FInventoryItemList InventoryList;
 
 	/** OnRep function that gets called whenever the InventoryList is replicated. */
@@ -228,7 +228,7 @@ protected:
 
 private:
 	/** Full list of all replicated item instances that were added via an FInventoryItemEntry. */
-	UPROPERTY(Transient)
+	UPROPERTY(Transient, VisibleInstanceOnly)
 	TArray<TObjectPtr<UObject>> AllReplicatedItemInstances;
 
 	/** Timer handle for delayed removal of operations. */
