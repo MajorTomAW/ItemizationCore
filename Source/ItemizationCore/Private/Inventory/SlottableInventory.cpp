@@ -220,6 +220,11 @@ FInventoryItemSlot* ASlottableInventory::GetNextAvailableItemSlot(
 	return nullptr;
 }
 
+FInventoryItemSlot* ASlottableInventory::FindItemSlot(const TScriptInterface<IInventoryItemInstanceInterface>& ItemInstance) const
+{
+	return InventorySlotList.FindItemSlot(ItemInstance);
+}
+
 FInventoryItemSlot* ASlottableInventory::FindItemSlotBySlotId(const FInventorySlotId& SlotId, const FGameplayTag& GroupTag) const
 {
 	return InventorySlotList.FindItemSlotBySlotId(SlotId, GroupTag);

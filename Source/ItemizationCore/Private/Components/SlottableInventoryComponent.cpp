@@ -65,6 +65,19 @@ FInventoryItemId USlottableInventoryComponent::PlaceItemInSlot_Definition(
 	return Result;
 }
 
+void USlottableInventoryComponent::Server_SwapItemSlots_Implementation(
+	FInventorySlotId SlotA, FGameplayTag SlotGroupA,
+	FInventorySlotId SlotB, FGameplayTag SlotGroupB)
+{
+	SwapItemSlots(SlotA, SlotGroupA, SlotB, SlotGroupB);
+}
+
+bool USlottableInventoryComponent::Server_SwapItemSlots_Validate(
+	FInventorySlotId SlotA, FGameplayTag SlotGroupA,
+	FInventorySlotId SlotB, FGameplayTag SlotGroupB)
+{
+	return true;
+}
 
 
 void USlottableInventoryComponent::SwapItemSlots(
@@ -90,6 +103,29 @@ void USlottableInventoryComponent::SwapItemSlots(
 
 	// Actually swap the item slots
 	Inventory->SwapItemSlots(MoveTemp(Params));
+}
+
+FInventorySlotId USlottableInventoryComponent::FindSlotId(
+	TScriptInterface<IInventoryItemInstanceInterface> ItemInstance,
+	FGameplayTag& OutGroupTag) const
+{
+	ASlottableInventory* Inventory = GetSlottableInventory();
+	if (!IsValid(Inventory))
+	{
+		ITEMIZATION_ERROR_CONTEXT("Cannot find slot id of item %s. Inventory is invalid.",
+			*GetNameSafe(ItemInstance.GetObject()))
+
+		return FInventorySlotId::InvalidId;
+	}
+
+	FInventorySlotId SlotId = FInventorySlotId::InvalidId;
+	if (const auto* Slot = Inventory->FindItemSlot(ItemInstance))
+	{
+		OutGroupTag = Slot->GetGroupTag();
+		SlotId = Slot->GetSlotId();
+	}
+
+	return SlotId;
 }
 
 #if WITH_EDITOR

@@ -39,7 +39,12 @@ public:
 	UE_API const UItemDefinitionBase* GetItemDefinition() const;
 
 	/** Returns the slot id of this slot vm. */
+	UFUNCTION(BlueprintPure)
 	FInventorySlotId GetItemSlotId() const { return ItemSlotId; }
+
+	/** Returns the group tag. */
+	UFUNCTION(BlueprintPure)
+	FGameplayTag GetGroupTag() const { return GroupTag; }
 
 	/** Returns the owning inventory of this slot vm. */
 	ASlottableInventory* GetOwningInventory() const { return OwningInventory; }

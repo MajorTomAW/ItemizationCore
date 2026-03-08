@@ -117,6 +117,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category=Inventory, BlueprintAuthorityOnly, meta=(Categories="Inventory.Group"))
 	UE_API int32 RemoveItem(TScriptInterface<IInventoryItemInstanceInterface> ItemInstance, int32 NumRemove, FGameplayTag GroupTag);
 
+	/**
+	 *
+	 */
+	UFUNCTION(BlueprintCallable, Category=Inventory, Server, Reliable, WithValidation)
+	UE_API void Server_DropItem(UObject* ItemInstance);
+
+	UFUNCTION(BlueprintCallable, Category=Inventory, BlueprintAuthorityOnly)
+	UE_API int32 DropItem(TScriptInterface<IInventoryItemInstanceInterface> ItemInstance);
+
 protected:
 	/** Creates the actual inventory actor storing it in the handle. */
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category=Inventory)

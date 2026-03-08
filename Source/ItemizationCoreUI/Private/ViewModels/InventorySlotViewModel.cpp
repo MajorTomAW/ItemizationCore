@@ -37,6 +37,8 @@ void UInventorySlotViewModel::SetInventoryAndSlot(ASlottableInventory* NewInvent
 			OwningInventory->OnItemSlotChangedDelegate.AddUObject(this, &ThisClass::OnItemSlotChanged);
 		}
 
+		ResolveItem();
+
 		UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(OwningInventory);
 		UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(ItemSlotId);
 		UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(GetItemStackSize);
@@ -44,8 +46,6 @@ void UInventorySlotViewModel::SetInventoryAndSlot(ASlottableInventory* NewInvent
 		UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(GetSlotIdString);
 		UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(IsSlotOccupied);
 		UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(GetItemDefinition);
-
-		ResolveItem();
 	}
 }
 

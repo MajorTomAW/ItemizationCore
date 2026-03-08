@@ -47,10 +47,17 @@ public:
 	 * @returns The id to the item that was added, or an invalid if if the item could not be added.
 	 */
 	UFUNCTION(BlueprintCallable, Category=Inventory, BlueprintAuthorityOnly, meta=(Categories="Inventory.Group"), DisplayName="Place Item In Slot (Definition)")
-	FInventoryItemId PlaceItemInSlot_Definition(const UItemDefinitionBase* ItemDefinition, const FInventorySlotId& SlotId, int32 StackSize, UObject* SourceObject, FGameplayTag GroupTag, int32& OutNumCouldNotAdd);
+	UE_API FInventoryItemId PlaceItemInSlot_Definition(const UItemDefinitionBase* ItemDefinition, const FInventorySlotId& SlotId, int32 StackSize, UObject* SourceObject, FGameplayTag GroupTag, int32& OutNumCouldNotAdd);
+
+	UFUNCTION(BlueprintCallable, Category=Inventory, Server, Reliable, WithValidation)
+	UE_API void Server_SwapItemSlots(FInventorySlotId SlotA, FGameplayTag SlotGroupA, FInventorySlotId SlotB, FGameplayTag SlotGroupB);
 
 	UFUNCTION(BlueprintCallable, Category=Inventory, BlueprintAuthorityOnly, meta=(Categories="Inventory.Group"))
-	void SwapItemSlots(const FInventorySlotId& SlotA, FGameplayTag SlotGroupA, const FInventorySlotId& SlotB, FGameplayTag SlotGroupB);
+	UE_API void SwapItemSlots(const FInventorySlotId& SlotA, FGameplayTag SlotGroupA, const FInventorySlotId& SlotB, FGameplayTag SlotGroupB);
+
+	/** Tries to find an item slot id and its group tag by associated item. */
+	UFUNCTION(BlueprintPure, Category=Inventory)
+	UE_API FInventorySlotId FindSlotId(TScriptInterface<IInventoryItemInstanceInterface> ItemInstance, FGameplayTag& OutGroupTag) const;
 
 	//~ Begin UObject Interface
 #if WITH_EDITOR

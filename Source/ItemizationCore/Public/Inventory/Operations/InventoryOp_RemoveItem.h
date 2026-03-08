@@ -45,7 +45,7 @@ public:
 		int32 NumRemove = 0;
 
 		/** The slot group to add the item to. */
-		FGameplayTag GroupTag = Itemization::Tags::TAG_InventoryGroup_Inventory;
+		FGameplayTag GroupTag;
 
 
 		/** Helper function to check if any of the identifiers are valid. */

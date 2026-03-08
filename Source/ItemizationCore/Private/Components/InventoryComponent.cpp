@@ -307,6 +307,31 @@ int32 UInventoryComponent::RemoveItem(
 	return Result;
 }
 
+bool UInventoryComponent::Server_DropItem_Validate(UObject* ItemInstance)
+{
+	return true;
+}
+
+void UInventoryComponent::Server_DropItem_Implementation(UObject* ItemInstance)
+{
+	DropItem(ItemInstance);
+}
+
+int32 UInventoryComponent::DropItem(TScriptInterface<IInventoryItemInstanceInterface> ItemInstance)
+{
+	int32 Result = 0;
+	AInventoryBase* Inventory = GetInventory();
+	if (!IsValid(Inventory))
+	{
+		ITEMIZATION_ERROR_CONTEXT("Cannot drop item [%s] from inventory [%s] for %s. Inventory is invalid.",
+			*GetNameSafe(ItemInstance.GetObject()), *GetNameSafe(Inventory), *GetNameSafe(GetOwner()));
+		return Result;
+	}
+
+	Inventory->DropItem(ItemInstance);
+	return Result;
+}
+
 void UInventoryComponent::CreateInventory()
 {
 	UWorld* const World = GetWorld();

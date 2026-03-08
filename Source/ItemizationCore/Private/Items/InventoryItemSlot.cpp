@@ -27,7 +27,6 @@ void FInventoryItemSlot::OccupySlot(const FInventoryItemEntry& ItemEntry)
 
 	// Fill in the data
 	ItemId = ItemEntry.GetItemId();
-	ItemInstance = ItemEntry.GetItemInstance().GetObject();
 
 	MarkSlotDirty();
 
@@ -38,7 +37,6 @@ void FInventoryItemSlot::OccupySlot(const FInventoryItemEntry& ItemEntry)
 void FInventoryItemSlot::UnoccupySlot()
 {
 	ItemId.Reset();
-	ItemInstance.Reset();
 
 	MarkSlotDirty();
 
@@ -48,7 +46,15 @@ void FInventoryItemSlot::UnoccupySlot()
 
 UObject* FInventoryItemSlot::GetItemInSlot() const
 {
-	return ItemInstance.Get();
+	if (OwningInventory.IsValid())
+	{
+		if (const auto* Entry = OwningInventory->FindItemEntryById(ItemId))
+		{
+			return Entry->GetItemInstance().GetObject();
+		}
+	}
+
+	return nullptr;
 }
 
 const FInventoryItemEntry* FInventoryItemSlot::GetItemEntryInSlot() const
@@ -71,7 +77,7 @@ void FInventoryItemSlot::MarkSlotDirty()
 
 void FInventoryItemSlot::TryResolveItemInstance()
 {
-	if (ItemId.IsValid())
+	/*if (ItemId.IsValid())
 	{
 		bool bNeedsToRefreshInstance = false;
 		if (ItemInstance.IsValid())
@@ -100,7 +106,7 @@ void FInventoryItemSlot::TryResolveItemInstance()
 	else
 	{
 		ItemInstance = nullptr;
-	}
+	}*/
 }
 
 void FInventoryItemSlot::SwapContents(FInventoryItemSlot& Other)
@@ -114,9 +120,9 @@ void FInventoryItemSlot::SwapContents(FInventoryItemSlot& Other)
 	MarkSlotDirty();
 	Other.MarkSlotDirty();
 
-	// Reset both item instances as we will resolve them after swapping again
+	/*// Reset both item instances as we will resolve them after swapping again
 	ItemInstance.Reset();
-	Other.ItemInstance.Reset();
+	Other.ItemInstance.Reset();*/
 
 	// Swap the item ids
 	Swap(ItemId, Other.ItemId);
@@ -245,6 +251,21 @@ void FInventorySlotList::SwapSlotsContent(
 	SlotA->SwapContents(*SlotB);
 }
 
+FInventoryItemSlot* FInventorySlotList::FindItemSlot(
+	const TScriptInterface<IInventoryItemInstanceInterface>& ItemInstance) const
+{
+	for (auto& Slot : ItemSlots)
+	{
+		if (Slot.GetItemInSlot() != ItemInstance.GetObject())
+		{
+			continue;
+		}
+
+		return const_cast<FInventoryItemSlot*>(&Slot);
+	}
+	return nullptr;
+}
+
 FInventoryItemSlot* FInventorySlotList::FindItemSlotBySlotId(
 	const FInventorySlotId& SlotId,
 	const FGameplayTag& GroupTag) const
@@ -273,7 +294,7 @@ FInventoryItemSlot* FInventorySlotList::FindItemSlotByItemId(
 {
 	for (auto& Slot : ItemSlots)
 	{
-		if (Slot != ItemId)
+		if (Slot.GetItemId() != ItemId)
 		{
 			continue;
 		}

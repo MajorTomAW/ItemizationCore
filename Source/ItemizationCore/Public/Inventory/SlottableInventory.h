@@ -74,6 +74,9 @@ public:
 	/** Returns the full list of all item slots in the inventory. */
 	const FInventorySlotList& GetSlotList() const { return InventorySlotList; }
 
+	/** Returns an item slot associated with its item isntance. */
+	UE_API FInventoryItemSlot* FindItemSlot(const TScriptInterface<IInventoryItemInstanceInterface>& ItemInstance) const;
+
 	/** Returns an item slot associated by its slot id. */
 	UE_API FInventoryItemSlot* FindItemSlotBySlotId(const FInventorySlotId& SlotId, const FGameplayTag& GroupTag = FGameplayTag()) const;
 

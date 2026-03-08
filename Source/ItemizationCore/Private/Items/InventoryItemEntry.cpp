@@ -17,6 +17,7 @@ FInventoryItemEntry::FInventoryItemEntry()
 	, LastObservedStackSize(INDEX_NONE)
 	, bPendingRemove(false)
 	, bIsDirty(false)
+	, bWaitingOnItemInstance(false)
 {
 }
 
@@ -28,7 +29,8 @@ FInventoryItemEntry::FInventoryItemEntry(const FInventoryItemEntry& Other)
 	SourceObject = Other.SourceObject;
 	OwningInventory = Other.OwningInventory;
 	bPendingRemove = false;
-	bIsDirty = true;
+	bIsDirty = false;
+	bWaitingOnItemInstance = false;
 }
 
 FInventoryItemEntry::FInventoryItemEntry(const UItemDefinitionBase* InItemDefinition, int32 InCount, UObject* InSourceObject)
@@ -36,6 +38,7 @@ FInventoryItemEntry::FInventoryItemEntry(const UItemDefinitionBase* InItemDefini
 	, SourceObject(InSourceObject)
 	, bPendingRemove(false)
 	, bIsDirty(false)
+	, bWaitingOnItemInstance(false)
 {
 	// Sometimes a negative value can be passed in,
 	// we treat it as zero
@@ -225,7 +228,15 @@ void FInventoryItemEntry::PostReplicatedAdd(const FInventoryItemList& InArraySer
 {
 	if (InArraySerializer.OwningInventory)
 	{
-		InArraySerializer.OwningInventory->OnGiveItem(*this);
+		if (!GetItemInstance())
+		{
+			bWaitingOnItemInstance = true;
+			UE_LOG(LogTemp, Warning, TEXT("PostReplicatedAdd but no item isntance, waiting for it now..."))
+		}
+		else
+		{
+			InArraySerializer.OwningInventory->OnGiveItem(*this);
+		}
 	}
 }
 
@@ -233,10 +244,19 @@ void FInventoryItemEntry::PostReplicatedChange(const FInventoryItemList& InArray
 {
 	if (InArraySerializer.OwningInventory)
 	{
-		// call the notify change directly
-		// I don't want to go through the same process as OnGiveItem/OnRemoveItem to make a
-		// OnItemChanged which I would have to call server-side each time i make modifications to a single item entry.
-		InArraySerializer.OwningInventory->NotifyItemChanged(*this, LastObservedStackSize, StackSize);
+		if (GetItemInstance() && bWaitingOnItemInstance)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("PostReplicatedChange and the instance was resolved, calling OnGIveITem"))
+			bWaitingOnItemInstance = false;
+			InArraySerializer.OwningInventory->OnGiveItem(*this);
+		}
+		else
+		{
+			// call the notify change directly
+			// I don't want to go through the same process as OnGiveItem/OnRemoveItem to make a
+			// OnItemChanged which I would have to call server-side each time i make modifications to a single item entry.
+			InArraySerializer.OwningInventory->NotifyItemChanged(*this, LastObservedStackSize, StackSize);
+		}
 	}
 }
 

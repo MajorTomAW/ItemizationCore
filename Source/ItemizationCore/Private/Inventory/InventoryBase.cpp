@@ -736,6 +736,8 @@ void AInventoryBase::ProcessRemoveItemOperation(const TInventoryOpRef<FInventory
 		// Check the filter
 		if (!MatchesRemoveFilter(Other, Params))
 		{
+			UE_LOG(LogTemp, Warning, TEXT("DOESNT MATHC FILTER -- ItemEntry.ItemId(%u) != Params.ItemId(%u)"),
+			Other.GetItemId().Get(), Params.ItemId.Get())
 			continue;
 		}
 
@@ -799,7 +801,10 @@ bool AInventoryBase::MatchesRemoveFilter(
 
 	if (Params.ItemId.IsValid())
 	{
-		return ItemEntry.GetItemId() == Params.ItemId;
+		const bool bResult = ItemEntry.GetItemId() == Params.ItemId;
+		UE_LOG(LogTemp, Warning, TEXT("RESULT %d -- ItemEntry.ItemId(%u) == Params.ItemId(%u)"),
+			bResult, ItemEntry.GetItemId().Get(), Params.ItemId.Get())
+		return bResult;
 	}
 
 	if (Params.HasValidFilterFunc())

@@ -12,6 +12,7 @@
 #include "InventoryItemSlot.generated.h"
 
 
+class IInventoryItemInstanceInterface;
 class ASlottableInventory;
 class AInventoryBase;
 class UObject;
@@ -105,7 +106,7 @@ public:
 	template <class ItemType>
 	ItemType* GetItemInSlot() const
 	{
-		return CastChecked<ItemType>(GetItemInSlot());
+		return CastChecked<ItemType>(GetItemInSlot(), ECastCheckedType::NullAllowed);
 	}
 
 	/** Returns the item entry in this slot. */
@@ -171,8 +172,9 @@ private:
 	FInventoryItemId ItemId;
 
 	/** Non replicated item instance that lives inside this slot. Gets resolved when item id is assigned. */
-	UPROPERTY(NotReplicated)
-	TWeakObjectPtr<UObject> ItemInstance;
+	/*UPROPERTY(NotReplicated)
+	TWeakObjectPtr<UObject> ItemInstance;*/
+	uint8 bWaitingOnItemInstance:1 = false;
 
 	/** Reference to the owning inventory. */
 	UPROPERTY(NotReplicated)
@@ -235,6 +237,9 @@ public:
 
 	/** Swaps the contents of two item slots. */
 	UE_API void SwapSlotsContent(const FInventorySlotId& SlotIdA, const FGameplayTag& SlotGroupA, const FInventorySlotId& SlotIdB, const FGameplayTag& SlotGroupB) const;
+
+	/** Tries to find an FInventoryItemSlot by its item instance. */
+	UE_API FInventoryItemSlot* FindItemSlot(const TScriptInterface<IInventoryItemInstanceInterface>& ItemInstance) const;
 
 	/** Tries to find an FInventoryItemSlot by its Id. */
 	UE_API FInventoryItemSlot* FindItemSlotBySlotId(const FInventorySlotId& SlotId, const FGameplayTag& GroupTag = FGameplayTag()) const;

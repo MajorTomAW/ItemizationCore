@@ -158,6 +158,7 @@ protected:
 	/** Replicated item instance */
 	UPROPERTY()
 	TObjectPtr<UObject> ReplicatedInstance;
+	uint8 bWaitingOnItemInstance:1;
 
 	/** Non-replicated item instance */
 	UPROPERTY(NotReplicated)
