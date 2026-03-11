@@ -1,87 +1,78 @@
-﻿// Author: Tom Werner (MajorT), 2025 November
+﻿// Author: Tom Werner (dc: majort), 2026
 
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
+#include "InventorySlotId.h"
 #include "MVVMViewModelBase.h"
-#include "Items/InventoryItemSlot.h"
 #include "InventorySlotViewModel.generated.h"
 
-class UItemDefinitionBase;
-class IInventoryItemInstanceInterface;
+struct FInventoryItemEntry;
+struct FInventoryItemSlot;
+struct FInventoryItemId;
+class UItemInstanceBase;
+class AInventoryBase;
 
-#define UE_API ITEMIZATIONCOREUI_API
-
-UCLASS(MinimalAPI)
-class UInventorySlotViewModel : public UMVVMViewModelBase
+/** A VM representing a single slot in an inventory "grid".  */
+UCLASS()
+class ITEMIZATIONCOREUI_API UInventorySlotViewModel : public UMVVMViewModelBase
 {
 	GENERATED_BODY()
 
 public:
-	UE_API UInventorySlotViewModel();
+	void SetInventoryAndSlot(AInventoryBase* NewInventory, const FInventorySlotId& NewSlotId, const FGameplayTag& NewGroupTag);
 
-	UFUNCTION(BlueprintCallable)
-	UE_API void SetInventoryAndSlot(ASlottableInventory* NewInventory, const FInventorySlotId& NewSlot, const FGameplayTag& NewGroupTag);
-
+	/** Gets the current stack size of the item in this slot. */
 	UFUNCTION(BlueprintPure, FieldNotify)
-	UE_API int32 GetItemStackSize() const;
+	int32 GetItemStackSize() const;
 
+	/** Gets the current max stack size of the item in this slot. */
 	UFUNCTION(BlueprintPure, FieldNotify)
-	UE_API int32 GetItemMaxStackSize() const;
+	int32 GetItemMaxStackSize() const;
 
+	/** Gets the current item definition of the item in this slot. */
 	UFUNCTION(BlueprintPure, FieldNotify)
-	UE_API FString GetSlotIdString() const;
-
-	UFUNCTION(BlueprintPure, FieldNotify)
-	UE_API bool IsSlotOccupied() const;
-
-	UFUNCTION(BlueprintPure, FieldNotify)
-	UE_API const UItemDefinitionBase* GetItemDefinition() const;
+	const class UItemDefinitionBase* GetItemDefinition() const;
 
 	/** Returns the slot id of this slot vm. */
 	UFUNCTION(BlueprintPure)
 	FInventorySlotId GetItemSlotId() const { return ItemSlotId; }
 
-	/** Returns the group tag. */
+	/** returns the item instance of this slot vm. */
+	UFUNCTION(BlueprintPure)
+	UItemInstanceBase* GetItemInstance() const { return ItemInstance; }
+
+	/** Returns true if this slot contains a valid item. */
+	UFUNCTION(BlueprintPure, FieldNotify)
+	bool IsSlotOccupied() const;
+
 	UFUNCTION(BlueprintPure)
 	FGameplayTag GetGroupTag() const { return GroupTag; }
 
-	/** Returns the owning inventory of this slot vm. */
-	ASlottableInventory* GetOwningInventory() const { return OwningInventory; }
-
-	/** Returns the owning item instance of this slot vm. */
-	TScriptInterface<IInventoryItemInstanceInterface> GetItemInstance() const { return ItemInstance; }
+	UFUNCTION(BlueprintPure)
+	AInventoryBase* GetOwningInventory() const { return OwningInventory; }
 
 protected:
-	UE_API void ResolveItem();
+	void TryResolveItem();
 
-	UE_API virtual void OnItemAdded(
-		const FInventoryItemEntry& ItemThatWasAdded,
-		const int32& LastCount,
-		const int32& NewCount );
+	void BroadcastNewItem();
+	void BroadcastItemStateChanged();
 
-	UE_API virtual void OnItemRemoved(
-		const FInventoryItemEntry& ItemThatWasRemoved,
-		const int32& LastCount,
-		const int32& NewCount);
-
-	UE_API virtual void OnItemChanged(
-		const FInventoryItemEntry& ItemThatChanged,
-		const int32& LastCount,
-		const int32& NewCount);
-
-	UE_API virtual void OnItemSlotChanged(const FInventoryItemSlot& ItemSlot);
+	virtual void OnItemSlotChanged(const FInventoryItemSlot& SlotThatChanged, const FInventoryItemId& LastItemInSlot, const FInventoryItemId& NewItemInSlot);
+	virtual void OnItemChanged(const FInventoryItemEntry& ItemThatChanged, const int32& LastStackSize, const int32& NewStackSize);
 
 protected:
-	UPROPERTY(BlueprintReadOnly, Getter, FieldNotify)
-	TObjectPtr<ASlottableInventory> OwningInventory;
+	/** The owning inventory. */
+	UPROPERTY(Transient, BlueprintReadOnly, FieldNotify)
+	TObjectPtr<AInventoryBase> OwningInventory;
 
 	UPROPERTY(BlueprintReadOnly, Getter, FieldNotify)
 	FInventorySlotId ItemSlotId;
+
+	UPROPERTY()
 	FGameplayTag GroupTag;
 
 	UPROPERTY(BlueprintReadOnly, Getter, FieldNotify)
-	TScriptInterface<IInventoryItemInstanceInterface> ItemInstance;
+	TObjectPtr<UItemInstanceBase> ItemInstance;
 };
-
-#undef UE_API

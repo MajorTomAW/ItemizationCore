@@ -1,39 +1,54 @@
-﻿// Author: Tom Werner (MajorT), 2025 November
+﻿// Author: Tom Werner (dc: majort), 2026
 
 
 #include "ViewModels/InventoryGroupViewModel.h"
 
-#include "Inventory/SlottableInventory.h"
+#include "IInventoryOwnerInterface.h"
+#include "InventoryBase.h"
+#include "InventoryLibrary.h"
 #include "ViewModels/InventorySlotViewModel.h"
 
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(InventoryGroupViewModel)
 
-void UInventoryGroupViewModel::SetInventoryAndGroup(ASlottableInventory* NewInventory, const FGameplayTag& NewGroupTag)
+UInventoryGroupViewModel* UInventoryGroupViewModel::CreateInventoryGroupViewModel(
+	const AActor* InventoryOwner,
+	FGameplayTag GroupTag)
 {
-	GroupTag = NewGroupTag;
-
-	if (NewInventory == OwningInventory)
+	AInventoryBase* Inventory = UInventoryLibrary::FindInventory(InventoryOwner);
+	if (!IsValid(Inventory))
 	{
-		return;
+		return nullptr;
 	}
 
-	if (IsValid(OwningInventory))
+	ThisClass* NewVM = NewObject<ThisClass>();
+	NewVM->SetInventoryAndGroup(Inventory, GroupTag);
+	return NewVM;
+}
+
+void UInventoryGroupViewModel::SetInventoryAndGroup(AInventoryBase* NewInventory, const FGameplayTag& NewGroupTag)
+{
+	if (OwningInventory != NewInventory || GroupTag != NewGroupTag)
 	{
+		if (IsValid(OwningInventory))
+		{
+			OwningInventory->OnItemSlotAddedDelegate.RemoveAll(this);
+			OwningInventory->OnItemSlotRemovedDelegate.RemoveAll(this);
+		}
 
+		GroupTag = NewGroupTag;
+		OwningInventory = NewInventory;
+
+		if (IsValid(OwningInventory))
+		{
+			//@TODO: Bind
+		}
+
+		UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(GetNumSlotsInGroup);
+		UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(GetInventorySlotViewModels);
+		UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(GetNumColumns);
+		UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(GetNumRows);
 	}
-
-	OwningInventory = NewInventory;
-
-	if (IsValid(OwningInventory))
-	{
-
-	}
-
-	UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(GetNumSlotsInGroup);
-	UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(GetInventorySlotViewModels);
-	UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(GetNumColumns);
-	UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(GetNumRows);
 }
 
 TArray<UInventorySlotViewModel*> UInventoryGroupViewModel::GetInventorySlotViewModels() const

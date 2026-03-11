@@ -2,7 +2,7 @@
 
 public class ItemizationCoreUI : ModuleRules
 {
-    public ItemizationCoreUI(ReadOnlyTargetRules Target) : base(Target)
+    public ItemizationCoreUI(ReadOnlyTargetRules target) : base(target)
     {
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
