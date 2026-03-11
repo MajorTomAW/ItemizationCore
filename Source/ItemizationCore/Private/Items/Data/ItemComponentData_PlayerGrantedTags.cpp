@@ -1,5 +1,4 @@
-﻿/*
-// Author: Tom Werner (MajorT), 2025
+﻿// Author: Tom Werner (MajorT), 2025
 
 
 #include "Items/Data/ItemComponentData_PlayerGrantedTags.h"
@@ -12,18 +11,17 @@
 
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
-#include "InventoryHandle.h"
-#include "Inventory/InventoryBase.h"
+#include "InventoryBase.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(ItemComponentData_PlayerGrantedTags)
 
 void FItemComponentData_PlayerGrantedTags::OnItemGiven(
 	FInventoryItemEntry& ItemEntry,
-	const FInventoryHandle& InventoryHandle) const
+	AInventoryBase* Inventory) const
 {
-	if (AInventoryBase* OwningInventory = InventoryHandle.GetInventory())
+	if (ensure(Inventory))
 	{
-		if (UAbilitySystemComponent* OwnerACS = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(OwningInventory->GetOwner()))
+		if (UAbilitySystemComponent* OwnerACS = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(Inventory->GetOwner()))
 		{
 			OwnerACS->AddLooseGameplayTags(TagsToGrant);
 
@@ -37,11 +35,11 @@ void FItemComponentData_PlayerGrantedTags::OnItemGiven(
 
 void FItemComponentData_PlayerGrantedTags::OnItemRemoved(
 	FInventoryItemEntry& ItemEntry,
-	const FInventoryHandle& InventoryHandle) const
+	AInventoryBase* Inventory) const
 {
-	if (AInventoryBase* OwningInventory = InventoryHandle.GetInventory())
+	if (ensure(Inventory))
 	{
-		if (UAbilitySystemComponent* OwnerACS = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(OwningInventory->GetOwner()))
+		if (UAbilitySystemComponent* OwnerACS = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(Inventory->GetOwner()))
 		{
 			OwnerACS->RemoveLooseGameplayTags(TagsToGrant);
 
@@ -54,6 +52,8 @@ void FItemComponentData_PlayerGrantedTags::OnItemRemoved(
 }
 
 #if WITH_EDITOR
+
+
 EDataValidationResult FItemComponentData_PlayerGrantedTags::IsDataValid(FDataValidationContext& Context) const
 {
 	EDataValidationResult Result = FItemComponentData::IsDataValid(Context);
@@ -85,4 +85,3 @@ FText FItemComponentData_PlayerGrantedTags::GetDescription() const
 }
 #undef LOCTEXT_NAMESPACE
 #endif
-*/
