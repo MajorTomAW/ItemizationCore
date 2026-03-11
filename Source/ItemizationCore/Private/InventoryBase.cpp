@@ -112,6 +112,7 @@ UItemInstanceBase* AInventoryBase::GiveItem(
 	const UItemDefinitionBase* ItemDefinition,
 	int32 NumToGive,
 	UObject* SourceObject,
+	FGameplayTag PreferredGroup,
 	int32& OutNumCouldNotGive)
 {
 	SCOPE_CYCLE_COUNTER(STAT_Itemization_GiveItem)
@@ -178,7 +179,7 @@ UItemInstanceBase* AInventoryBase::GiveItem(
 	{
 		int32 CreatedStackSize;
 		FInventoryItemId NewItemId;
-		UItemInstanceBase* NewItem = AttemptCreateNewStack(ThisItem, NewItemId, FGameplayTag(), OutNumCouldNotGive, CreatedStackSize);
+		UItemInstanceBase* NewItem = AttemptCreateNewStack(ThisItem, NewItemId, PreferredGroup, OutNumCouldNotGive, CreatedStackSize);
 		if (!IsValid(NewItem))
 		{
 			break;
@@ -203,7 +204,7 @@ int32 AInventoryBase::RemoveItemById(const FInventoryItemId& ItemId, int32 NumTo
 {
 	SCOPE_CYCLE_COUNTER(STAT_Itemization_RemoveItem)
 
-	int32 NumRemoved = NumToRemove;
+	int32 NumRemoved = FMath::Max(NumToRemove, 0);
 
 	if (!HasAuthority())
 	{
@@ -297,10 +298,11 @@ void AInventoryBase::Server_RemoveItem_Implementation(
 void AInventoryBase::Server_GiveItem_Implementation(
 	const UItemDefinitionBase* ItemDefinition,
 	int32 NumToGive,
-	UObject* SourceObject)
+	UObject* SourceObject,
+	FGameplayTag PreferredGroup)
 {
 	int32 OutNumCouldNotGive;
-	GiveItem(ItemDefinition, NumToGive, SourceObject, OutNumCouldNotGive);
+	GiveItem(ItemDefinition, NumToGive, SourceObject, PreferredGroup, OutNumCouldNotGive);
 }
 
 UItemInstanceBase* AInventoryBase::PlaceItemInSlot(
@@ -377,6 +379,20 @@ void AInventoryBase::SwapItemSlots(
 	SlotList.SwapSlotsContent(SlotA, GroupTagA, SlotB, GroupTagB);
 }
 
+void AInventoryBase::Server_SwapItemSlots_Implementation(
+	FInventorySlotId SlotA, FGameplayTag GroupTagA,
+	FInventorySlotId SlotB, FGameplayTag GroupTagB)
+{
+	SwapItemSlots(SlotA, GroupTagA, SlotB, GroupTagB);
+}
+
+bool AInventoryBase::Server_SwapItemSlots_Validate(
+	FInventorySlotId SlotA, FGameplayTag GroupTagA,
+	FInventorySlotId SlotB, FGameplayTag GroupTagB)
+{
+	return SlotA.IsValid() && SlotB.IsValid();
+}
+
 AActor* AInventoryBase::DropItem(const UItemInstanceBase* Item, int32 NumToDrop)
 {
 	return DropItem(Item->GetItemId(), NumToDrop);
@@ -410,6 +426,16 @@ AActor* AInventoryBase::DropItem(const FInventoryItemId& ItemId, int32 NumToDrop
 	}
 
 	return SpawnPickupActor(PickupCreationData);
+}
+
+void AInventoryBase::Server_DropItem_Implementation(FInventoryItemId ItemId, int32 NumToDrop)
+{
+	DropItem(ItemId, NumToDrop);
+}
+
+bool AInventoryBase::Server_DropItem_Validate(FInventoryItemId ItemId, int32 NumToDrop)
+{
+	return ItemId.IsValid();
 }
 
 TArray<AActor*> AInventoryBase::DropAllItems()

@@ -104,7 +104,7 @@ EDataValidationResult UInventoryComponent::IsDataValid(FDataValidationContext& C
 
 void UInventoryComponent::CallOrRegister_OnInventoryInitialized(FOnInventoryInitialized::FDelegate&& Delegate)
 {
-	if (AInventoryBase* MyInventory = GetInventory())
+	if (AInventoryBase* MyInventory = Execute_GetInventory(this))
 	{
 		Delegate.ExecuteIfBound(MyInventory);
 	}

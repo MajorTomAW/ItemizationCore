@@ -65,13 +65,17 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Itemization|Item")
 	static UE_API bool IsItemStackable(const UItemDefinitionBase* ItemDefinition);
 
+	/** Tries to find the slot id and group of an item. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Itemization|Item")
+	static UE_API FInventorySlotId FindSlotId(AInventoryBase* Inventory, const UItemInstanceBase* ItemInstance, FGameplayTag& OutGroupTag);
+
 
 	/** Gives an item to an inventory owner. */
-	UFUNCTION(BlueprintCallable, Category=Inventory, meta=(DefaultToSelf="InventoryOwner"), BlueprintAuthorityOnly)
-	static UE_API UItemInstanceBase* GiveItemToInventoryOwner(const TScriptInterface<IInventoryOwnerInterface>& InventoryOwner, const UItemDefinitionBase* ItemDefinition, int32 NumToGive, UObject* SourceObject, int32& OutNumCouldNotGive);
+	UFUNCTION(BlueprintCallable, Category=Inventory, meta=(DefaultToSelf="InventoryOwner", Categories="Inventory.Group"), BlueprintAuthorityOnly)
+	static UE_API UItemInstanceBase* GiveItemToInventoryOwner(const TScriptInterface<IInventoryOwnerInterface>& InventoryOwner, const UItemDefinitionBase* ItemDefinition, int32 NumToGive, UObject* SourceObject, FGameplayTag PreferredGroup, int32& OutNumCouldNotGive);
 
-	UFUNCTION(BlueprintCallable, Category=Inventory, meta=(DefaultToSelf="InventoryOwner"))
-	static UE_API void Server_GiveItemToInventoryOwner(const TScriptInterface<IInventoryOwnerInterface>& InventoryOwner, const UItemDefinitionBase* ItemDefinition, int32 NumToGive, UObject* SourceObject);
+	UFUNCTION(BlueprintCallable, Category=Inventory, meta=(DefaultToSelf="InventoryOwner", Categories="Inventory.Group"))
+	static UE_API void Server_GiveItemToInventoryOwner(const TScriptInterface<IInventoryOwnerInterface>& InventoryOwner, const UItemDefinitionBase* ItemDefinition, int32 NumToGive, UObject* SourceObject, FGameplayTag PreferredGroup);
 
 	/** Gives an item to an inventory owner and places it in the specified slot. */
 	UFUNCTION(BlueprintCallable, Category=Inventory, meta=(DefaultToSelf="InventoryOwner"), BlueprintAuthorityOnly, meta=(Categories="Inventory.Group"))
@@ -84,6 +88,15 @@ public:
 	/** Swaps the items in the two specified slots. */
 	UFUNCTION(BlueprintCallable, Category=Inventory, meta=(DefaultToSelf="InventoryOwner", Categories="Inventory.Group"), BlueprintAuthorityOnly)
 	static UE_API void SwapItemSlotsOnInventoryOwner(const TScriptInterface<IInventoryOwnerInterface>& InventoryOwner, const FInventorySlotId& SlotA, FGameplayTag GroupTagA, const FInventorySlotId& SlotB, FGameplayTag GroupTagB);
+
+	/** Performs a server rpc to call SwapItemSlots. */
+	UFUNCTION(BlueprintCallable, Category=Inventory, meta=(DefaultToSelf="InventoryOwner", Categories="Inventory.Group"))
+	static UE_API void Server_SwapItemSlotsOnInventoryOwner(const TScriptInterface<IInventoryOwnerInterface>& InventoryOwner, const FInventorySlotId& SlotA, FGameplayTag GroupTagA, const FInventorySlotId& SlotB, FGameplayTag GroupTagB);
+
+	/** Performs a server rpc to call DropItem. */
+	UFUNCTION(BlueprintCallable, Category=Inventory, meta=(DefaultToSelf="InventoryOwner"))
+	static UE_API void Server_DropItem(const TScriptInterface<IInventoryOwnerInterface>& InventoryOwner, const FInventoryItemId& ItemId, int32 NumToDrop = -1);
+
 };
 
 #undef UE_API

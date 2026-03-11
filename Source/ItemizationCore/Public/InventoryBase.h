@@ -17,13 +17,14 @@
 class UInventoryConfig;
 struct FInventoryItemSlot;
 
+/** An actor that acts as a container for an inventory and slots. */
 UCLASS(MinimalAPI)
 class AInventoryBase : public AActor
 {
 	GENERATED_BODY()
 
 public:
-	AInventoryBase(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
+	UE_API AInventoryBase(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 	static UE_API const int32 REMOVE_ENTIRE_STACK;
 
 	/** Initializes this inventory's slots using the inventory config asset. */
@@ -34,11 +35,11 @@ public:
 	 * Will try to place it into the next unoccupied item slot if the item can't be placed into overflow.
 	 * Overflow meaning that the item is inside the inventory but not in the inventory "grid".
 	 */
-	UE_API UItemInstanceBase* GiveItem(const UItemDefinitionBase* ItemDefinition, int32 NumToGive, UObject* SourceObject, int32& OutNumCouldNotGive);
+	UE_API UItemInstanceBase* GiveItem(const UItemDefinitionBase* ItemDefinition, int32 NumToGive, UObject* SourceObject, FGameplayTag PreferredGroup, int32& OutNumCouldNotGive);
 
 	/** Performs a server rpc to call GiveItem() on this inventory. */
 	UFUNCTION(Server, Reliable)
-	UE_API void Server_GiveItem(const UItemDefinitionBase* ItemDefinition, int32 NumToGive, UObject* SourceObject);
+	UE_API void Server_GiveItem(const UItemDefinitionBase* ItemDefinition, int32 NumToGive, UObject* SourceObject, FGameplayTag PreferredGroup);
 
 	/**
 	 * Removes an item from the inventory.
@@ -75,6 +76,10 @@ public:
 	 */
 	UE_API void SwapItemSlots(const FInventorySlotId& SlotA, const FGameplayTag& GroupTagA, const FInventorySlotId& SlotB, const FGameplayTag& GroupTagB);
 
+	/** Performs a server rpc to call SwapItemSlots() on this inventory. */
+	UFUNCTION(Server, Reliable, WithValidation)
+	UE_API void Server_SwapItemSlots(FInventorySlotId SlotA, FGameplayTag GroupTagA, FInventorySlotId SlotB, FGameplayTag GroupTagB);
+
 	/**
 	 * Removes and drops an item to the ground.
 	 *
@@ -84,6 +89,10 @@ public:
 	 */
 	UE_API virtual AActor* DropItem(const UItemInstanceBase* Item, int32 NumToDrop = REMOVE_ENTIRE_STACK);
 	UE_API virtual AActor* DropItem(const FInventoryItemId& ItemId, int32 NumToDrop = REMOVE_ENTIRE_STACK);
+
+	/** Performs a server rpc to call DropItem() on this inventory. */
+	UFUNCTION(Server, Reliable, WithValidation)
+	UE_API void Server_DropItem(FInventoryItemId ItemId, int32 NumToDrop = REMOVE_ENTIRE_STACK);
 
 	/** Removes and drops all items to the ground. */
 	UE_API virtual TArray<AActor*> DropAllItems();

@@ -53,7 +53,7 @@ public:
 	 * Therefore, by modifying this item entry, you only modify the one inside the pickup and not inside the inventory.
 	 */
 	UFUNCTION(BlueprintCallable, Category=Pickup)
-	virtual const FInventoryItemEntry& GetPrimaryPickupItemEntry() const = 0;
+	virtual const FInventoryItemEntry&	GetPrimaryPickupItemEntry() const = 0;
 
 	/** Returns the primary item definition stored in this pickupable actor. */
 	UFUNCTION(BlueprintCallable, Category=Pickup)

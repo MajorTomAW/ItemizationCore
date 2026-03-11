@@ -61,7 +61,7 @@ void UItemizationCheatManagerExtension::PopulateAutoCompleteEntries(TArray<FAuto
 		{
 			FAutoCompleteCommand AutoCompleteCmd;
 			AutoCompleteCmd.Command = FString::Printf(TEXT("GiveItem %s"), *AssetData.GetPrimaryAssetId().ToString());
-			AutoCompleteCmd.Desc = FString::Printf(TEXT("ItemAssetId[FString] Count[int32]"));
+			AutoCompleteCmd.Desc = FString::Printf(TEXT("ItemAssetId[FString] Count[int32] GroupName[FString]"));
 			AutoCompleteCmd.Color = ConsoleSettings->InputColor;
 			AutoCompleteCommands.Add(AutoCompleteCmd);
 		}
@@ -80,7 +80,8 @@ void UItemizationCheatManagerExtension::PopulateAutoCompleteEntries(TArray<FAuto
 
 void UItemizationCheatManagerExtension::GiveItem(
 	const FString& ItemAssetId,
-	int32 Count) const
+	int32 Count,
+	FString GroupName) const
 {
 #if UE_WITH_CHEAT_MANAGER
 	APlayerController* PC = GetPlayerController();
@@ -99,8 +100,14 @@ void UItemizationCheatManagerExtension::GiveItem(
 
 	UE_LOG(LogConsoleResponse, Log, TEXT("Giving Item %s (count: %d) to %s"), *ItemAssetId, Count, *PC->GetName())
 
+	FGameplayTag GroupTag;
+	if (!GroupName.IsEmpty())
+	{
+		GroupTag = FGameplayTag::RequestGameplayTag(*GroupName);
+	}
+
 	int32 Excess;
-	Inventory->GiveItem(ItemDef, Count, PC, Excess);
+	Inventory->GiveItem(ItemDef, Count, PC, GroupTag, Excess);
 #endif
 }
 

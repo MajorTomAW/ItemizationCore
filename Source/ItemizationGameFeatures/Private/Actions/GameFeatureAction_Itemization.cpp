@@ -4,7 +4,7 @@
 #include "Actions/GameFeatureAction_Itemization.h"
 
 #include "Components/GameFrameworkComponentManager.h"
-#include "Inventory/InventoryBase.h"
+#include "InventoryBase.h"
 
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(GameFeatureAction_Itemization)

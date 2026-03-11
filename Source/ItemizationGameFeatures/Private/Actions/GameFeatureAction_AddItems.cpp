@@ -3,8 +3,7 @@
 
 #include "Actions/GameFeatureAction_AddItems.h"
 
-#include "Inventory/InventoryBase.h"
-#include "Inventory/Operations/InventoryOp_GiveItem.h"
+#include "InventoryBase.h"
 #include "Items/ItemAndCount.h"
 
 
@@ -53,11 +52,8 @@ void UGameFeatureAction_AddItems::OnInitItemizationData(
 
 	for (const auto& ItemGrant : ItemsToGive)
 	{
-		FInventoryOp_GiveItem::FParams Params;
-		Params.ItemDefinition = ItemGrant.ItemDefinition;
-		Params.NumItems = ItemGrant.StackSize;
-
-		Inventory->GiveItem(MoveTemp(Params));
+		int32 Dummy;
+		Inventory->GiveItem(ItemGrant.ItemDefinition, ItemGrant.StackSize, nullptr, FGameplayTag(), Dummy);
 	}
 }
 

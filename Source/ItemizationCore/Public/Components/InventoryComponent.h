@@ -61,7 +61,7 @@ protected:
 	UFUNCTION()
 	void OnRep_Inventory();
 
-protected:
+public:
 	/** The inventory class to spawn with this component. */
 	UPROPERTY(Config, EditDefaultsOnly, BlueprintReadOnly, Category=Inventory)
 	TSubclassOf<AInventoryBase> InventoryClass;

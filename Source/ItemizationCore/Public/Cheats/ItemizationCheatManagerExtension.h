@@ -34,7 +34,7 @@ protected:
 	 * @param GroupName	String that will be resolved into a gameplay tag, representing the group to add the item to.
 	 */
 	UFUNCTION(Exec)
-	void GiveItem(const FString& ItemAssetId, int32 Count = -1) const;
+	void GiveItem(const FString& ItemAssetId, int32 Count = 1, FString GroupName = TEXT("")) const;
 
 	/**
 	 * Removes the specified amount of the specified item from the owning player's inventory.

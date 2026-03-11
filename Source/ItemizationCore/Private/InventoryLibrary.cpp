@@ -83,11 +83,32 @@ bool UInventoryLibrary::IsItemStackable(const UItemDefinitionBase* ItemDefinitio
 	return false;
 }
 
+FInventorySlotId UInventoryLibrary::FindSlotId(
+	AInventoryBase* Inventory,
+	const UItemInstanceBase* ItemInstance,
+	FGameplayTag& OutGroupTag)
+{
+	FInventorySlotId SlotId = FInventorySlotId::InvalidId;
+	if (!IsValid(Inventory))
+	{
+		return SlotId;
+	}
+
+	if (const auto* Slot = Inventory->FindItemSlotByItemId(ItemInstance->GetItemId(), FGameplayTag()))
+	{
+		OutGroupTag = Slot->GetGroupTag();
+		SlotId = Slot->GetSlotId();
+	}
+
+	return SlotId;
+}
+
 UItemInstanceBase* UInventoryLibrary::GiveItemToInventoryOwner(
 	const TScriptInterface<IInventoryOwnerInterface>& InventoryOwner,
 	const UItemDefinitionBase* ItemDefinition,
 	int32 NumToGive,
 	UObject* SourceObject,
+	FGameplayTag PreferredGroup,
 	int32& OutNumCouldNotGive)
 {
 	AInventoryBase* Inventory = InventoryOwner->Execute_GetInventory(InventoryOwner.GetObject());
@@ -98,7 +119,7 @@ UItemInstanceBase* UInventoryLibrary::GiveItemToInventoryOwner(
 
 	if (Inventory->HasAuthority())
 	{
-		return Inventory->GiveItem(ItemDefinition, NumToGive, SourceObject, OutNumCouldNotGive);
+		return Inventory->GiveItem(ItemDefinition, NumToGive, SourceObject, PreferredGroup, OutNumCouldNotGive);
 	}
 	else
 	{
@@ -111,7 +132,9 @@ UItemInstanceBase* UInventoryLibrary::GiveItemToInventoryOwner(
 void UInventoryLibrary::Server_GiveItemToInventoryOwner(
 	const TScriptInterface<IInventoryOwnerInterface>& InventoryOwner,
 	const UItemDefinitionBase* ItemDefinition,
-	int32 NumToGive, UObject* SourceObject)
+	int32 NumToGive,
+	UObject* SourceObject,
+	FGameplayTag PreferredGroup)
 {
 	AInventoryBase* Inventory = InventoryOwner->Execute_GetInventory(InventoryOwner.GetObject());
 	if (!ensure(IsValid(Inventory)))
@@ -122,11 +145,11 @@ void UInventoryLibrary::Server_GiveItemToInventoryOwner(
 	if (Inventory->HasAuthority())
 	{
 		int32 OutNumCouldNotGive;
-		Inventory->GiveItem(ItemDefinition, NumToGive, SourceObject, OutNumCouldNotGive);
+		Inventory->GiveItem(ItemDefinition, NumToGive, SourceObject, PreferredGroup, OutNumCouldNotGive);
 	}
 	else
 	{
-		Inventory->Server_GiveItem(ItemDefinition, NumToGive, SourceObject);
+		Inventory->Server_GiveItem(ItemDefinition, NumToGive, SourceObject, PreferredGroup);
 	}
 }
 
@@ -189,4 +212,45 @@ void UInventoryLibrary::SwapItemSlotsOnInventoryOwner(
 	}
 
 	Inventory->SwapItemSlots(SlotA, GroupTagA, SlotB, GroupTagB);
+}
+
+void UInventoryLibrary::Server_SwapItemSlotsOnInventoryOwner(
+	const TScriptInterface<IInventoryOwnerInterface>& InventoryOwner,
+	const FInventorySlotId& SlotA, FGameplayTag GroupTagA,
+	const FInventorySlotId& SlotB, FGameplayTag GroupTagB)
+{
+	AInventoryBase* Inventory = InventoryOwner->Execute_GetInventory(InventoryOwner.GetObject());
+	if (!ensure(IsValid(Inventory)))
+	{
+		return;
+	}
+
+	if (Inventory->HasAuthority())
+	{
+		Inventory->SwapItemSlots(SlotA, GroupTagA, SlotB, GroupTagB);
+	}
+	else
+	{
+		Inventory->Server_SwapItemSlots(SlotA, GroupTagA, SlotB, GroupTagB);
+	}
+}
+
+void UInventoryLibrary::Server_DropItem(
+	const TScriptInterface<IInventoryOwnerInterface>& InventoryOwner,
+	const FInventoryItemId& ItemId, int32 NumToDrop)
+{
+	AInventoryBase* Inventory = InventoryOwner->Execute_GetInventory(InventoryOwner.GetObject());
+	if (!ensure(IsValid(Inventory)))
+	{
+		return;
+	}
+
+	if (Inventory->HasAuthority())
+	{
+		Inventory->DropItem(ItemId, NumToDrop);
+	}
+	else
+	{
+		Inventory->Server_DropItem(ItemId, NumToDrop);
+	}
 }

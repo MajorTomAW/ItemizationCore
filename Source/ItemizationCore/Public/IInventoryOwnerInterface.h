@@ -6,6 +6,8 @@
 
 #include "IInventoryOwnerInterface.generated.h"
 
+#define UE_API ITEMIZATIONCORE_API
+
 class AInventoryBase;
 
 /** Interface which can be used to find an inventory on an arbitrary actor. */
@@ -22,6 +24,8 @@ class IInventoryOwnerInterface
 public:
 	/** Returns the owning inventory this interface is associated with. */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category=Inventory)
-	AInventoryBase* GetInventory() const;
+	UE_API AInventoryBase* GetInventory() const;
 	virtual AInventoryBase* GetInventory_Implementation() const = 0;
 };
+
+#undef UE_API
