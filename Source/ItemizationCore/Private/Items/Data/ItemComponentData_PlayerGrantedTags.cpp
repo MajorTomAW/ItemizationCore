@@ -1,4 +1,5 @@
-﻿// Author: Tom Werner (MajorT), 2025
+﻿/*
+// Author: Tom Werner (MajorT), 2025
 
 
 #include "Items/Data/ItemComponentData_PlayerGrantedTags.h"
@@ -84,3 +85,4 @@ FText FItemComponentData_PlayerGrantedTags::GetDescription() const
 }
 #undef LOCTEXT_NAMESPACE
 #endif
+*/

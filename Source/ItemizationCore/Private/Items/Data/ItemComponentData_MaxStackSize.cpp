@@ -3,8 +3,6 @@
 
 #include "Items/Data/ItemComponentData_MaxStackSize.h"
 
-#include "Items/InventoryItemEntry.h"
-
 FItemComponentData_MaxStackSize::FItemComponentData_MaxStackSize()
 {
 }

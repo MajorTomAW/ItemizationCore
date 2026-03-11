@@ -1,4 +1,4 @@
-﻿// Author: Tom Werner (MajorT), 2025
+﻿// Author: Tom Werner (dc: majort), 2026
 
 
 #include "Items/Data/ItemComponentData.h"
@@ -34,14 +34,14 @@ bool FItemComponentData::CanMergeItems(
 
 void FItemComponentData::OnItemGiven(
 	FInventoryItemEntry& ItemEntry,
-	const FInventoryHandle& InventoryHandle) const
+	AInventoryBase* Inventory) const
 {
 	// Stub
 }
 
 void FItemComponentData::OnItemRemoved(
 	FInventoryItemEntry& ItemEntry,
-	const FInventoryHandle& InventoryHandle) const
+	AInventoryBase* Inventory) const
 {
 	// Stub
 }

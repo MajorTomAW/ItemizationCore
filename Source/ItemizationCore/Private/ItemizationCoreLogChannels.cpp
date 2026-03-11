@@ -1,13 +1,14 @@
-﻿// Author: Tom Werner (MajorT), 2025
+﻿// Author: Tom Werner (dc: majort), 2026
 
 
 #include "ItemizationCoreLogChannels.h"
 
+DEFINE_LOG_CATEGORY(LogItemization)
+DEFINE_LOG_CATEGORY(LogItemizationUI)
+
 #if WITH_EDITOR
 extern ENGINE_API FString GPlayInEditorContextString;
 #endif
-
-DEFINE_LOG_CATEGORY(LogItemization);
 
 FString UE::ItemizationCore::GetNetContextString(const UObject* Obj)
 {
@@ -24,6 +25,10 @@ FString UE::ItemizationCore::GetNetContextString(const UObject* Obj)
 	else if (const AActor* Outer = Cast<AActor>(Obj->GetOuter()))
 	{
 		Role = Outer->GetLocalRole();
+	}
+	else if (const AActor* Outermost = Cast<AActor>(Obj->GetOutermostObject()))
+	{
+		Role = Outermost->GetLocalRole();
 	}
 
 	if (Role != ROLE_None)

@@ -5,7 +5,6 @@
 #include "CoreMinimal.h"
 #include "Data/ItemComponentData.h"
 #include "Engine/DataAsset.h"
-#include "Enums/EItemDataQueryResult.h"
 
 #if WINDOWS_USE_FEATURE_APPLICATIONMISC_CLASS
 #include "Windows/WindowsPlatformApplicationMisc.h"
@@ -14,7 +13,7 @@
 #include "ItemDefinitionBase.generated.h"
 
 struct FGameplayTag;
-class UInventoryItemInstance;
+class UItemInstanceBase;
 
 UCLASS(Blueprintable, PrioritizeCategories=("Item", "General"))
 class ITEMIZATIONCORE_API UItemDefinitionBase
@@ -90,7 +89,7 @@ public:
 		return static_cast<const PropertyType*>(GetItemData(PropertyType::StaticStruct()));
 	}
 
-	TSoftClassPtr<UObject> GetItemInstanceClass() const { return ItemInstanceClass; }
+	TSoftClassPtr<UItemInstanceBase> GetItemInstanceClass() const { return ItemInstanceClass; }
 
 	/** Returns the item name as a plain text. */
 	UFUNCTION(BlueprintCallable, Category=Item)
@@ -124,6 +123,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category=Item)
 	virtual int32 GetMaxStackSize() const;
 
+	/** Returns the max durability of this item, needs to be overriden in your project to allow having custom durability sources. */
+	UFUNCTION(BlueprintCallable, Category=Item)
+	virtual float GetMaxDurability() const;
+
+	/** Returns the icon of this item. */
+	UFUNCTION(BlueprintCallable, Category=Item)
+	virtual TSoftObjectPtr<UTexture2D> GetItemIcon() const;
+
 	virtual TArray<TSoftObjectPtr<const UScriptStruct>> GetDisallowedDataTypes() const;
 
 protected:
@@ -144,8 +151,8 @@ protected:
 	FString DocumentationURL;
 
 	/** The class of the item instance that should be created when this item is given to an inventory. */
-	UPROPERTY(EditDefaultsOnly, meta=(MustImplement="/Script/ItemizationCore.InventoryItemInstanceInterface"), Category=General)
-	TSoftClassPtr<UObject> ItemInstanceClass;
+	UPROPERTY(EditDefaultsOnly, Category=General)
+	TSoftClassPtr<UItemInstanceBase> ItemInstanceClass;
 
 
 

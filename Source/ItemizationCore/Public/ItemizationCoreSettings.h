@@ -55,6 +55,15 @@ public:
 	UPROPERTY(Config, EditDefaultsOnly, Category=Traits)
 	FGameplayTag AutoCombineStacks;
 
+	/** Tag, that if present on an item, will force it into overflow and therefore not displaying in the inventory "grid". */
+	UPROPERTY(Config, EditDefaultsOnly, Category=Traits)
+	FGameplayTag ForceIntoOverflowTag;
+
+	/** Tag, that if present on an item, will mark it as having durability and therefore will cause additional checks within the inventory.
+	 * For instance item A can be stacked 2x but if one of them doesnt hav full durability, the can't be stacked.. */
+	UPROPERTY(Config, EditDefaultsOnly, Category=Traits)
+	FGameplayTag HasDurabilityTag;
+
 	/** List of item types registered in the itemization core system and asset manager. */
 	UPROPERTY(Config, EditDefaultsOnly, Category=ItemTypes)
 	TArray<FName> ItemTypes;

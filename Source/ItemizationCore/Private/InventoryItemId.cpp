@@ -1,4 +1,4 @@
-﻿// Author: Tom Werner (MajorT), 2025
+﻿// Author: Tom Werner (dc: majort), 2026
 
 
 #include "InventoryItemId.h"

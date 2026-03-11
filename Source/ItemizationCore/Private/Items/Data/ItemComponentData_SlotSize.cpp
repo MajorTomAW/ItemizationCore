@@ -3,8 +3,6 @@
 
 #include "Items/Data/ItemComponentData_SlotSize.h"
 
-#include "Items/InventoryItemEntry.h"
-
 FItemComponentData_SlotSize::FItemComponentData_SlotSize()
 	: SlotSize(1)
 {

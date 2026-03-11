@@ -1,17 +1,13 @@
-﻿// Author: Tom Werner (MajorT), 2025
+﻿// Author: Tom Werner (dc: majort), 2026
 
 
 #include "Components/InventoryComponent.h"
 
+#include "InventoryBase.h"
 #include "ItemizationCoreLogChannels.h"
-#include "Inventory/InventoryBase.h"
-#include "Inventory/InventoryConfigAsset.h"
-#include "Inventory/SlottableInventory.h"
-#include "Inventory/Operations/InventoryOp_PlaceItemInSlot.h"
-#include "Items/InventoryItemInstance.h"
-#include "Items/ItemDefinitionBase.h"
-
+#include "Config/InventoryConfig.h"
 #include "Net/UnrealNetwork.h"
+
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(InventoryComponent)
 
@@ -28,31 +24,24 @@ UInventoryComponent::UInventoryComponent(const FObjectInitializer& ObjectInitial
 
 	bWantsInitializeComponent = true;
 	bShouldAcquireInventoryOnInitialize = true;
-	bAttachInventoryToOwner = true;
+	bAttachInventoryToOwner = false;
+
+	InventoryClass = AInventoryBase::StaticClass();
 }
 
-void UInventoryComponent::GetOwnedGameplayTags(FGameplayTagContainer& TagContainer) const
+AInventoryBase* UInventoryComponent::GetInventory_Implementation() const
 {
+	return Inventory;
 }
 
-AInventoryBase* UInventoryComponent::GetInventory() const
+void UInventoryComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
 {
-	if (InventoryHandle.IsValid())
-	{
-		return InventoryHandle.GetInventory();
-	}
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	return nullptr;
-}
-
-void UInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
 	FDoRepLifetimeParams SharedParams;
 	SharedParams.bIsPushBased = true;
 
-	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, InventoryHandle, SharedParams);
-
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, Inventory, SharedParams);
 }
 
 void UInventoryComponent::PostInitProperties()
@@ -76,14 +65,15 @@ void UInventoryComponent::InitializeComponent()
 		bShouldAcquireInventoryOnInitialize)
 	{
 		// Make sure we're starting with a clean inventory
-		if (InventoryHandle.IsValid())
+		if (IsValid(Inventory))
 		{
-			ITEMIZATION_WARN_CONTEXT("Cleaning up old inventory handle [%s] for %s.",
-				*GetNameSafe(InventoryHandle.GetInventory()), *GetNameSafe(GetOwner()));
-			InventoryHandle.Reset();
+			ITEMIZATION_LOG(Warning, "Cleaning up old inventory [%s] for %s.",
+				*GetNameSafe(Inventory), *GetNameSafe(GetOwner()));
+
+			Inventory = nullptr;
 		}
 
-		ITEMIZATION_VERBOSE_CONTEXT("Acquiring inventory on initialize for %s.",
+		ITEMIZATION_LOG(Verbose, "Acquiring inventory on initialize for %s.",
 			*GetNameSafe(GetOwner()));
 
 		CreateInventory();
@@ -114,222 +104,14 @@ EDataValidationResult UInventoryComponent::IsDataValid(FDataValidationContext& C
 
 void UInventoryComponent::CallOrRegister_OnInventoryInitialized(FOnInventoryInitialized::FDelegate&& Delegate)
 {
-	if (AInventoryBase* Inventory = GetInventory())
+	if (AInventoryBase* MyInventory = GetInventory())
 	{
-		Delegate.ExecuteIfBound(Inventory);
+		Delegate.ExecuteIfBound(MyInventory);
 	}
 	else
 	{
 		OnInventoryInitialized.Add(MoveTemp(Delegate));
 	}
-}
-
-TScriptInterface<IInventoryItemInstanceInterface> UInventoryComponent::FindItemInstanceById(const FInventoryItemId& ItemId) const
-{
-	AInventoryBase* Inventory = GetInventory();
-	if (!IsValid(Inventory))
-	{
-		return nullptr;
-	}
-
-	// Find the item instance in the inventory
-	TScriptInterface<IInventoryItemInstanceInterface> ItemInstance = Inventory->FindItemInstanceById(ItemId);
-	if (IsValid(ItemInstance.GetObject()))
-	{
-		return ItemInstance;
-	}
-
-	ITEMIZATION_WARN_CONTEXT("Could not find item instance with handle [%s] in inventory [%s] for %s.",
-		*ItemId.ToString(), *GetNameSafe(Inventory), *GetNameSafe(GetOwner()));
-
-	return nullptr;
-}
-
-TArray<TScriptInterface<IInventoryItemInstanceInterface>> UInventoryComponent::GetInventoryItems() const
-{
-	AInventoryBase* Inventory = GetInventory();
-	if (!IsValid(Inventory))
-	{
-		return TArray<TScriptInterface<IInventoryItemInstanceInterface>>();
-	}
-
-	return Inventory->GetAllItemInstances();
-}
-
-/*TArray<TScriptInterface<IInventoryItemInstanceInterface>> UInventoryComponent::GetInventoryItemsInGroup(FGameplayTag Group) const
-{
-	AInventoryBase* Inventory = GetInventory();
-	if (!IsValid(Inventory))
-	{
-		return {};
-	}
-
-	return Inventory->GetItemInstancesInGroup(Group);
-}*/
-
-/*TArray<TScriptInterface<IInventoryItemInstanceInterface>> UInventoryComponent::GetInventoryItemsInGroups(TArray<FGameplayTag> Groups) const
-{
-	TArray<TScriptInterface<IInventoryItemInstanceInterface>> Result;
-	AInventoryBase* Inventory = GetInventory();
-	if (!IsValid(Inventory))
-	{
-		return Result;
-	}
-
-	for (const FGameplayTag& GroupTag : Groups)
-	{
-		Result.Append(GetInventoryItemsInGroup(GroupTag));
-	}
-
-	return Result;
-}*/
-
-FInventoryItemId UInventoryComponent::GiveItem(
-	const UItemDefinitionBase* ItemDefinition,
-	int32 StackSize,
-	UObject* SourceObject,
-	FGameplayTag GroupTag,
-	int32& OutNumCouldNotAdd)
-{
-	FInventoryItemId Result = FInventoryItemId::InvalidId;
-
-	AInventoryBase* Inventory = GetInventory();
-	if (!IsValid(Inventory))
-	{
-		ITEMIZATION_ERROR_CONTEXT("Cannot give item [%s] to inventory [%s] for %s. Inventory is invalid.",
-			*GetNameSafe(ItemDefinition), *GetNameSafe(Inventory), *GetNameSafe(GetOwner()));
-		return Result;
-	}
-
-	// Build our give item operation parameters
-	FInventoryOp_GiveItem::FParams Params;
-	Params.ItemDefinition = ItemDefinition;
-	Params.NumItems = StackSize;
-	Params.GroupTag = GroupTag;
-	Params.SourceObject = SourceObject;
-
-	// Actually give the item
-	if (const TInventoryOpPtr<FInventoryOp_GiveItem> Op = Inventory->GiveItem(MoveTemp(Params)))
-	{
-		Result = Op->Result.ItemId;
-
-		// Let us know about how many items could not be added
-		OutNumCouldNotAdd = Op->Result.Excess;
-	}
-
-	return Result;
-}
-
-int32 UInventoryComponent::RemoveItemByDefinition(
-	const UItemDefinitionBase* ItemDefinition,
-	int32 NumRemove,
-	FGameplayTag GroupTag)
-{
-	int32 Result = NumRemove;
-	AInventoryBase* Inventory = GetInventory();
-	if (!IsValid(Inventory))
-	{
-		ITEMIZATION_ERROR_CONTEXT("Cannot remove item [%s] from inventory [%s] for %s. Inventory is invalid.",
-			*GetNameSafe(ItemDefinition), *GetNameSafe(Inventory), *GetNameSafe(GetOwner()));
-		return Result;
-	}
-
-	// Build our remove item operation parameters
-	FInventoryOp_RemoveItem::FParams Params;
-	Params.ItemDefinition = ItemDefinition;
-	Params.NumRemove = NumRemove;
-	Params.GroupTag = GroupTag;
-
-	// Actually remove the item
-	if (const TInventoryOpPtr<FInventoryOp_RemoveItem> Op = Inventory->RemoveItem(MoveTemp(Params)))
-	{
-		Result = Op->Result.NumRemoved;
-	}
-
-	return Result;
-}
-
-int32 UInventoryComponent::RemoveItemById(
-	const FInventoryItemId& ItemId,
-	int32 NumRemove,
-	FGameplayTag GroupTag)
-{
-	int32 Result = NumRemove;
-	AInventoryBase* Inventory = GetInventory();
-	if (!IsValid(Inventory))
-	{
-		ITEMIZATION_ERROR_CONTEXT("Cannot remove item [%s] from inventory [%s] for %s. Inventory is invalid.",
-			*ItemId.ToString(), *GetNameSafe(Inventory), *GetNameSafe(GetOwner()));
-		return Result;
-	}
-
-	// Build our remove item operation parameters
-	FInventoryOp_RemoveItem::FParams Params;
-	Params.ItemId = ItemId;
-	Params.NumRemove = NumRemove;
-	Params.GroupTag = GroupTag;
-
-	// Actually remove the item
-	if (const TInventoryOpPtr<FInventoryOp_RemoveItem> Op = Inventory->RemoveItem(MoveTemp(Params)))
-	{
-		Result = Op->Result.NumRemoved;
-	}
-
-	return Result;
-}
-
-int32 UInventoryComponent::RemoveItem(
-	TScriptInterface<IInventoryItemInstanceInterface> ItemInstance,
-	int32 NumRemove,
-	FGameplayTag GroupTag)
-{
-	int32 Result = NumRemove;
-	AInventoryBase* Inventory = GetInventory();
-	if (!IsValid(Inventory))
-	{
-		ITEMIZATION_ERROR_CONTEXT("Cannot remove item [%s] from inventory [%s] for %s. Inventory is invalid.",
-			*GetNameSafe(ItemInstance.GetObject()), *GetNameSafe(Inventory), *GetNameSafe(GetOwner()));
-		return Result;
-	}
-
-	// Build our remove item operation parameters
-	FInventoryOp_RemoveItem::FParams Params;
-	Params.ItemInstance = ItemInstance.GetObject();
-	Params.NumRemove = NumRemove;
-	Params.GroupTag = GroupTag;
-
-	// Actually remove the item
-	if (const TInventoryOpPtr<FInventoryOp_RemoveItem> Op = Inventory->RemoveItem(MoveTemp(Params)))
-	{
-		Result = Op->Result.NumRemoved;
-	}
-
-	return Result;
-}
-
-bool UInventoryComponent::Server_DropItem_Validate(UObject* ItemInstance)
-{
-	return true;
-}
-
-void UInventoryComponent::Server_DropItem_Implementation(UObject* ItemInstance)
-{
-	DropItem(ItemInstance);
-}
-
-int32 UInventoryComponent::DropItem(TScriptInterface<IInventoryItemInstanceInterface> ItemInstance)
-{
-	int32 Result = 0;
-	AInventoryBase* Inventory = GetInventory();
-	if (!IsValid(Inventory))
-	{
-		ITEMIZATION_ERROR_CONTEXT("Cannot drop item [%s] from inventory [%s] for %s. Inventory is invalid.",
-			*GetNameSafe(ItemInstance.GetObject()), *GetNameSafe(Inventory), *GetNameSafe(GetOwner()));
-		return Result;
-	}
-
-	Inventory->DropItem(ItemInstance);
-	return Result;
 }
 
 void UInventoryComponent::CreateInventory()
@@ -353,23 +135,18 @@ void UInventoryComponent::CreateInventory()
 	}
 
 	// Spawn the inventory
-	AInventoryBase* SpawnedInventory =
-		World->SpawnActor<AInventoryBase>(Class, SpawnInfo);
+	MARK_PROPERTY_DIRTY_FROM_NAME(ThisClass, Inventory, this);
+	Inventory = World->SpawnActor<AInventoryBase>(Class, SpawnInfo);
 
-	MARK_PROPERTY_DIRTY_FROM_NAME(ThisClass, InventoryHandle, this);
-
-	InventoryHandle.AssignInventory(SpawnedInventory);
-	AuthorityInventory = SpawnedInventory;
-
-	OnInventoryCreated(SpawnedInventory);
+	OnInventoryCreated(Inventory);
 }
 
-void UInventoryComponent::OnInventoryCreated(AInventoryBase* Inventory)
+void UInventoryComponent::OnInventoryCreated(AInventoryBase* MyInventory)
 {
-	Inventory->InventoryHandle = InventoryHandle;
+	//Inventory->InventoryHandle = InventoryHandle;
 
-	ITEMIZATION_DISPLAY_NET("Inventory [%s] created for %s.",
-		*GetNameSafe(Inventory), *GetNameSafe(GetOwner()));
+	ITEMIZATION_LOG(Log, "Inventory [%s] created for %s.",
+		*GetNameSafe(MyInventory), *GetNameSafe(GetOwner()));
 
 	if (bAttachInventoryToOwner)
 	{
@@ -377,30 +154,45 @@ void UInventoryComponent::OnInventoryCreated(AInventoryBase* Inventory)
 		if (IsValid(OwnerActor))
 		{
 			// Only attach if not already attached.
-			if (OwnerActor->GetRootComponent() && Inventory->GetRootComponent()->GetAttachParent() != OwnerActor->GetRootComponent())
+			if (OwnerActor->GetRootComponent() && MyInventory->GetRootComponent()->GetAttachParent() != OwnerActor->GetRootComponent())
 			{
-				Inventory->GetRootComponent()->DetachFromComponent(FDetachmentTransformRules::KeepRelativeTransform);
-				Inventory->GetRootComponent()->SetRelativeLocationAndRotation(FVector::ZeroVector, FRotator::ZeroRotator);
-				Inventory->AttachToComponent(OwnerActor->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
+				MyInventory->GetRootComponent()->DetachFromComponent(FDetachmentTransformRules::KeepRelativeTransform);
+				MyInventory->GetRootComponent()->SetRelativeLocationAndRotation(FVector::ZeroVector, FRotator::ZeroRotator);
+				MyInventory->AttachToComponent(OwnerActor->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
 			}
 		}
 	}
 
-	SetupInventory(Inventory);
+	SetupInventory(MyInventory);
 
-	OnInventoryInitialized.Broadcast(Inventory);
+	OnInventoryInitialized.Broadcast(MyInventory);
 	OnInventoryInitialized.Clear();
 }
 
-
-void UInventoryComponent::OnRep_InventoryHandle()
+void UInventoryComponent::SetupInventory(AInventoryBase* MyInventory)
 {
-	if (InventoryHandle.IsValid())
+	if (HasAuthority())
 	{
-		OnInventoryCreated(InventoryHandle.GetInventory());
+		InitInventoryGroups(MyInventory);
 	}
-	else
+}
+
+void UInventoryComponent::InitInventoryGroups(AInventoryBase* MyInventory)
+{
+	if (!IsValid(InventoryConfig))
 	{
-		// If
+		ITEMIZATION_LOG(Warning, "Unable to init inventory groups for %s with an invalid inventory config.",
+			*GetNameSafe(GetOwner()))
+		return;
+	}
+
+	MyInventory->InitializeInventorySlots(InventoryConfig);
+}
+
+void UInventoryComponent::OnRep_Inventory()
+{
+	if (IsValid(Inventory))
+	{
+		OnInventoryCreated(Inventory);
 	}
 }

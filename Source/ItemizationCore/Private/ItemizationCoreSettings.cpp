@@ -16,6 +16,8 @@ UItemizationCoreSettings::UItemizationCoreSettings(const FObjectInitializer& Obj
 	SingleStackTag = Itemization::Tags::TAG_ItemTrait_SingleStack;
 	TransientTag = Itemization::Tags::TAG_ItemTrait_Transient;
 	AutoCombineStacks = Itemization::Tags::TAG_ItemTrait_AutoCombineStacks;
+	ForceIntoOverflowTag = Itemization::Tags::TAG_ItemTrait_ForceIntoOverflow;
+	HasDurabilityTag = Itemization::Tags::TAG_ItemTrait_HasDurability;
 
 	ItemTypes.Append({NAME_None, "ItemDefinition"});
 }
@@ -48,7 +50,7 @@ void UItemizationCoreSettings::PostEditChangeProperty(struct FPropertyChangedEve
 		{
 			if (UniqueItemTypes.Contains(ItemType) && ItemType != NAME_None)
 			{
-				ITEMIZATION_ERROR("Duplicate item type found: %s", *ItemType.ToString());
+				ITEMIZATION_LOG(Error, "Duplicate item type found: %s", *ItemType.ToString());
 				continue;
 			}
 

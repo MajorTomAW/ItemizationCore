@@ -3,14 +3,12 @@
 
 #include "Cheats/ItemizationCheatManagerExtension.h"
 
+#include "InventoryLibrary.h"
 #include "ItemizationCoreSettings.h"
-#include "Components/InventoryComponent.h"
-#include "Components/SlottableInventoryComponent.h"
 #include "Engine/AssetManager.h"
 #include "Engine/Console.h"
-#include "Inventory/InventoryBase.h"
+#include "InventoryBase.h"
 #include "Items/ItemDefinitionBase.h"
-#include "Items/IInventoryItemInstanceInterface.h"
 
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(ItemizationCheatManagerExtension)
@@ -63,7 +61,7 @@ void UItemizationCheatManagerExtension::PopulateAutoCompleteEntries(TArray<FAuto
 		{
 			FAutoCompleteCommand AutoCompleteCmd;
 			AutoCompleteCmd.Command = FString::Printf(TEXT("GiveItem %s"), *AssetData.GetPrimaryAssetId().ToString());
-			AutoCompleteCmd.Desc = FString::Printf(TEXT("ItemAssetId[FString] Count[int32] GroupName[FName]"));
+			AutoCompleteCmd.Desc = FString::Printf(TEXT("ItemAssetId[FString] Count[int32]"));
 			AutoCompleteCmd.Color = ConsoleSettings->InputColor;
 			AutoCompleteCommands.Add(AutoCompleteCmd);
 		}
@@ -72,7 +70,7 @@ void UItemizationCheatManagerExtension::PopulateAutoCompleteEntries(TArray<FAuto
 		{
 			FAutoCompleteCommand AutoCompleteCmd;
 			AutoCompleteCmd.Command = FString::Printf(TEXT("RemoveItem %s"), *AssetData.GetPrimaryAssetId().ToString());
-			AutoCompleteCmd.Desc = FString::Printf(TEXT("ItemAssetId[FString] Count[int32] GroupName[FName]"));
+			AutoCompleteCmd.Desc = FString::Printf(TEXT("ItemAssetId[FString] Count[int32]"));
 			AutoCompleteCmd.Color = ConsoleSettings->InputColor;
 			AutoCompleteCommands.Add(AutoCompleteCmd);
 		}
@@ -82,15 +80,14 @@ void UItemizationCheatManagerExtension::PopulateAutoCompleteEntries(TArray<FAuto
 
 void UItemizationCheatManagerExtension::GiveItem(
 	const FString& ItemAssetId,
-	int32 Count,
-	const FName& GroupName) const
+	int32 Count) const
 {
 #if UE_WITH_CHEAT_MANAGER
 	APlayerController* PC = GetPlayerController();
-	UInventoryComponent* InventoryComp = PC ? PC->FindComponentByClass<UInventoryComponent>() : nullptr;
-	if (!IsValid(InventoryComp))
+	AInventoryBase* Inventory = FindInventory(PC);
+	if (!IsValid(Inventory))
 	{
-		UE_LOG(LogConsoleResponse, Warning, TEXT("%s does not have an Inventory Component."), *GetNameSafe(PC))
+		UE_LOG(LogConsoleResponse, Warning, TEXT("%s does not have an Inventory."), *GetNameSafe(PC))
 		return;
 	}
 
@@ -102,28 +99,21 @@ void UItemizationCheatManagerExtension::GiveItem(
 
 	UE_LOG(LogConsoleResponse, Log, TEXT("Giving Item %s (count: %d) to %s"), *ItemAssetId, Count, *PC->GetName())
 
-	FGameplayTag GroupTag;
-	if (!GroupName.IsNone())
-	{
-		 GroupTag = FGameplayTag::RequestGameplayTag(GroupName);
-	}
-
 	int32 Excess;
-	InventoryComp->GiveItem(ItemDef, Count, PC, GroupTag, Excess);
+	Inventory->GiveItem(ItemDef, Count, PC, Excess);
 #endif
 }
 
 void UItemizationCheatManagerExtension::RemoveItem(
 	const FString& ItemAssetId,
-	int32 Count,
-	const FName& GroupName) const
+	int32 Count) const
 {
 #if UE_WITH_CHEAT_MANAGER
 	APlayerController* PC = GetPlayerController();
-	UInventoryComponent* InventoryComp = PC ? PC->FindComponentByClass<UInventoryComponent>() : nullptr;
-	if (!IsValid(InventoryComp))
+	AInventoryBase* Inventory = FindInventory(PC);
+	if (!IsValid(Inventory))
 	{
-		UE_LOG(LogConsoleResponse, Warning, TEXT("%s does not have an Inventory Component."), *GetNameSafe(PC))
+		UE_LOG(LogConsoleResponse, Warning, TEXT("%s does not have an Inventory."), *GetNameSafe(PC))
 		return;
 	}
 
@@ -135,13 +125,7 @@ void UItemizationCheatManagerExtension::RemoveItem(
 
 	UE_LOG(LogConsoleResponse, Log, TEXT("Removing Item %s (count: %d) from %s"), *ItemAssetId, Count, *PC->GetName())
 
-	FGameplayTag GroupTag;
-	if (!GroupName.IsNone())
-	{
-		GroupTag = FGameplayTag::RequestGameplayTag(GroupName);
-	}
-
-	InventoryComp->RemoveItemByDefinition(ItemDef, Count, GroupTag);
+	//Inventory->RemoveItemByDefinition(ItemDef, Count, GroupTag);
 #endif
 }
 
@@ -149,16 +133,16 @@ void UItemizationCheatManagerExtension::RemoveItemById(uint32 ItemId, int32 Coun
 {
 #if UE_WITH_CHEAT_MANAGER
 	APlayerController* PC = GetPlayerController();
-	UInventoryComponent* InventoryComp = PC ? PC->FindComponentByClass<UInventoryComponent>() : nullptr;
-	if (!IsValid(InventoryComp))
+	AInventoryBase* Inventory = FindInventory(PC);
+	if (!IsValid(Inventory))
 	{
-		UE_LOG(LogConsoleResponse, Warning, TEXT("%s does not have an Inventory Component."), *GetNameSafe(PC))
+		UE_LOG(LogConsoleResponse, Warning, TEXT("%s does not have an Inventory."), *GetNameSafe(PC))
 		return;
 	}
 
 	UE_LOG(LogConsoleResponse, Log, TEXT("Removing Item %u (count: %d) from %s"), ItemId, Count, *PC->GetName())
 
-	InventoryComp->RemoveItemById(FInventoryItemId(ItemId), Count, FGameplayTag());
+	Inventory->RemoveItemById(FInventoryItemId(ItemId), Count);
 #endif
 }
 
@@ -168,10 +152,10 @@ void UItemizationCheatManagerExtension::SwapItemSlots(
 {
 #if UE_WITH_CHEAT_MANAGER
 	APlayerController* PC = GetPlayerController();
-	USlottableInventoryComponent* InventoryComp = PC ? PC->FindComponentByClass<USlottableInventoryComponent>() : nullptr;
-	if (!IsValid(InventoryComp))
+	AInventoryBase* Inventory = FindInventory(PC);
+	if (!IsValid(Inventory))
 	{
-		UE_LOG(LogConsoleResponse, Warning, TEXT("%s does not have a Slottable Inventory Component."), *GetNameSafe(PC))
+		UE_LOG(LogConsoleResponse, Warning, TEXT("%s does not have an Inventory."), *GetNameSafe(PC))
 		return;
 	}
 
@@ -192,7 +176,7 @@ void UItemizationCheatManagerExtension::SwapItemSlots(
 	UE_LOG(LogConsoleResponse, Log, TEXT("Swapping slot '%s' [%s] with '%s' [%s]"),
 		*SlotA.ToString(), *GroupTagA.ToString(), *SlotB.ToString(), *GroupTagB.ToString())
 
-	InventoryComp->SwapItemSlots(SlotA, GroupTagA, SlotB, GroupTagB);
+	Inventory->SwapItemSlots(SlotA, GroupTagA, SlotB, GroupTagB);
 #endif
 }
 
@@ -200,10 +184,10 @@ void UItemizationCheatManagerExtension::DropItem(const FString& ItemAssetId, int
 {
 #if UE_WITH_CHEAT_MANAGER
 	APlayerController* PC = GetPlayerController();
-	UInventoryComponent* InventoryComp = PC ? PC->FindComponentByClass<UInventoryComponent>() : nullptr;
-	if (!IsValid(InventoryComp))
+	AInventoryBase* Inventory = FindInventory(PC);
+	if (!IsValid(Inventory))
 	{
-		UE_LOG(LogConsoleResponse, Warning, TEXT("%s does not have an Inventory Component."), *GetNameSafe(PC))
+		UE_LOG(LogConsoleResponse, Warning, TEXT("%s does not have an Inventory."), *GetNameSafe(PC))
 		return;
 	}
 
@@ -215,8 +199,8 @@ void UItemizationCheatManagerExtension::DropItem(const FString& ItemAssetId, int
 
 	UE_LOG(LogConsoleResponse, Log, TEXT("Dropping item %s (count: %d) from %s"), *ItemAssetId, Count, *PC->GetName())
 
-	//@TODO: Use inventory comp wrapper for this
-	InventoryComp->GetInventory()->DropItem(ItemDef, Count);
+
+	//Inventory->DropItem(ItemDef, Count);
 #endif
 }
 
@@ -224,17 +208,16 @@ void UItemizationCheatManagerExtension::DropItemById(uint32 ItemId, int32 Count)
 {
 #if UE_WITH_CHEAT_MANAGER
 	APlayerController* PC = GetPlayerController();
-	UInventoryComponent* InventoryComp = PC ? PC->FindComponentByClass<UInventoryComponent>() : nullptr;
-	if (!IsValid(InventoryComp))
+	AInventoryBase* Inventory = FindInventory(PC);
+	if (!IsValid(Inventory))
 	{
-		UE_LOG(LogConsoleResponse, Warning, TEXT("%s does not have an Inventory Component."), *GetNameSafe(PC))
+		UE_LOG(LogConsoleResponse, Warning, TEXT("%s does not have an Inventory."), *GetNameSafe(PC))
 		return;
 	}
 
 	UE_LOG(LogConsoleResponse, Log, TEXT("Dropping item %u (count: %d) from %s"), ItemId, Count, *PC->GetName())
 
-	//@TODO: Use inventory comp wrapper for this
-	InventoryComp->GetInventory()->DropItem(FInventoryItemId(ItemId), Count);
+	Inventory->DropItem(FInventoryItemId(ItemId), Count);
 #endif
 }
 
@@ -273,4 +256,9 @@ UItemDefinitionBase* UItemizationCheatManagerExtension::FindItemDefinition(const
 	}
 
 	return ItemDef;
+}
+
+AInventoryBase* UItemizationCheatManagerExtension::FindInventory(AActor* Actor) const
+{
+	return UInventoryLibrary::FindInventory(Actor);
 }

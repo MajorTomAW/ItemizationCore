@@ -1,11 +1,11 @@
-﻿// Author: Tom Werner (MajorT), 2025
+﻿// Author: Tom Werner (dc: majort), 2026
 
 #pragma once
 
 #include "InventoryItemId.generated.h"
 
 /** Globally unique handle that points to an exact FInventoryItemEntry in an inventory. */
-USTRUCT(BlueprintType)
+USTRUCT(BlueprintType, meta=(HasNativeMake="/Script/InventoryLibrary.MakeInventoryItemId", HasNativeBreak="/Script/InventoryLibrary.BreakInventoryItemId"))
 struct alignas(4) FInventoryItemId
 {
 	GENERATED_BODY()

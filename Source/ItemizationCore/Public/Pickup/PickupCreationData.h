@@ -1,7 +1,8 @@
-﻿// Author: Tom Werner (dc: majort), 2026 January
+﻿// Author: Tom Werner (dc: majort), 2026
 
 #pragma once
-#include "Items/InventoryItemEntry.h"
+#include "InventoryItemList.h"
+#include "StructUtils/InstancedStruct.h"
 
 #include "PickupCreationData.generated.h"
 

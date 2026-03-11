@@ -8,6 +8,7 @@
 
 #include "ItemizationCheatManagerExtension.generated.h"
 
+class AInventoryBase;
 class UItemDefinitionBase;
 
 /** Cheats for the itemization core */
@@ -33,7 +34,7 @@ protected:
 	 * @param GroupName	String that will be resolved into a gameplay tag, representing the group to add the item to.
 	 */
 	UFUNCTION(Exec)
-	void GiveItem(const FString& ItemAssetId, int32 Count = 1, const FName& GroupName = NAME_None) const;
+	void GiveItem(const FString& ItemAssetId, int32 Count = -1) const;
 
 	/**
 	 * Removes the specified amount of the specified item from the owning player's inventory.
@@ -42,7 +43,7 @@ protected:
 	 * @param GroupName	String that will be resolved into a gameplay tag, representing the group to add the item to.
 	 */
 	UFUNCTION(Exec)
-	void RemoveItem(const FString& ItemAssetId, int32 Count = 1, const FName& GroupName = NAME_None) const;
+	void RemoveItem(const FString& ItemAssetId, int32 Count = -1) const;
 
 	/**
 	 * Removes the specified amount of the specified item from the owning player's inventory.
@@ -50,7 +51,7 @@ protected:
 	 * @param Count The number of items to remove. Default is 1.
 	 */
 	UFUNCTION(Exec)
-	void RemoveItemById(uint32 ItemId, int32 Count = 1) const;
+	void RemoveItemById(uint32 ItemId, int32 Count = -1) const;
 
 	/**
 	 * Swaps the contents of the two specified slots
@@ -70,7 +71,7 @@ protected:
 	 * @param Count
 	 */
 	UFUNCTION(Exec)
-	void DropItem(const FString& ItemAssetId, int32 Count = 1) const;
+	void DropItem(const FString& ItemAssetId, int32 Count = -1) const;
 
 	/**
 	 * Drops the specified amount of the specified item as a pickup into the world.
@@ -78,8 +79,9 @@ protected:
 	 * @param Count
 	 */
 	UFUNCTION(Exec)
-	void DropItemById(uint32 ItemId, int32 Count = 1) const;
+	void DropItemById(uint32 ItemId, int32 Count = -1) const;
 
 private:
 	UItemDefinitionBase* FindItemDefinition(const FString& ItemAssetId) const;
+	AInventoryBase* FindInventory(AActor* Actor) const;
 };

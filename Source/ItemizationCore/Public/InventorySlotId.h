@@ -1,10 +1,11 @@
-﻿// Author: Tom Werner (MajorT), 2025
+﻿// Author: Tom Werner (MajorT), 2026
 
 #pragma once
 
 #include "InventorySlotId.generated.h"
 
-USTRUCT(BlueprintType)
+/** Id that represents an item slot in a 2D grid. */
+USTRUCT(BlueprintType, meta=(HasNativeMake="/Script/InventoryLibrary.MakeInventorySlotId", HasNativeBreak="/Script/InventoryLibrary.BreakInventorySlotId"))
 struct alignas(8) FInventorySlotId
 {
 	GENERATED_BODY()
@@ -53,7 +54,7 @@ public:
 		return (RowIndex != INVALID_SLOT) && (ColumnIndex != INVALID_SLOT);
 	}
 
-	static FInventorySlotId InvalidId;
+	static const FInventorySlotId InvalidId;
 
 public:
 	/** Compared this handle with another handle. */

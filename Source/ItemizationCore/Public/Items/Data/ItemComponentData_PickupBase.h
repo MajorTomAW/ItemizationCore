@@ -20,7 +20,7 @@ public:
 	FItemComponentData_PickupBase();
 
 	/** Constructs a pickup creation data. */
-	virtual FPickupCreationData GetPickupCreationData(const FInventoryItemEntry& ItemEntry, const FInventoryHandle& InventoryHandle) const;
+	virtual FPickupCreationData GetPickupCreationData(const FInventoryItemEntry& ItemEntry, const AInventoryBase* Inventory) const;
 
 public:
 	/** Actor class to spawn that acts as a pickupable actor in the world. */

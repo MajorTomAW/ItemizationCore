@@ -1,5 +1,6 @@
-﻿// Author: Tom Werner (dc: majort), 2026 January
+﻿// Author: Tom Werner (dc: majort), 2026
+
 
 #include "InventorySlotId.h"
 
-FInventorySlotId FInventorySlotId::InvalidId;
+const FInventorySlotId FInventorySlotId::InvalidId = FInventorySlotId();

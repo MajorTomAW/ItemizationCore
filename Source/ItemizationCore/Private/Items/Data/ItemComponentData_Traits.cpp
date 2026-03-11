@@ -4,8 +4,6 @@
 #include "Items/Data/ItemComponentData_Traits.h"
 
 #include "ItemizationCoreTags.h"
-#include "Inventory/Operations/InventoryOpCache.h"
-#include "Items/ItemDefinitionBase.h"
 
 #if WITH_EDITOR
 #include "Misc/DataValidation.h"

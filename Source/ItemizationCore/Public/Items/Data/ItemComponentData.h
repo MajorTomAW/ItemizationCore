@@ -1,19 +1,29 @@
-﻿// Author: Tom Werner (MajorT), 2025
+﻿// Author: Tom Werner (dc: majort), 2026
 
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Inventory/Operations/InventoryOp_GiveItem.h"
 #include "StructUtils/InstancedStruct.h"
 
 #include "ItemComponentData.generated.h"
 
-struct FInventoryHandle;
+class AInventoryBase;
 struct FInventoryTrackableOp;
 struct FInventoryItemEntry;
 class UObject;
 class UWorld;
 struct FFrame;
+
+/** Enum representing the result of a query for an item data component. */
+UENUM(BlueprintType)
+enum class EItemDataQueryResult : uint8
+{
+	/** The query was successful and the item data was found. */
+	Found =		0x0,
+
+	/** The query was unsuccessful and the item data wasn't found. */
+	NotFound =	0x1,
+};
 
 /**
  * This struct represents the base item component data.
@@ -56,10 +66,10 @@ public:
 	virtual bool CanMergeItems(const FInventoryItemEntry& ThisEntry, const FInventoryItemEntry& OtherEntry) const;
 
 	/** Called after an item has been instantiated. */
-	virtual void OnItemGiven(FInventoryItemEntry& ItemEntry, const FInventoryHandle& InventoryHandle) const;
+	virtual void OnItemGiven(FInventoryItemEntry& ItemEntry, AInventoryBase* Inventory) const;
 
 	/** Called when an item instance is removed from an inventory. */
-	virtual void OnItemRemoved(FInventoryItemEntry& ItemEntry, const FInventoryHandle& InventoryHandle) const;
+	virtual void OnItemRemoved(FInventoryItemEntry& ItemEntry, AInventoryBase* Inventory) const;
 
 	/** Returns the logical name of this item data. */
 	FORCEINLINE static FName GetFName()

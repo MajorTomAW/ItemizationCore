@@ -3,8 +3,7 @@
 
 #include "Items/Data/ItemComponentData_PickupBase.h"
 
-#include "InventoryHandle.h"
-#include "Inventory/InventoryBase.h"
+#include "InventoryBase.h"
 
 
 FItemComponentData_PickupBase::FItemComponentData_PickupBase()
@@ -13,9 +12,8 @@ FItemComponentData_PickupBase::FItemComponentData_PickupBase()
 
 FPickupCreationData FItemComponentData_PickupBase::GetPickupCreationData(
 	const FInventoryItemEntry& ItemEntry,
-	const FInventoryHandle& InventoryHandle) const
+	const AInventoryBase* Inventory) const
 {
-	AInventoryBase* Inventory = InventoryHandle.GetInventory();
 	check(Inventory)
 
 	FPickupCreationData CreationData;
@@ -38,7 +36,11 @@ FPickupCreationData FItemComponentData_PickupBase::GetPickupCreationData(
 
 		// By default, spawn 40 cm in front of the owner
 		constexpr float SpawnOffset = 40.f;
-		Impl.Location = Actor->GetActorLocation() + Actor->GetActorForwardVector() * SpawnOffset;
+
+		FVector EyesLoc;
+		FRotator EyesRot;
+		Actor->GetActorEyesViewPoint(EyesLoc, EyesRot);
+		Impl.Location = EyesLoc + Actor->GetActorForwardVector() * SpawnOffset;
 
 		// Assign the data
 		CreationData.Set(Impl);

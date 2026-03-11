@@ -3,14 +3,13 @@
 
 #include "Items/ItemDefinitionBase.h"
 
-#include "Items/InventoryItemInstance.h"
+#include "ItemInstanceBase.h"
 
 #if WITH_EDITOR
 #include "UObject/ObjectSaveContext.h"
 #include "Misc/DataValidation.h"
 #endif
 
-#include "ItemizationCoreLogChannels.h"
 #include "Items/Data/ItemComponentData_Icon.h"
 #include "Items/Data/ItemComponentData_MaxStackSize.h"
 #include "Items/Data/ItemComponentData_Traits.h"
@@ -22,7 +21,7 @@
 
 UItemDefinitionBase::UItemDefinitionBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
-	, ItemInstanceClass(UInventoryItemInstance::StaticClass())
+	, ItemInstanceClass(UItemInstanceBase::StaticClass())
 {
 	ItemAssetType = "ItemDefinition";
 	ItemAssetId = GetFName();
@@ -246,13 +245,31 @@ bool UItemDefinitionBase::HasTrait(const FGameplayTag& TraitToCheck) const
 
 int32 UItemDefinitionBase::GetMaxStackSize() const
 {
-	if (const FItemComponentData_MaxStackSize* MaxStackSizeData = GetItemData<FItemComponentData_MaxStackSize>())
+	if (const auto* MaxStackSizeData = GetItemData<FItemComponentData_MaxStackSize>())
 	{
 		return MaxStackSizeData->GetMaxStackSize();
 	}
 
 	// Without max stack size item data, max stack size is assumed to be 1
 	return 1;
+}
+
+float UItemDefinitionBase::GetMaxDurability() const
+{
+	// We will go with 100 durability by default
+	// It is highly recommended that you override this method to add
+	// custom durability sources
+	return 100.f;
+}
+
+TSoftObjectPtr<UTexture2D> UItemDefinitionBase::GetItemIcon() const
+{
+	if (const auto* IconData = GetItemData<FItemComponentData_Icon>())
+	{
+		return IconData->Icon;
+	}
+
+	return nullptr;
 }
 
 TArray<TSoftObjectPtr<const UScriptStruct>> UItemDefinitionBase::GetDisallowedDataTypes() const

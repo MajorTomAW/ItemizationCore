@@ -42,27 +42,27 @@ namespace Itemization::Tags
 		"Item.Trait.AllowEmptyStack",
 		"Trait for an item that won't be removed from the inventory when any of it's stacks is empty.");
 
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(TAG_ItemTrait_AllowItemSyncShare,
+	/*UE_DEFINE_GAMEPLAY_TAG_COMMENT(TAG_ItemTrait_AllowItemSyncShare,
 		"Item.Trait.AllowItemSyncShare",
-		"Trait for an item that can be shared across titles via itemSync Service.");
+		"Trait for an item that can be shared across titles via itemSync Service.");*/
 
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(TAG_ItemTrait_AllowQuickbarFocusForGameplayOnly,
+	/*UE_DEFINE_GAMEPLAY_TAG_COMMENT(TAG_ItemTrait_AllowQuickbarFocusForGameplayOnly,
 		"Item.Trait.AllowQuickbarFocusForGameplayOnly",
-		"Trait for an item that allows the quickbar to focus on the item only when using a gamepad, even if it's disallowed from the mouse-wheel.");
+		"Trait for an item that allows the quickbar to focus on the item only when using a gamepad, even if it's disallowed from the mouse-wheel.");*/
 
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(TAG_ItemTrait_AllowSwapSingleStack,
 		"Item.Trait.AllowSwapSingleStack",
 		"Trait for an item that allows replacing the stack in the inventory with the one picked up or granted. Only used when the item has the SingleStack trait.");
 
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(TAG_ItemTrait_AlwaysCountForCollectionQuest,
+	/*UE_DEFINE_GAMEPLAY_TAG_COMMENT(TAG_ItemTrait_AlwaysCountForCollectionQuest,
 		"Item.Trait.AlwaysCountForCollectionQuest",
-		"Trait for an item that will always be counted for collection quests.");
+		"Trait for an item that will always be counted for collection quests.");*/
 
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(TAG_ItemTrait_AutoCombineStacks,
 		"Item.Trait.AutoCombineStacks",
 		"Trait for an item that will automatically combine compatible stacks to fill larger stacks first.");
 
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(TAG_ItemTrait_CacheFiringRateOnWeaponFire,
+	/*UE_DEFINE_GAMEPLAY_TAG_COMMENT(TAG_ItemTrait_CacheFiringRateOnWeaponFire,
 		"Item.Trait.CacheFiringRateOnWeaponFire",
 		"Trait for an item to always use previous shooting's firing rate for checks, e.g. weapon still use ADS firing interval between previous shot ADS state and current shot in hip fire state.");
 
@@ -76,15 +76,15 @@ namespace Itemization::Tags
 
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(TAG_ItemTrait_DisallowQuickbarFocus,
 		"Item.Trait.DisallowQuickbarFocus",
-		"Trait for an item that doesn't allow the quickbar to focus on the item.");
+		"Trait for an item that doesn't allow the quickbar to focus on the item.");*/
 
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(TAG_ItemTrait_ForceIntoOverflow,
 		"Item.Trait.ForceIntoOverflow",
 		"Trait for an item that doesn't show up on any quickbar e.g. ability weapon items.");
 
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(TAG_ItemTrait_ForceQuickbarFocusWhenAdded,
+	/*UE_DEFINE_GAMEPLAY_TAG_COMMENT(TAG_ItemTrait_ForceQuickbarFocusWhenAdded,
 		"Item.Trait.ForceQuickbarFocusWhenAdded",
-		"Trait for an item that gets quickbar focus when it is added to the inventory.");
+		"Trait for an item that gets quickbar focus when it is added to the inventory.");*/
 
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(TAG_ItemTrait_ForceStayInOverflow,
 		"Item.Trait.ForceStayInOverflow",
@@ -106,9 +106,9 @@ namespace Itemization::Tags
 		"Item.Trait.InventorySizeLimited",
 		"Trait for an item that should count towards the inventory limit.");
 
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(TAG_ItemTrait_ShuffleTile,
+	/*UE_DEFINE_GAMEPLAY_TAG_COMMENT(TAG_ItemTrait_ShuffleTile,
 		"Item.Trait.ShuffleTile",
-		"Trait for an item that is a shuffle tile for random selections in the front end.");
+		"Trait for an item that is a shuffle tile for random selections in the front end.");*/
 
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(TAG_ItemTrait_SingleStack,
 		"Item.Trait.SingleStack",

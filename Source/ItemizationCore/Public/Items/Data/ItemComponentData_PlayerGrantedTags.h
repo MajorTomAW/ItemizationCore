@@ -1,4 +1,5 @@
-﻿// Author: Tom Werner (MajorT), 2025 November
+﻿/*
+// Author: Tom Werner (MajorT), 2025 November
 
 #pragma once
 
@@ -7,18 +8,18 @@
 
 #include "ItemComponentData_PlayerGrantedTags.generated.h"
 
-/** Item data for granting tags to the owning player when added to the inventory. */
+/** Item data for granting tags to the owning player when added to the inventory. #1#
 USTRUCT(DisplayName = "Player Granted Tags Data")
 struct FItemComponentData_PlayerGrantedTags : public FItemComponentData
 {
 	GENERATED_BODY()
 
 protected:
-	/** Traits that this item has. */
+	/** Traits that this item has. #1#
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=Traits)
 	FGameplayTagContainer TagsToGrant;
 
-	/** If true, will add to replicated tag list instead. */
+	/** If true, will add to replicated tag list instead. #1#
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=Traits)
 	bool bShouldReplicate = false;
 
@@ -33,3 +34,4 @@ protected:
 #endif
 	//~ End FItemComponentData Interface
 };
+*/
