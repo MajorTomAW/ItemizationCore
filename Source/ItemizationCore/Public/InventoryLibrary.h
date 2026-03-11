@@ -96,7 +96,6 @@ public:
 	/** Performs a server rpc to call DropItem. */
 	UFUNCTION(BlueprintCallable, Category=Inventory, meta=(DefaultToSelf="InventoryOwner"))
 	static UE_API void Server_DropItem(const TScriptInterface<IInventoryOwnerInterface>& InventoryOwner, const FInventoryItemId& ItemId, int32 NumToDrop = -1);
-
 };
 
 #undef UE_API

@@ -152,6 +152,7 @@ public:
 	UE_API FPickupCreationData MakePickupCreationData(const FInventoryItemEntry& ItemEntry) const;
 
 	/** Spawns a pickup actor using the given pickup creation data. */
+	UFUNCTION(BlueprintCallable, Category=Inventory, BlueprintAuthorityOnly)
 	UE_API AActor* SpawnPickupActor(const FPickupCreationData& PickupCreationData) const;
 
 	/** Called right after a pickup was spawned. */
