@@ -192,6 +192,15 @@ UItemInstanceBase* AInventoryBase::GiveItem(
 
 	// Make sure we don't go into negative
 	OutNumCouldNotGive = FMath::Max(0, OutNumCouldNotGive);
+
+
+	// Drop the excess amount
+	if (OutNumCouldNotGive > 0)
+	{
+		// Drop the excess amount
+		DropExcessAmount(ItemDefinition, OutNumCouldNotGive);
+	}
+
 	return LastRelevantInstance;
 }
 
@@ -768,6 +777,17 @@ bool AInventoryBase::CanPlaceItemInSlot(const FInventoryItemEntry& ItemEntry, co
 	return true;
 }
 
+void AInventoryBase::DropExcessAmount(
+	const UItemDefinitionBase* ItemDefinition,
+	int32 ExcessAmount)
+{
+	FInventoryItemEntry ItemToDrop = CreateNewItemEntry(ItemDefinition, ExcessAmount, nullptr);
+	ItemToDrop.SetItemInstance(NewObject<UItemInstanceBase>(GetTransientPackage(), ItemDefinition->GetItemInstanceClass().LoadSynchronous()));
+	FPickupCreationData CreationData = MakePickupCreationData(ItemToDrop);
+
+	SpawnPickupActor(CreationData);
+}
+
 void AInventoryBase::OnGiveItem(FInventoryItemEntry& ItemEntry)
 {
 	if (!ensure(ItemEntry.IsValid()))
@@ -1275,7 +1295,7 @@ void AInventoryBase::AddReplicatedItemInstance(UItemInstanceBase* ItemInstance)
 {
 	if (IsUsingRegisteredSubObjectList())
 	{
-		AddReplicatedSubObject(ItemInstance, COND_None);
+		AddReplicatedSubObject(ItemInstance, COND_ReplayOrOwner);
 	}
 }
 

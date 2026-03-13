@@ -175,6 +175,9 @@ public:
 	UE_API virtual bool CanPlaceItemInSlot(const FInventoryItemEntry& ItemEntry, const FInventoryItemSlot& ItemSlot) const;
 
 
+	/** Drops the excess amount of an item during GiveItem(). */
+	UE_API virtual void DropExcessAmount(const UItemDefinitionBase* ItemDefinition, int32 ExcessAmount);
+
 
 	/** Called when an item was just given to the inventory. Used to initialize it. */
 	UE_API virtual void OnGiveItem(FInventoryItemEntry& ItemEntry);
